@@ -1,0 +1,175 @@
+﻿<script>
+// FIREBASE CONFIG
+const FIREBASE_CONFIG = {
+  apiKey: "COLE_AQUI_A_API_KEY",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJETO",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_SENDER_ID",
+  appId: "SEU_APP_ID"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const _auth = firebase.auth();
+const _db   = firebase.firestore();
+const _st   = firebase.storage();
+
+// Estado global
+let DATA = null;
+let _currentUser = null;
+let nvBase = [], nvPage = 0, nvRows = [];
+
+// Auth state
+_auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    showLoading();
+    try {
+      const uDoc = await _db.collection('users').doc(user.uid).get();
+      if (!uDoc.exists) { await _auth.signOut(); showLoginScreen('Acesso nao autorizado.'); return; }
+      _currentUser = { uid: user.uid, email: user.email, ...uDoc.data() };
+      await _loadData(_currentUser.empresas || []);
+      hideLoading();
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      _applyPermissions();
+      initApp();
+    } catch(e) {
+      hideLoading();
+      showLoginScreen('Erro: ' + e.message);
+    }
+  } else {
+    showLoginScreen();
+  }
+});
+
+async function _loadData(empresas) {
+  if (!empresas.length) throw new Error('Nenhuma empresa autorizada para este usuario.');
+  const datas = await Promise.all(empresas.map(async (emp) => {
+    const url = await _st.ref('data/' + emp + '.json').getDownloadURL();
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Falha ao baixar ' + emp + '.json');
+    return r.json();
+  }));
+  DATA = _mergeData(datas);
+}
+
+function _mergeData(datas) {
+  const totFrete = datas.reduce((s,d)=>s+(d.resumo?.valor_total_frete||0),0);
+  const totNfe   = datas.reduce((s,d)=>s+(d.resumo?.nfe_com_cte||0),0);
+  return {
+    gerado_em: datas[0]?.gerado_em || '',
+    cnpj_map: Object.assign({}, ...datas.map(d=>d.cnpj_map||{})),
+    por_nat_op: datas[0]?.por_nat_op || [],
+    detalhes: datas.flatMap(d=>d.detalhes||[]),
+    ctes_nao_vinculados: datas.flatMap(d=>d.ctes_nao_vinculados||[]),
+    cancelados_data: datas.flatMap(d=>d.cancelados_data||[]),
+    cte_cancelados_chaves: [...new Set(datas.flatMap(d=>d.cte_cancelados_chaves||[]))],
+    compras: datas.flatMap(d=>d.compras||[]),
+    devolucoes_mkt: datas.flatMap(d=>d.devolucoes_mkt||[]),
+    transf_sem_cte: datas.flatMap(d=>d.transf_sem_cte||[]),
+    transf_fat: Object.assign({}, ...datas.map(d=>d.transf_fat||{})),
+    resumo: {
+      ...(datas[0]?.resumo||{}),
+      valor_total_frete: Math.round(totFrete*100)/100,
+      total_faturamento: Math.round(datas.reduce((s,d)=>s+(d.resumo?.total_faturamento||0),0)*100)/100,
+      nfe_com_cte: totNfe,
+      media_frete: totNfe ? Math.round(totFrete/totNfe*100)/100 : 0,
+    }
+  };
+}
+
+function _applyPermissions() {
+  if (!_currentUser) return;
+  const adminBtn = document.getElementById('tab-btn-admin');
+  if (adminBtn) adminBtn.style.display = _currentUser.isAdmin ? '' : 'none';
+  if (_currentUser.isAdmin) return;
+  const tabs = _currentUser.tabs;
+  if (tabs && Array.isArray(tabs)) {
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+      const t = btn.dataset.tab;
+      if (t !== 'admin' && !tabs.includes(t)) btn.style.display = 'none';
+    });
+    const first = document.querySelector('.tab-btn[data-tab]:not([style*="none"])');
+    if (first && !first.classList.contains('active')) {
+      document.querySelectorAll('.tab-btn.active,.tab-panel.active').forEach(el=>el.classList.remove('active'));
+      first.classList.add('active');
+      const panel = document.getElementById('tab-'+first.dataset.tab);
+      if (panel) panel.classList.add('active');
+    }
+  }
+}
+
+function showLoginScreen(err) {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'none';
+  const el = document.getElementById('login-error');
+  if (err) { el.textContent = err; el.style.display = 'block'; }
+  else { el.style.display = 'none'; }
+}
+function showLoading() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
+}
+async function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-error');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  err.style.display = 'none';
+  try {
+    await _auth.signInWithEmailAndPassword(email, pass);
+  } catch(e2) {
+    err.textContent = e2.code === 'auth/wrong-password' || e2.code === 'auth/user-not-found'
+      ? 'E-mail ou senha incorretos.' : e2.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+async function doForgotPassword(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  if (!email) { alert('Digite o e-mail primeiro.'); return; }
+  try {
+    await _auth.sendPasswordResetEmail(email);
+    alert('E-mail de recuperacao enviado para ' + email + '. Verifique sua caixa de entrada.');
+  } catch(e2) { alert('Erro: ' + e2.message); }
+}
+async function doLogout() {
+  if (confirm('Deseja sair do sistema?')) await _auth.signOut();
+}
+
+// Helpers
+const BRL  = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const N    = (v,d=0) => v.toLocaleString('pt-BR',{maximumFractionDigits:d});
+const MESES= ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const TR_ALIAS={'SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','EBAZARCOMBR LTDA':'MERCADO LIVRE'};
+const MARKETPLACE_TR=new Set(['SHPS TECNOLOGIA E SERVICO LTDA','SHPS TECNOLOGIA E SERVICO LTDA','EBAZARCOMBR LTDA']);
+function trName(raw){if(!raw||raw==='-') return raw||'-';const clean=raw.replace(/^.*? - /,'').trim();return TR_ALIAS[clean.toUpperCase()]||clean;}
+function isMarketplace(tr){if(!tr) return false;const clean=tr.replace(/^.*? - /,'').trim().toUpperCase();if(MARKETPLACE_TR.has(clean)) return true;if(clean.includes('SHPS TECNOLOGIA')) return true;if(clean.includes('EBAZARCOMBR')) return true;return false;}
+function normCh(s){ return (s||'').toUpperCase().replace(/[\s_\-]+/g,''); }
+const ONLINE_CH_RAW=['AMAZON','ECOMMERCE','ECOMMERCETELEVENDAS','MAGALU','MERCADOLIVRE','RAIADROGASIL','SHOPPE','SHOPEE','SITELINHAHUM','TIKTOSHOP','TIKTOKSHOP','BELEZAWEB','BELEZANAWEB'];
+const ONLINE_CH_NORM=new Set(ONLINE_CH_RAW);
+const ONLINE_CH=new Set(['AMAZON','ECOMMERCE','ECOMMERCE_TELEVENDAS','MAGALU','MERCADO LIVRE','RAIA DROGASIL','SHOPPE','SHOPEE','SITE LINHAHUM','SITE_LINHAHUM','TIKTOSHOP','TIKTOK SHOP','BELEZA WEB','BELEZAWEB']);
+function isOnlineCh(c){ return ONLINE_CH_NORM.has(normCh(c)); }
+function getCategoria(canal){ return isOnlineCh(canal)?'Online':'B2B'; }
+const dataMes = d => (d.data||'').slice(3,5);
+const dataAno = d => (d.data||'').slice(6,10);
+const per  = d => d ? d.substring(3,10) : '';
+const perL = p => { const [m,y]=p.split('/'); return MESES[+m]+'/'+y; };
+function getWeek(dateStr){if(!dateStr) return '';const parts=dateStr.split('/');if(parts.length<3) return '';const d=new Date(+parts[2],+parts[1]-1,+parts[0]);const jan1=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);return d.getFullYear()+'-W'+String(wk).padStart(2,'0');}
+Chart.defaults.color='#E2E8F0';Chart.defaults.borderColor='rgba(255,255,255,.05)';Chart.defaults.font.family="'Inter','Segoe UI',system-ui,sans-serif";
+const COLORS=['#3B82F6','#10B981','#F59E0B','#EF4444','#7C3AED','#34D399','#FCD34D','#F87171','#A78BFA','#60A5FA','#6EE7B7','#FBBF24','#22D3EE','#FB7185','#C4B5FD'];
+const CR={};
+const hasChart=()=>typeof Chart!=='undefined';
+function mkBar(id,lbs,vals,color,lbl){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:[{label:lbl||'Frete',data:vals,backgroundColor:color||'#2563EB',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
+function mkMultiBar(id,lbs,vals,colors){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:[{label:'Frete',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
+function mkDonut(id,lbs,vals){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels:lbs,datasets:[{data:vals,backgroundColor:COLORS,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:9,padding:10,color:'#E2E8F0'}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return ' '+c.label+': '+BRL(c.raw)+' ('+(c.raw/t*100).toFixed(1)+'%)';}}}}}});}catch(e){}}
+function mkGrouped(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,color:'#E2E8F0'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
+function mkStacked(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#E2E8F0'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
+function mkLine(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#E2E8F0',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
+function mkLinePct(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#E2E8F0',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw.toFixed(2)+'%'},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>v.toFixed(1)+'%',font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}

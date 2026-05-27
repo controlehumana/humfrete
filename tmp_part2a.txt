@@ -1,0 +1,42 @@
+﻿<!-- TAB VISAO GERAL -->
+<div id="tab-visao-geral" class="tab-panel active">
+  <div class="hero-grid">
+    <div class="hero-card c-blue"><div class="kpi-tooltip">Custo total com transportadoras no periodo.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre frete cobrado do cliente e pago a transportadora.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 vendidos, quanto foi gasto com frete.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-amber"><div class="kpi-tooltip">Custo medio por entrega vinculada a CTe.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Cobertura de Documentos</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">As demais sao retiradas ou ex-works</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Frete Gratis (Entregas)</div><div class="kpi-val" id="k_gratis">-</div><div class="kpi-sub" id="k_gratis_sub">-</div></div>
+  </div>
+  <div class="card" style="padding:16px 18px"><div class="card-title">Frete por Linha de Produto</div><div class="lp-grid">
+    <div class="kpi-card lp-card-lh"><div class="kpi-lbl">Frete Linhahum</div><div class="kpi-val" id="k_lh_frete" style="color:var(--green)">-</div><div class="kpi-sub" id="k_lh_pct">-</div></div>
+    <div class="kpi-card lp-card-hu"><div class="kpi-lbl">Frete Humana Alimentar</div><div class="kpi-val" id="k_hu_frete" style="color:var(--blue2)">-</div><div class="kpi-sub" id="k_hu_pct">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Faturamento Linhahum</div><div class="kpi-val" id="k_lh_nf" style="font-size:16px">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Faturamento Humana</div><div class="kpi-val" id="k_hu_nf" style="font-size:16px">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">% Frete/Venda Linhahum</div><div class="kpi-val" id="k_lh_pctvenda" style="font-size:18px">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">% Frete/Venda Humana</div><div class="kpi-val" id="k_hu_pctvenda" style="font-size:18px">-</div></div>
+  </div></div>
+  <div id="alerts-row"></div>
+  <div class="sdiv">Insights Executivos Automaticos</div>
+  <div class="insights-grid" id="insights-grid"></div>
+  <div class="sdiv">Evolucao Temporal</div>
+  <div class="card"><div class="card-title">Frete Mensal por Empresa (R$)</div><div class="ch-wrap-xl"><canvas id="ch_timeline"></canvas></div></div>
+  <div class="card"><div class="card-title">% Frete / Venda por Empresa e Mes</div><div class="ch-wrap-xl"><canvas id="ch_pct_emp_mes"></canvas></div></div>
+  <div class="card"><div class="card-title">% Frete / Venda - Mapa de Desempenho</div><div id="yoy_heatmap" style="overflow-x:auto;overflow-y:visible"></div></div>
+  <div class="sdiv">Distribuicao Geografica</div>
+  <div class="ch2">
+    <div class="card"><div class="card-title">Custo de Frete por Estado - Top 15</div><div class="ch-wrap"><canvas id="ch_estado"></canvas></div></div>
+    <div class="card"><div class="card-title">Participacao por Transportadora - Top 10</div><div class="ch-wrap"><canvas id="ch_transp"></canvas></div></div>
+  </div>
+  <div class="sdiv">Analise por Empresa</div>
+  <div class="card"><div class="card-title">Frete por Empresa</div><div class="ch-wrap"><canvas id="ch_empresa"></canvas></div></div>
+  <div id="warn_box" style="display:none" class="warn-box"><strong id="warn_sem">0</strong> NF-e do faturamento nao encontraram CTe correspondente.</div>
+  <div class="sdiv">Performance por Natureza de Operacao</div>
+  <div class="card"><div class="card-title">Ranking - Natureza de Operacao</div><div class="tw"><table><thead><tr><th>#</th><th>Natureza de Operacao</th><th>Qtd NF-e</th><th>Frete Pago</th><th>Frete Cobrado</th><th>Saldo</th><th>% do Total</th><th>Part.</th></tr></thead><tbody id="natop_tbody"></tbody></table></div></div>
+  <div class="footer" id="footer_info"></div>
+</div>

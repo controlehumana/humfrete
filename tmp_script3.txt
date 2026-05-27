@@ -1,0 +1,108 @@
+﻿const PAGE=50;let tablePage=0;let filteredRows=[];let tableRows=[];let tableSort={col:null,dir:'desc'};
+function renderAll(){
+  filteredRows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
+  tableRows=applySortToRows(filteredRows);
+  const agg=aggregate(tableRows);const r=DATA.resumo;
+  document.getElementById('h_total').textContent=BRL(agg.tot);
+  const pctStr=agg.fretePctFat.toFixed(1)+'%';
+  const chipEl=document.getElementById('h_pct_fat_chip');chipEl.textContent=pctStr;chipEl.className='chip '+(agg.fretePctFat>8?'chip-red':agg.fretePctFat>5?'chip-amber':'chip-green');
+  const saldoEl=document.getElementById('h_saldo');saldoEl.textContent=BRL(agg.difTot);saldoEl.style.color=agg.difTot>=0?'var(--green)':'var(--red)';
+  document.getElementById('h_saldo_sub').innerHTML=agg.difTot>=0?'<span class="chip chip-green"><i class="fa-solid fa-arrow-up"></i> Cobrado &gt; Pago</span>&nbsp;empresa cobre o custo':'<span class="chip chip-red"><i class="fa-solid fa-arrow-down"></i> Pago &gt; Cobrado</span>&nbsp;prejuizo no frete';
+  const pctRecEl=document.getElementById('h_pct_rec');pctRecEl.textContent=pctStr;pctRecEl.style.color=agg.fretePctFat>8?'var(--red)':agg.fretePctFat>5?'var(--yellow)':'var(--green)';
+  document.getElementById('h_pct_rec_sub').innerHTML=agg.fretePctFat<=5?'<span class="chip chip-green"><i class="fa-solid fa-check"></i> Abaixo do benchmark</span>':agg.fretePctFat<=8?'<span class="chip chip-amber"><i class="fa-solid fa-triangle-exclamation"></i>Atencao &mdash; meta &lt;5%</span>':'<span class="chip chip-red"><i class="fa-solid fa-xmark"></i> Acima do benchmark</span>';
+  document.getElementById('h_ticket').textContent=BRL(agg.media);
+  document.getElementById('h_ticket_sub').textContent=N(agg.qtd)+' entregas vinculadas';
+  document.getElementById('k_vinc').textContent=N(agg.qtd);
+  document.getElementById('k_vinc_sub').textContent='de '+N(r.total_nfe_fat||0)+' NF-e';
+  const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
+  const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=90?'var(--green)':taxa>=70?'var(--yellow)':'var(--red)';
+  document.getElementById('k_ntransp').textContent=N(agg.numTransp);
+  document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trName(agg.topTransp.label):'';
+  const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';
+  document.getElementById('k_conc_sub').textContent=agg.topTransp?trName(agg.topTransp.label):'';
+  document.getElementById('k_gratis').textContent=N(agg.nSem);
+  document.getElementById('k_gratis_sub').textContent=(agg.qtd?(agg.nSem/agg.qtd*100).toFixed(1):0)+'% das entregas';
+  const tot1=agg.tot||1;
+  document.getElementById('k_lh_frete').textContent=BRL(agg.flh);document.getElementById('k_lh_pct').textContent=(agg.flh/tot1*100).toFixed(1)+'% do frete';
+  document.getElementById('k_hu_frete').textContent=BRL(agg.fhu);document.getElementById('k_hu_pct').textContent=(agg.fhu/tot1*100).toFixed(1)+'% do frete';
+  document.getElementById('k_lh_nf').textContent=BRL(agg.nlh);document.getElementById('k_hu_nf').textContent=BRL(agg.nhu);
+  const lhPV=document.getElementById('k_lh_pctvenda');lhPV.textContent=agg.nlh?(agg.flh/agg.nlh*100).toFixed(2)+'%':'--';lhPV.style.color=agg.nlh&&agg.flh/agg.nlh*100>8?'var(--red)':agg.nlh&&agg.flh/agg.nlh*100>5?'var(--yellow)':'var(--green)';
+  const huPV=document.getElementById('k_hu_pctvenda');huPV.textContent=agg.nhu?(agg.fhu/agg.nhu*100).toFixed(2)+'%':'--';huPV.style.color=agg.nhu&&agg.fhu/agg.nhu*100>8?'var(--red)':agg.nhu&&agg.fhu/agg.nhu*100>5?'var(--yellow)':'var(--green)';
+  renderAlerts(agg);renderInsights(agg);
+  const allPers=[...new Set(DATA.detalhes.map(d=>per(d.data)).filter(Boolean))].sort();
+  const allEmps=[...new Set(tableRows.map(d=>d.empresa).filter(Boolean))].sort();
+  const byPE={};
+  tableRows.forEach(d=>{const p=per(d.data);if(!p) return;const e=d.empresa||'N/A';if(!byPE[p])byPE[p]={};byPE[p][e]=(byPE[p][e]||0)+d.valor_frete;});
+  const tlLbs=allPers.map(p=>perL(p));
+  const tlDs=allEmps.map((emp,i)=>({label:emp,data:allPers.map(p=>(byPE[p]&&byPE[p][emp])||0),borderColor:COLORS[i%COLORS.length],backgroundColor:COLORS[i%COLORS.length]+'22',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:COLORS[i%COLORS.length],pointBorderColor:'#fff',pointBorderWidth:2}));
+  mkLine('ch_timeline',tlLbs,tlDs);
+  const byPE_nf={};
+  tableRows.forEach(d=>{const p=per(d.data);if(!p) return;const e=d.empresa||'N/A';if(!byPE_nf[p])byPE_nf[p]={};if(!byPE_nf[p][e])byPE_nf[p][e]={fr:0,nf:0};byPE_nf[p][e].fr+=d.valor_frete;byPE_nf[p][e].nf+=d.total_nf;});
+  const pctDs=allEmps.map((emp,i)=>({label:emp,data:allPers.map(p=>{const v=byPE_nf[p]&&byPE_nf[p][emp];return v&&v.nf?+(v.fr/v.nf*100).toFixed(2):null;}),borderColor:COLORS[i%COLORS.length],backgroundColor:COLORS[i%COLORS.length]+'22',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:COLORS[i%COLORS.length],pointBorderColor:'#fff',pointBorderWidth:2,spanGaps:true}));
+  mkLinePct('ch_pct_emp_mes',tlLbs,pctDs);
+  const allYears=[...new Set(tableRows.map(d=>dataAno(d)).filter(Boolean))].sort();
+  const byYME={};
+  tableRows.forEach(d=>{const a=dataAno(d),m=dataMes(d),e=d.empresa||'N/A';if(!a||!m) return;if(!byYME[a])byYME[a]={};if(!byYME[a][m])byYME[a][m]={fr:0,nf:0};byYME[a][m].fr+=d.valor_frete;byYME[a][m].nf+=d.total_nf;const ke=a+'|'+e;if(!byYME[ke])byYME[ke]={};if(!byYME[ke][m])byYME[ke][m]={fr:0,nf:0};byYME[ke][m].fr+=d.valor_frete;byYME[ke][m].nf+=d.total_nf;});
+  window._yoyData={allYears,allEmps,byYME,allPers,tlLbs};renderYoY();
+  const top15E=agg.byEst.slice(0,15);mkMultiBar('ch_estado',top15E.map(x=>x.label),top15E.map(x=>x.frete),top15E.map((_,i)=>'hsl('+(215-i*6)+',70%,'+(52-i)+'%)'));
+  const top10T=agg.byTr.slice(0,10);mkDonut('ch_transp',top10T.map(x=>trName(x.label)),top10T.map(x=>x.frete));
+  mkBar('ch_empresa',agg.byEmp.map(x=>x.label),agg.byEmp.map(x=>x.frete),'#059669');
+  const wShow=r.nfe_sem_cte>0&&!state.ano&&!state.mes&&!state.empresa&&!state.linha;
+  document.getElementById('warn_box').style.display=wShow?'':'none';document.getElementById('warn_sem').textContent=N(r.nfe_sem_cte);
+  document.getElementById('natop_tbody').innerHTML=agg.byNat.map((n,i)=>{const saldo=n.diferenca||0;const sC=saldo>0?'color:var(--green)':saldo<0?'color:var(--red)':'color:var(--text3)';const pct=agg.tot?(n.frete/agg.tot*100):0;return '<tr><td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td><td style="color:var(--text);font-weight:500">'+n.label+'</td><td>'+N(n.qtd)+'</td><td style="color:var(--text);font-weight:600">'+BRL(n.frete)+'</td><td>'+BRL(n.cobrado)+'</td><td style="'+sC+';font-weight:700">'+BRL(saldo)+'</td><td>'+pct.toFixed(1)+'%</td><td><div style="width:'+Math.min(pct*4,100)+'px;height:3px;background:var(--blue);border-radius:2px;opacity:.7"></div></td></tr>';}).join('');
+  updateTags();
+  document.getElementById('tb_vinc').textContent=N(agg.qtd);document.getElementById('tb_op').textContent=N(agg.qtd);
+  document.getElementById('footer_info').textContent=N(agg.qtd)+' NF-e vinculadas  |  '+BRL(agg.tot)+'  |  '+DATA.gerado_em;
+  const prevData=prevMonthAgg();const prev=prevData?prevData.agg:null;const prevLbl=prevData?MESES[prevData.mes]+(prevData.ano?' '+prevData.ano.slice(2):''):'';const vsNote=prev?(' <span style="color:var(--text3);font-size:9px">vs '+prevLbl+'</span>'):'';
+  document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difTot,prev.difTot,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
+  tablePage=0;renderTable();
+  const activeTab=document.querySelector('.tab-btn.active');
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados')nvRender();else if(tab==='compras')renderCompras();else if(tab==='dev-mkt')renderDevMkt();}
+}
+function pctBarInline(fr,nf){if(!nf) return '<span style="color:var(--text3)">-</span>';const p=fr/nf*100;const cls=p<5?'tg':p<10?'ty':'tr';const barClr=p<5?'var(--green)':p<10?'var(--amber)':'var(--red)';return '<div class="pct-bar-wrap"><span class="tag '+cls+'">'+p.toFixed(1)+'%</span><div class="pct-bar-bg"><div class="pct-bar-fill" style="width:'+Math.min(p*5,100)+'%;background:'+barClr+'"></div></div></div>';}
+function applySortToRows(rows){if(!tableSort.col) return rows;return [...rows].sort((a,b)=>{let va,vb;if(tableSort.col==='pct'){va=a.total_nf?a.valor_frete/a.total_nf:0;vb=b.total_nf?b.valor_frete/b.total_nf:0;}else if(tableSort.col==='total_nf'){va=a.total_nf||0;vb=b.total_nf||0;}else if(tableSort.col==='valor_frete'){va=a.valor_frete||0;vb=b.valor_frete||0;}else if(tableSort.col==='diferenca'){va=a.diferenca_frete||0;vb=b.diferenca_frete||0;}return tableSort.dir==='desc'?vb-va:va-vb;});}
+function sortBy(col){if(tableSort.col===col)tableSort.dir=tableSort.dir==='desc'?'asc':'desc';else{tableSort.col=col;tableSort.dir='desc';}tableRows=applySortToRows(filteredRows);tablePage=0;renderTable();updateSortHeaders();}
+function updateSortHeaders(){['total_nf','valor_frete','diferenca','pct'].forEach(c=>{const th=document.getElementById('th_'+c);if(!th) return;th.classList.remove('sort-asc','sort-desc');if(tableSort.col===c)th.classList.add('sort-'+tableSort.dir);});}
+function linhaTag(l){if(l==='Linhahum') return '<span class="tag tg">Linhahum</span>';if(l==='Humana Alimentar') return '<span class="tag tb">Humana</span>';return '<span class="tag ty">Misto</span>';}
+const cteRateioIndex={};
+function buildCteRateioIndex(){(DATA.detalhes||[]).forEach(d=>{if(d.is_rateio&&d.cte_chave){if(!cteRateioIndex[d.cte_chave])cteRateioIndex[d.cte_chave]=[];cteRateioIndex[d.cte_chave].push(d);}});}
+function toggleRateioDetail(trId,cteChave,curNfe){
+  const detId='rd-'+trId;const existing=document.getElementById(detId);const btn=document.getElementById('rb-'+trId);
+  if(existing){existing.remove();if(btn)btn.innerHTML='<i class="fa-solid fa-circle-info"></i> Rateio';return;}
+  if(btn)btn.innerHTML='<i class="fa-solid fa-chevron-up"></i> Fechar';
+  const peers=(cteRateioIndex[cteChave]||[]).slice().sort((a,b)=>b.pct_rateio-a.pct_rateio);
+  const totCte=peers.length?(peers[0].valor_frete_cte||peers.reduce((s,r)=>s+r.valor_frete,0)):0;
+  const maxPct=peers.length?peers[0].pct_rateio:1;
+  const peersHtml=peers.map(r=>{const isCur=r.chave_nfe===curNfe;const bw=(maxPct>0?r.pct_rateio/maxPct*100:0).toFixed(0);return '<tr style="border-bottom:1px solid #1A2535'+(isCur?';background:rgba(245,158,11,.08)':'')+'">'+'<td style="padding:5px 10px"><strong style="color:'+(isCur?'var(--amber)':'var(--text)')+'">'+r.empresa+'</strong>'+(isCur?' <span style="font-size:9px;background:#3D2E00;color:var(--amber);padding:1px 6px;border-radius:4px">esta NF-e</span>':'')+'</td>'+'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+r.numero+'</td>'+'<td style="text-align:right;color:var(--text)">'+BRL(r.total_nf)+'</td>'+'<td style="text-align:right;color:var(--blue2);font-weight:700">'+BRL(r.valor_frete)+'</td>'+'<td style="text-align:right;font-weight:700;color:var(--amber)">'+r.pct_rateio+'%</td>'+'<td style="min-width:100px;padding:5px 10px"><div style="height:4px;border-radius:2px;background:#1E2D42"><div style="height:100%;border-radius:2px;background:var(--amber);width:'+bw+'%"></div></div></td></tr>';}).join('');
+  const panel='<tr id="'+detId+'" style="background:#080D18"><td colspan="19" style="padding:0"><div style="background:#0A1525;border-left:3px solid var(--amber);padding:14px 18px;margin:0 0 2px 0"><div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--amber)"><i class="fa-solid fa-truck"></i> Rateio do CTe</span><span style="font-family:monospace;font-size:10px;color:var(--text3)">...'+cteChave.slice(-14)+'</span><span style="font-size:11px;color:var(--text2)">Frete total: <strong style="color:var(--text)">'+BRL(totCte)+'</strong></span><span style="font-size:11px;color:var(--text2)">Dividido entre <strong style="color:var(--amber)">'+peers.length+'</strong> NF-e</span></div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid #2A3F58;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)"><th style="padding:4px 10px;text-align:left">Empresa</th><th style="text-align:left">NF</th><th style="text-align:right">Valor da Nota</th><th style="text-align:right">Frete Rateado</th><th style="text-align:right">% do Rateio</th><th style="min-width:100px">Proporcao</th></tr></thead><tbody>'+peersHtml+'</tbody><tfoot><tr style="border-top:1px solid #2A3F58;font-weight:700"><td colspan="3" style="padding:5px 10px;color:var(--text3);font-size:10px">Total</td><td style="text-align:right;color:var(--text)">'+BRL(totCte)+'</td><td style="text-align:right;color:var(--text)">100%</td><td></td></tr></tfoot></table></div></td></tr>';
+  document.getElementById(trId).insertAdjacentHTML('afterend',panel);
+}
+function mkDetailRow(d,rowId){
+  const dif=d.diferenca_frete||0;const dC=dif>0?'color:var(--green)':dif<0?'color:var(--red)':'color:var(--text3)';
+  const cob=d.frete_cobrado||0;const pct=d.total_nf?d.valor_frete/d.total_nf*100:0;const rowCls=pct>10?' class="row-alert"':'';
+  const rid=rowId||'x';
+  const rateioBtn=d.is_rateio?'<button id="rb-'+rid+'" onclick="event.stopPropagation();toggleRateioDetail(\''+rid+'\',\''+d.cte_chave+'\',\''+d.chave_nfe+'\')" style="margin-left:5px;background:#3D2E00;border:1px solid #6B4F00;color:var(--amber);font-size:9px;font-weight:700;padding:1px 7px;border-radius:4px;cursor:pointer;font-family:inherit"><i class="fa-solid fa-circle-info"></i> Rateio</button>':'';
+  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="color:var(--blue2);font-weight:600;white-space:nowrap">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td></tr>';
+}
+function mkPager(total,page,perPage,pagerId,onPage){
+  const pages=Math.ceil(total/perPage);const pager=document.getElementById(pagerId);pager.innerHTML='';
+  if(pages<=1){pager.innerHTML='<span class="pinfo">'+N(total)+' registro(s)</span>';return;}
+  const addBtn=(lbl,pg,act,dis)=>{const b=document.createElement('button');b.textContent=lbl;if(act)b.classList.add('active');if(dis)b.disabled=true;b.onclick=()=>onPage(pg);pager.appendChild(b);};
+  const info=document.createElement('span');info.className='pinfo';info.textContent=N(total)+' reg.  p.'+(page+1)+'/'+pages;pager.appendChild(info);
+  addBtn('<<',0,false,page===0);addBtn('<',page-1,false,page===0);
+  const lo=Math.max(0,page-2),hi=Math.min(pages-1,page+2);for(let i=lo;i<=hi;i++) addBtn(i+1,i,i===page);
+  addBtn('>',page+1,false,page===pages-1);addBtn('>>',pages-1,false,page===pages-1);
+}
+function renderTable(){
+  const tbody=document.getElementById('tbody');const slice=tableRows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
+  tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'dr'+(tablePage*PAGE+i))).join('');
+  mkPager(tableRows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
+}
+selAno.addEventListener('change',()=>{state.ano=selAno.value;renderAll();});
+selMes.addEventListener('change',()=>{state.mes=selMes.value;renderAll();});
+selEmpH.addEventListener('change',()=>{state.empresa=selEmpH.value;renderAll();});
+selLnH.addEventListener('change',()=>{state.linha=selLnH.value;renderAll();});
+selEst.addEventListener('change',()=>{state.estado=selEst.value;renderAll();});
+selTr.addEventListener('change',()=>{state.transp=selTr.value;renderAll();});
+selCn.addEventListener('change',()=>{state.canal=selCn.value;renderAll();});
+inpQ.addEventListener('input',()=>{state.q=inpQ.value.toLowerCase();renderAll();});
