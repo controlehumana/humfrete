@@ -1,0 +1,16 @@
+# Dados locais — não versionar
+dashboard_frete.html
+CTe/
+__pycache__/
+*.pyc
+
+# Credenciais Firebase — NUNCA commitar
+serviceAccountKey.json
+firebase_config.json
+
+# Temporários
+tmp_*.txt
+tmp_*.py
+teste_*.html
+test_*.js
+*.json.bak
