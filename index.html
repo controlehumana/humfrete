@@ -1212,7 +1212,7 @@ function toggleCliDetails(key){
 // ABA EMPRESA
 const NAT_TRANSF=/TRANSFER|1-00005-0000002/i;
 const HU_CLI=/HUMANA\s*ALIMENTAR/i;
-const CNPJ_EMPRESA=DATA.cnpj_map||{};
+let CNPJ_EMPRESA={};
 function resolveEmpDest(d){ return CNPJ_EMPRESA[d.dest_cnpj]||CNPJ_EMPRESA[d.part_cnpj]||d.cliente||'?'; }
 function isTransferencia(d){
   return NAT_TRANSF.test(d.nat_operacao||'')
@@ -1442,6 +1442,7 @@ function renderEmpresa(){
 }
 // ── initApp() — called after Firebase data is loaded ────────────────────────
 function initApp(){
+  CNPJ_EMPRESA = DATA.cnpj_map || {};
   // Populate filter dropdowns
   const anos=[...new Set(DATA.detalhes.map(d=>(d.data||'').slice(6,10)).filter(Boolean))].sort();
   anos.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;selAno.appendChild(o);});
