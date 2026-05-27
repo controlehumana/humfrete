@@ -237,16 +237,27 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 .conso-txt{font-size:12px;color:var(--text2);line-height:1.6}
 .conso-txt strong{color:var(--text)}
 /* LOGIN OVERLAY */
-#login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
-#login-card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:var(--shadow-md)}
-#login-card h2{font-size:18px;font-weight:800;margin-bottom:4px}
-#login-card p{font-size:12px;color:var(--text2);margin-bottom:20px}
-.login-field{width:100%;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;margin-bottom:10px;display:block}
-.login-field:focus{border-color:var(--blue)}
-.login-btn{width:100%;background:var(--blue);border:none;border-radius:8px;padding:11px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s;margin-top:4px}
-.login-btn:hover{background:#2563EB}.login-btn:disabled{opacity:.6;cursor:default}
-#login-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red2);border-radius:8px;padding:8px 12px;font-size:12px;margin-top:10px;display:none}
-.login-link{display:block;text-align:center;margin-top:14px;font-size:11px;color:var(--text3);cursor:pointer;text-decoration:none}
+#login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;background-image:radial-gradient(ellipse 900px 700px at 20% 10%,rgba(59,130,246,.08) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 80% 90%,rgba(124,58,237,.07) 0%,transparent 65%)}
+#login-card{background:var(--s1);border:1px solid var(--bd);border-radius:22px;padding:48px 52px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.03)}
+#login-brand{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+#login-logo-mark{width:46px;height:46px;background:linear-gradient(135deg,var(--blue) 0%,var(--purple) 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;flex-shrink:0;box-shadow:0 4px 16px rgba(59,130,246,.35)}
+#login-brand-info{display:flex;flex-direction:column;gap:3px}
+#login-brand-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px;line-height:1}
+#login-brand-sub{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.8px;text-transform:uppercase}
+#login-divider{height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent);margin-bottom:32px}
+#login-card h2{font-size:21px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin-bottom:6px}
+#login-card .login-subtitle{font-size:12px;color:var(--text2);margin-bottom:28px;line-height:1.6}
+.login-field-wrap{margin-bottom:18px}
+.login-label{display:block;font-size:10px;font-weight:700;color:var(--text3);margin-bottom:7px;letter-spacing:.8px;text-transform:uppercase}
+.login-field{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 16px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;display:block}
+.login-field:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.13)}
+.login-field::placeholder{color:var(--text3)}
+.login-btn{width:100%;background:linear-gradient(135deg,var(--blue) 0%,#2563EB 100%);border:none;border-radius:10px;padding:13px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s;margin-top:6px;letter-spacing:.2px;box-shadow:0 4px 18px rgba(59,130,246,.35)}
+.login-btn:hover{opacity:.92;box-shadow:0 6px 22px rgba(59,130,246,.45)}
+.login-btn:active{transform:translateY(1px);box-shadow:0 2px 10px rgba(59,130,246,.3)}
+.login-btn:disabled{opacity:.45;cursor:default;transform:none}
+#login-error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);color:var(--red2);border-radius:10px;padding:10px 14px;font-size:12px;margin-top:14px;display:none;line-height:1.5}
+.login-link{display:block;text-align:center;margin-top:22px;font-size:12px;color:var(--text3);cursor:pointer;text-decoration:none;transition:color .15s;letter-spacing:.1px}
 .login-link:hover{color:var(--blue2)}
 /* LOADING */
 #loading-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:9998;flex-direction:column;gap:16px}
@@ -279,16 +290,29 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay">
   <div id="login-card">
-    <div class="hd-logo" style="width:44px;height:44px;font-size:15px;margin:0 auto 16px">FR</div>
-    <h2 style="text-align:center;margin-bottom:4px">Gestao de Fretes</h2>
-    <p style="text-align:center">Entre com seu e-mail e senha cadastrado</p>
+    <div id="login-brand">
+      <div id="login-logo-mark">FR</div>
+      <div id="login-brand-info">
+        <span id="login-brand-name">Gestao de Fretes</span>
+        <span id="login-brand-sub">Controle Humana</span>
+      </div>
+    </div>
+    <div id="login-divider"></div>
+    <h2>Acesso ao sistema</h2>
+    <p class="login-subtitle">Entre com suas credenciais para continuar</p>
     <form id="login-form" onsubmit="doLogin(event)">
-      <input id="login-email" type="email" class="login-field" placeholder="E-mail" required autocomplete="email">
-      <input id="login-pass" type="password" class="login-field" placeholder="Senha" required autocomplete="current-password">
+      <div class="login-field-wrap">
+        <label class="login-label" for="login-email">E-mail</label>
+        <input id="login-email" type="email" class="login-field" placeholder="seu@email.com.br" required autocomplete="email">
+      </div>
+      <div class="login-field-wrap">
+        <label class="login-label" for="login-pass">Senha</label>
+        <input id="login-pass" type="password" class="login-field" placeholder="••••••••" required autocomplete="current-password">
+      </div>
       <button type="submit" id="login-btn" class="login-btn">Entrar</button>
     </form>
     <div id="login-error"></div>
-    <a class="login-link" href="#" onclick="doForgotPassword(event)"><i class="fa-solid fa-key" style="font-size:9px"></i> Esqueci minha senha</a>
+    <a class="login-link" href="#" onclick="doForgotPassword(event)">Esqueci minha senha</a>
   </div>
 </div>
 
