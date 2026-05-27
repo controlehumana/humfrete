@@ -270,16 +270,32 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 .admin-btn:hover{background:#2563EB}
 .admin-btn.danger{background:var(--red)}
 .admin-btn.secondary{background:var(--s2);border:1px solid var(--bd2);color:var(--text2)}
-.user-card{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
-.user-info{flex:1}
-.user-email{font-size:12px;font-weight:600;color:var(--text)}
+.user-card{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.user-card:last-child{margin-bottom:0}
+.user-avatar{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-email{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .user-meta{font-size:10px;color:var(--text3);margin-top:2px}
-.user-badge{display:inline-block;background:rgba(239,68,68,.15);color:var(--red2);border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:6px}
-.user-badge.admin{background:rgba(124,58,237,.15);color:var(--purple2);border-color:rgba(124,58,237,.3)}
-.permission-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.perm-chip{display:inline-flex;align-items:center;gap:4px;background:var(--s3);border:1px solid var(--bd2);border-radius:4px;padding:2px 8px;font-size:10px;color:var(--text2);cursor:pointer;transition:all .15s}
+.user-badge{display:inline-block;background:rgba(124,58,237,.15);color:var(--purple2);border:1px solid rgba(124,58,237,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:5px;vertical-align:middle}
+.permission-checks{display:flex;flex-wrap:wrap;gap:5px}
+.perm-chip{display:inline-flex;align-items:center;background:var(--s3);border:1px solid var(--bd2);border-radius:5px;padding:3px 10px;font-size:10px;color:var(--text2);cursor:pointer;transition:all .15s}
 .perm-chip.active{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--blue2)}
+.admin-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+.admin-right{display:flex;flex-direction:column;gap:16px}
+.admin-form{display:grid;gap:14px}
+.admin-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.admin-label{display:block;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px}
+.admin-input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:9px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;display:block}
+.admin-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.admin-input::placeholder{color:var(--text3)}
+.admin-perm-box{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.admin-perm-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px}
+.admin-btn{background:var(--blue);border:none;border-radius:7px;color:#fff;padding:8px 20px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s}
+.admin-btn:hover{background:#2563EB}
+.admin-btn.secondary{background:transparent;border:1px solid var(--bd2);color:var(--text2)}
+.admin-btn.secondary:hover{border-color:var(--blue);color:var(--blue2);background:rgba(59,130,246,.07)}
+.admin-del-btn{padding:5px 10px;font-size:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red2);border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;transition:background .15s}
+.admin-del-btn:hover{background:rgba(239,68,68,.2)}
 </style>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -611,23 +627,59 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 
 <!-- TAB ADMIN -->
 <div id="tab-admin" class="tab-panel">
-  <div class="card"><div class="card-title">Usuarios Cadastrados</div><div id="admin-users-list"><div style="color:var(--text3);font-size:12px">Carregando usuarios...</div></div></div>
-  <div class="card admin-section">
-    <div class="card-title">Adicionar / Editar Usuario</div>
-    <form id="admin-user-form" class="admin-form">
-      <input type="hidden" id="admin-edit-uid">
-      <input class="login-field" style="margin:0" id="admin-email" type="email" placeholder="E-mail *" required>
-      <input class="login-field" style="margin:0" id="admin-name" type="text" placeholder="Nome de exibicao">
-      <input class="login-field" style="margin:0" id="admin-pass" type="password" placeholder="Senha inicial (obrigatorio para novo usuario)">
-      <div><div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Empresas com acesso:</div><div id="admin-emp-checks" class="permission-checks"></div></div>
-      <div><div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Abas com acesso:</div><div id="admin-tab-checks" class="permission-checks"></div></div>
-      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="admin-is-admin" style="accent-color:var(--purple)"><label for="admin-is-admin" style="font-size:12px;color:var(--text2);cursor:pointer">Administrador (acesso total + aba admin)</label></div>
-      <div style="display:flex;gap:8px;margin-top:4px"><button type="submit" class="admin-btn" id="admin-save-btn">Salvar Usuario</button><button type="button" class="admin-btn secondary" onclick="adminCancelEdit()">Cancelar</button></div>
-      <div id="admin-form-msg" style="font-size:11px;color:var(--green2);display:none;margin-top:4px"></div>
-      <div id="admin-form-err" style="font-size:11px;color:var(--red2);display:none;margin-top:4px"></div>
-    </form>
+  <div class="admin-grid">
+    <!-- Coluna esquerda: lista de usuários -->
+    <div class="card" style="min-height:320px">
+      <div class="card-title">Usuarios Cadastrados</div>
+      <div id="admin-users-list"><div style="color:var(--text3);font-size:12px">Carregando usuarios...</div></div>
+    </div>
+    <!-- Coluna direita: formulário + meta info -->
+    <div class="admin-right">
+      <div class="card">
+        <div class="card-title">Adicionar / Editar Usuario</div>
+        <form id="admin-user-form" class="admin-form">
+          <input type="hidden" id="admin-edit-uid">
+          <div class="admin-row2">
+            <div>
+              <label class="admin-label" for="admin-email">E-mail</label>
+              <input class="admin-input" id="admin-email" type="email" placeholder="usuario@empresa.com.br" required>
+            </div>
+            <div>
+              <label class="admin-label" for="admin-name">Nome de exibicao</label>
+              <input class="admin-input" id="admin-name" type="text" placeholder="Nome Sobrenome">
+            </div>
+          </div>
+          <div>
+            <label class="admin-label" for="admin-pass">Senha</label>
+            <input class="admin-input" id="admin-pass" type="password" placeholder="Senha inicial (obrigatorio para novo usuario)">
+          </div>
+          <div class="admin-perm-box">
+            <div class="admin-perm-title">Empresas com acesso</div>
+            <div id="admin-emp-checks" class="permission-checks"></div>
+          </div>
+          <div class="admin-perm-box">
+            <div class="admin-perm-title">Abas com acesso</div>
+            <div id="admin-tab-checks" class="permission-checks"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="admin-is-admin" style="accent-color:var(--purple);width:14px;height:14px">
+            <label for="admin-is-admin" style="font-size:12px;color:var(--text2);cursor:pointer">Administrador — acesso total e aba admin</label>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="submit" class="admin-btn" id="admin-save-btn">Salvar Usuario</button>
+            <button type="button" class="admin-btn secondary" onclick="adminCancelEdit()">Cancelar</button>
+          </div>
+          <div id="admin-form-msg" style="font-size:11px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:var(--green2);border-radius:7px;padding:8px 12px;display:none;line-height:1.5"></div>
+          <div id="admin-form-err" style="font-size:11px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:var(--red2);border-radius:7px;padding:8px 12px;display:none;line-height:1.5"></div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title">Ultimo Upload de Dados</div>
+        <div id="admin-meta-info" style="font-size:12px;color:var(--text2);line-height:1.8">Carregando...</div>
+        <div style="margin-top:12px;font-size:11px;color:var(--text3)">Para atualizar os dados execute na sua maquina: <code style="background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--text2)">py atualizar.py</code></div>
+      </div>
+    </div>
   </div>
-  <div class="card"><div class="card-title">Informacoes do Upload de Dados</div><div id="admin-meta-info" style="font-size:12px;color:var(--text2)">Carregando...</div><div style="margin-top:10px;font-size:11px;color:var(--text3)">Para atualizar: execute <code style="background:var(--s2);padding:2px 6px;border-radius:4px">py processar_frete.py</code> na maquina com os arquivos XML/XLS.</div></div>
 </div>
 
 </div><!-- #app -->
@@ -1825,8 +1877,8 @@ function renderAdminUsers(){
         <div class="user-meta">Empresas: ${emps} &nbsp;·&nbsp; Abas: ${tabs}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
-        <button class="admin-btn secondary" style="padding:4px 12px;font-size:11px" onclick="adminEditUser('${u.uid}')">Editar</button>
-        <button style="padding:4px 10px;font-size:11px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red2);border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600" onclick="adminDeleteUser('${u.uid}','${safeEmail}')">Excluir</button>
+        <button class="admin-btn secondary" style="padding:5px 12px;font-size:11px" onclick="adminEditUser('${u.uid}')">Editar</button>
+        <button class="admin-del-btn" onclick="adminDeleteUser('${u.uid}','${safeEmail}')">Excluir</button>
       </div>
     </div>`;
   }).join('');
