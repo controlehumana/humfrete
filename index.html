@@ -658,7 +658,14 @@ async function _loadData(empresas) {
   const datas = await Promise.all(empresas.map(async (emp) => {
     const doc = await _db.collection('dados').doc(emp).get();
     if (!doc.exists) throw new Error('Dados de ' + emp + ' nao encontrados. Execute o processamento.');
-    return JSON.parse(doc.data().payload);
+    const data = JSON.parse(doc.data().payload);
+    const nChunks = data.det_chunks || 0;
+    if (nChunks > 0) {
+      const chunkIds = Array.from({length: nChunks}, (_, i) => emp + '_det_' + String(i).padStart(3, '0'));
+      const chunkDocs = await Promise.all(chunkIds.map(id => _db.collection('dados').doc(id).get()));
+      data.detalhes = chunkDocs.flatMap(cd => cd.exists ? JSON.parse(cd.data().payload).items : []);
+    }
+    return data;
   }));
   DATA = _mergeData(datas);
 }

@@ -3268,13 +3268,18 @@ def split_by_empresa(dados):
     return result
 
 
+CHUNK_SIZE = 800  # itens de detalhes por documento Firestore (~700KB cada)
+
+
 def upload_to_firestore(empresa_data, dados_completos):
-    """Faz upload dos dados por empresa para Firebase Firestore."""
+    """Faz upload dos dados por empresa para Firebase Firestore.
+    detalhes grandes sao divididos em chunks de CHUNK_SIZE itens cada.
+    """
     try:
         import firebase_admin
         from firebase_admin import credentials, firestore as fb_firestore
     except ImportError:
-        print("\n[AVISO] firebase-admin nao instalado. Execute: pip install firebase-admin")
+        print("\n[AVISO] firebase-admin nao instalado. Execute: py -m pip install firebase-admin")
         print("        Upload pulado.")
         return False
 
@@ -3291,18 +3296,30 @@ def upload_to_firestore(empresa_data, dados_completos):
             firebase_admin.initialize_app(cred)
 
         db = fb_firestore.client()
-        print(f"\n[Firestore] Fazendo upload...")
+        print(f"\n[Firestore] Fazendo upload (chunk={CHUNK_SIZE} itens)...")
+
         for emp, data in empresa_data.items():
-            json_str = json.dumps(data, ensure_ascii=False)
-            size_kb = len(json_str.encode("utf-8")) / 1024
-            if size_kb > 900:
-                print(f"   AVISO: {emp} muito grande ({size_kb:.0f} KB) — limite Firestore é 1MB por doc")
-            db.collection("dados").document(emp).set({
-                "payload": json_str,
-                "gerado_em": data.get("gerado_em", ""),
-                "size_kb": round(size_kb, 1),
-            })
-            print(f"   OK  dados/{emp}  ({size_kb:.1f} KB)")
+            detalhes = data.get("detalhes", [])
+            chunks = [detalhes[i:i+CHUNK_SIZE] for i in range(0, len(detalhes), CHUNK_SIZE)]
+            n_chunks = len(chunks)
+
+            # Documento principal: tudo menos detalhes
+            main_doc = {k: v for k, v in data.items() if k != "detalhes"}
+            main_doc["det_chunks"] = n_chunks
+            main_doc["gerado_em"] = data.get("gerado_em", "")
+
+            main_json = json.dumps(main_doc, ensure_ascii=False)
+            main_kb = len(main_json.encode("utf-8")) / 1024
+            db.collection("dados").document(emp).set({"payload": main_json, "gerado_em": main_doc["gerado_em"], "size_kb": round(main_kb, 1)})
+            print(f"   OK  dados/{emp}  ({main_kb:.0f} KB, {n_chunks} chunks de detalhes)")
+
+            # Chunks de detalhes
+            for i, chunk in enumerate(chunks):
+                chunk_json = json.dumps({"items": chunk}, ensure_ascii=False)
+                chunk_kb = len(chunk_json.encode("utf-8")) / 1024
+                doc_id = f"{emp}_det_{i:03d}"
+                db.collection("dados").document(doc_id).set({"payload": chunk_json, "size_kb": round(chunk_kb, 1)})
+                print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB, {len(chunk)} itens)")
 
         meta = {
             "gerado_em": dados_completos.get("gerado_em", ""),
