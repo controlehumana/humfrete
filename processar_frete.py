@@ -19,6 +19,7 @@ BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 CTE_DIR     = os.path.join(BASE_DIR, "CTe")
 CTE_XML_DIR = os.path.join(CTE_DIR, "Geral", "Tomador")
 OUTPUT_HTML = os.path.join(BASE_DIR, "dashboard_frete.html")
+QUIVE_DB    = os.path.join(os.path.dirname(BASE_DIR), "QUIVE", "cte.db")
 
 NS = "http://www.portalfiscal.inf.br/cte"
 
@@ -177,6 +178,110 @@ def parse_cancelamentos():
             pass
     print(f"\n[CANCEL] {len(chaves)} CTe cancelados encontrados")
     return chaves
+
+def parse_ctes_from_db(db_path):
+    """Le CTe do banco SQLite do QUIVE (mais rapido que parsear XMLs).
+    Retorna None se o banco nao existir ou nao tiver a tabela cte_campos.
+    """
+    import sqlite3
+    if not os.path.exists(db_path):
+        return None
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='cte_campos'")
+    if not cur.fetchone():
+        print("[AVISO] Tabela cte_campos nao encontrada. Execute criar_view.py no QUIVE primeiro.")
+        conn.close()
+        return None
+
+    print(f"\n[CTE-DB] Lendo do banco QUIVE: {db_path}")
+
+    # Cancelamentos
+    cancelados_lista = []
+    try:
+        cur.execute("""
+            SELECT cc.chave,
+                   COALESCE(cc.valor_total_prestacao, 0) AS valor,
+                   COALESCE(cc.nome_emitente, '')         AS transp
+            FROM cte_campos cc
+            JOIN cte_cancelamento ccan ON cc.chave = ccan.chave_cte
+        """)
+        for row in cur.fetchall():
+            cancelados_lista.append({
+                "cte_chave":     row["chave"],
+                "valor_frete":   round(float(row["valor"] or 0), 2),
+                "transportadora": row["transp"] or "",
+            })
+    except Exception as e:
+        print(f"   [AVISO] Nao foi possivel ler cancelamentos: {e}")
+
+    n_cancel = len(cancelados_lista)
+    cancelados_chaves = {c["cte_chave"] for c in cancelados_lista}
+    print(f"   {n_cancel} CTe cancelados")
+
+    # CTes ativos
+    cur.execute("""
+        SELECT cc.empresa,
+               cc.chave,
+               COALESCE(cc.nome_emitente,    '') AS transportadora,
+               COALESCE(cc.data_emissao,     '') AS data_emissao,
+               COALESCE(cc.municipio_origem, '') AS origem_cidade,
+               COALESCE(cc.uf_origem,        '') AS origem_uf,
+               COALESCE(cc.municipio_destino,'') AS destino_cidade,
+               COALESCE(cc.uf_destino,       '') AS destino_uf,
+               COALESCE(cc.cnpj_destinatario,'') AS dest_cnpj,
+               COALESCE(cc.nome_remetente,   '') AS rem_nome,
+               COALESCE(cc.valor_total_prestacao, 0) AS valor_frete,
+               COALESCE(cc.peso_bruto, 0)            AS peso_kg
+        FROM cte_campos cc
+        WHERE cc.chave NOT IN (SELECT chave_cte FROM cte_cancelamento)
+        ORDER BY cc.empresa, cc.chave
+    """)
+    rows = cur.fetchall()
+
+    # NFs por CTe
+    cur.execute("""
+        SELECT chave_cte, chave_nfe FROM cte_nf
+        WHERE chave_nfe IS NOT NULL AND chave_nfe != ''
+    """)
+    nf_map = defaultdict(list)
+    for row in cur.fetchall():
+        nf_map[row["chave_cte"]].append(row["chave_nfe"])
+
+    conn.close()
+
+    cte_list = []
+    nfe_to_cte = defaultdict(list)
+    for row in rows:
+        chave = row["chave"]
+        nfe_chaves = nf_map.get(chave, [])
+        cte_data = {
+            "cte_chave":     chave,
+            "transportadora": row["transportadora"],
+            "data_emissao":  row["data_emissao"],
+            "origem_cidade": row["origem_cidade"],
+            "origem_uf":     row["origem_uf"],
+            "destino_cidade": row["destino_cidade"],
+            "destino_uf":    row["destino_uf"],
+            "dest_cnpj":     row["dest_cnpj"],
+            "rem_nome":      row["rem_nome"],
+            "valor_frete":   round(float(row["valor_frete"] or 0), 2),
+            "nfe_chaves":    nfe_chaves,
+            "peso_kg":       round(float(row["peso_kg"] or 0), 2),
+            "volume_m3":     0.0,
+            "qtd_nfe":       len(nfe_chaves),
+        }
+        cte_list.append(cte_data)
+        for ch in nfe_chaves:
+            nfe_to_cte[ch].append(cte_data)
+
+    print(f"   {len(cte_list)} CTe ativos")
+    print(f"   {len(nfe_to_cte)} NF-e unicas referenciadas")
+    return cte_list, nfe_to_cte, n_cancel, cancelados_lista
+
 
 def parse_ctes(cte_xml_dir, chaves_canceladas=None):
     if not os.path.isdir(cte_xml_dir):
@@ -3342,9 +3447,15 @@ def main():
     print(" Processador de Fretes")
     print("=" * 60)
 
-    nfe_map                           = parse_faturamento(BASE_DIR)
-    chaves_canceladas                          = parse_cancelamentos()
-    cte_list, nfe_to_cte, n_cancel, c_lista   = parse_ctes(CTE_XML_DIR, chaves_canceladas)
+    nfe_map = parse_faturamento(BASE_DIR)
+
+    db_result = parse_ctes_from_db(QUIVE_DB)
+    if db_result is not None:
+        cte_list, nfe_to_cte, n_cancel, c_lista = db_result
+    else:
+        print("[INFO] Banco QUIVE nao encontrado. Parseando XMLs...")
+        chaves_canceladas = parse_cancelamentos()
+        cte_list, nfe_to_cte, n_cancel, c_lista = parse_ctes(CTE_XML_DIR, chaves_canceladas)
 
     if not cte_list and not nfe_map:
         print("\n[ERRO] Nenhum dado encontrado. Verifique os caminhos.")
