@@ -3268,11 +3268,11 @@ def split_by_empresa(dados):
     return result
 
 
-def upload_to_firebase(empresa_data, dados_completos):
-    """Faz upload dos JSONs por empresa para Firebase Storage."""
+def upload_to_firestore(empresa_data, dados_completos):
+    """Faz upload dos dados por empresa para Firebase Firestore."""
     try:
         import firebase_admin
-        from firebase_admin import credentials, storage as fb_storage
+        from firebase_admin import credentials, firestore as fb_firestore
     except ImportError:
         print("\n[AVISO] firebase-admin nao instalado. Execute: pip install firebase-admin")
         print("        Upload pulado.")
@@ -3288,41 +3288,33 @@ def upload_to_firebase(empresa_data, dados_completos):
     try:
         if not firebase_admin._apps:
             cred = credentials.Certificate(key_path)
-            cfg_path = os.path.join(BASE_DIR, "firebase_config.json")
-            bucket_name = None
-            if os.path.exists(cfg_path):
-                import json as _json
-                with open(cfg_path, encoding="utf-8") as f:
-                    cfg = _json.load(f)
-                bucket_name = cfg.get("storageBucket")
-            if not bucket_name:
-                import json as _json
-                with open(key_path, encoding="utf-8") as f:
-                    sa = _json.load(f)
-                bucket_name = sa.get("project_id","") + ".appspot.com"
-            firebase_admin.initialize_app(cred, {"storageBucket": bucket_name})
+            firebase_admin.initialize_app(cred)
 
-        bucket = fb_storage.bucket()
-        print(f"\n[Firebase Storage] Bucket: {bucket.name}")
+        db = fb_firestore.client()
+        print(f"\n[Firestore] Fazendo upload...")
         for emp, data in empresa_data.items():
-            json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
-            blob = bucket.blob(f"data/{emp}.json")
-            blob.upload_from_string(json_bytes, content_type="application/json")
-            print(f"   OK  data/{emp}.json  ({len(json_bytes)/1024:.1f} KB)")
+            json_str = json.dumps(data, ensure_ascii=False)
+            size_kb = len(json_str.encode("utf-8")) / 1024
+            if size_kb > 900:
+                print(f"   AVISO: {emp} muito grande ({size_kb:.0f} KB) — limite Firestore é 1MB por doc")
+            db.collection("dados").document(emp).set({
+                "payload": json_str,
+                "gerado_em": data.get("gerado_em", ""),
+                "size_kb": round(size_kb, 1),
+            })
+            print(f"   OK  dados/{emp}  ({size_kb:.1f} KB)")
 
         meta = {
-            "gerado_em": dados_completos.get("gerado_em",""),
+            "gerado_em": dados_completos.get("gerado_em", ""),
             "empresas": sorted(empresa_data.keys()),
             "timestamp": datetime.now().isoformat(),
         }
-        bucket.blob("data/_meta.json").upload_from_string(
-            json.dumps(meta, ensure_ascii=False), content_type="application/json"
-        )
-        print("   OK  data/_meta.json")
-        print(f"\n[OK] Firebase: {len(empresa_data)} empresa(s) publicadas.")
+        db.collection("dados").document("_meta").set(meta)
+        print("   OK  dados/_meta")
+        print(f"\n[OK] Firestore: {len(empresa_data)} empresa(s) publicadas.")
         return True
     except Exception as e:
-        print(f"\n[ERRO] Upload Firebase falhou: {e}")
+        print(f"\n[ERRO] Upload Firestore falhou: {e}")
         import traceback; traceback.print_exc()
         return False
 
@@ -3353,11 +3345,11 @@ def main():
     with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
         f.write(html)
 
-    # Upload para Firebase Storage (por empresa)
+    # Upload para Firestore (por empresa)
     print("\n[Firebase] Dividindo dados por empresa...")
     empresa_data = split_by_empresa(dados)
     print(f"   Empresas: {', '.join(sorted(empresa_data.keys()))}")
-    upload_to_firebase(empresa_data, dados)
+    upload_to_firestore(empresa_data, dados)
 
     r = dados["resumo"]
     print(f"\n[OK] Dashboard gerado: {OUTPUT_HTML}")

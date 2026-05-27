@@ -273,7 +273,6 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -624,7 +623,7 @@ const FIREBASE_CONFIG = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const _auth = firebase.auth();
 const _db   = firebase.firestore();
-const _st   = firebase.storage();
+
 
 // Estado global
 let DATA = null;
@@ -657,10 +656,9 @@ _auth.onAuthStateChanged(async (user) => {
 async function _loadData(empresas) {
   if (!empresas.length) throw new Error('Nenhuma empresa autorizada para este usuario.');
   const datas = await Promise.all(empresas.map(async (emp) => {
-    const url = await _st.ref('data/' + emp + '.json').getDownloadURL();
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('Falha ao baixar ' + emp + '.json');
-    return r.json();
+    const doc = await _db.collection('dados').doc(emp).get();
+    if (!doc.exists) throw new Error('Dados de ' + emp + ' nao encontrados. Execute o processamento.');
+    return JSON.parse(doc.data().payload);
   }));
   DATA = _mergeData(datas);
 }
@@ -1771,8 +1769,8 @@ async function loadAdminData(){
       ALL_TABS_INFO.forEach(t=>{const chip=document.createElement('span');chip.className='perm-chip';chip.dataset.tabid=t.id;chip.textContent=t.label;chip.onclick=()=>chip.classList.toggle('active');tabC.appendChild(chip);});
     }
     try{
-      const url=await _st.ref('data/_meta.json').getDownloadURL();
-      const meta=await fetch(url).then(r=>r.json());
+      const metaDoc=await _db.collection('dados').doc('_meta').get();
+      const meta=metaDoc.exists?metaDoc.data():{};
       const el=document.getElementById('admin-meta-info');
       if(el) el.innerHTML='<strong>Último upload:</strong> '+(meta.gerado_em||meta.timestamp||'—')+'<br><strong>Empresas:</strong> '+(meta.empresas||[]).join(', ');
     }catch(e){const el=document.getElementById('admin-meta-info');if(el)el.textContent='Metadata não disponível.';}
