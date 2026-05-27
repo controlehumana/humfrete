@@ -1,0 +1,81 @@
+﻿// ABA MARKETPLACE
+let mktPage=0;let mktRows=[];let mktFilterVal='';
+function setMktFilter(val){
+  mktFilterVal=val;
+  document.getElementById('mkt_f_all').classList.toggle('active',val==='');
+  document.getElementById('mkt_f_shopee').classList.toggle('active',val==='SHOPEE');
+  document.getElementById('mkt_f_ml').classList.toggle('active',val==='MERCADO LIVRE');
+  mktPage=0;renderMktTable();
+}
+function renderMarketplace(){
+  mktRows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:true});
+  const shopee=mktRows.filter(d=>d.marketplace_type==='shopee');
+  const ml=mktRows.filter(d=>d.marketplace_type==='ml');
+  const sumF=arr=>arr.reduce((s,d)=>s+d.valor_frete,0);
+  document.getElementById('mkt_shopee_frete').textContent=BRL(sumF(shopee));
+  document.getElementById('mkt_shopee_qtd').textContent=N(shopee.length)+' CTe';
+  document.getElementById('mkt_shopee_med').textContent=shopee.length?BRL(sumF(shopee)/shopee.length):'-';
+  document.getElementById('mkt_ml_frete').textContent=BRL(sumF(ml));
+  document.getElementById('mkt_ml_qtd').textContent=N(ml.length)+' CTe';
+  document.getElementById('mkt_ml_med').textContent=ml.length?BRL(sumF(ml)/ml.length):'-';
+  document.getElementById('tb_mkt').textContent=N(mktRows.length);
+  const allPers=[...new Set(DATA.detalhes.map(d=>per(d.data)).filter(Boolean))].sort();
+  const byPerSh={},byPerMl={};
+  shopee.forEach(d=>{const p=per(d.data);if(p) byPerSh[p]=(byPerSh[p]||0)+d.valor_frete;});
+  ml.forEach(d=>{const p=per(d.data);if(p) byPerMl[p]=(byPerMl[p]||0)+d.valor_frete;});
+  mkLine('ch_mkt_timeline',allPers.map(p=>perL(p)),[
+    {label:'Shopee',data:allPers.map(p=>byPerSh[p]||0),borderColor:'#FF6900',backgroundColor:'#FF690022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FF6900',pointBorderColor:'#fff',pointBorderWidth:2},
+    {label:'Mercado Livre',data:allPers.map(p=>byPerMl[p]||0),borderColor:'#FFE600',backgroundColor:'#FFE60022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FFE600',pointBorderColor:'#fff',pointBorderWidth:2},
+  ]);
+  mktPage=0;renderMktTable();
+}
+function renderMktTable(){
+  const tbody=document.getElementById('mkt_tbody');
+  const filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktRows;
+  const slice=filtered.slice(mktPage*PAGE,mktPage*PAGE+PAGE);
+  tbody.innerHTML=slice.map(d=>mkDetailRow(d)).join('');
+  mkPager(filtered.length,mktPage,PAGE,'mkt_pager',pg=>{mktPage=pg;renderMktTable();});
+}
+
+// ABA CLIENTES
+let cliPage=0;let cliData=[];
+function renderClientes(){
+  const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false})
+    .filter(d=>d.linha!=='Humana Alimentar')
+    .filter(d=>!/HUMANA\s*ALIMENTAR/i.test(d.cliente||''));
+  const grupos={};
+  rows.forEach(d=>{
+    const wk=getWeek(d.data);if(!wk) return;
+    const key=(d.cliente||'?')+'||'+(d.empresa||'?')+'||'+wk;
+    if(!grupos[key]) grupos[key]={cliente:d.cliente||'?',empresa:d.empresa||'?',semana:wk,ctes:[],destinos:{}};
+    grupos[key].ctes.push(d);
+    const dest=(d.destino_cidade||'?')+'/'+(d.destino_uf||'?');
+    grupos[key].destinos[dest]=(grupos[key].destinos[dest]||0)+1;
+  });
+  cliData=Object.values(grupos).filter(g=>g.ctes.length>=2).sort((a,b)=>b.ctes.length-a.ctes.length);
+  document.getElementById('tb_cli').textContent=N(cliData.length);
+  let ecoTotal=0;let totalCtesConsolid=0;
+  cliData.forEach(g=>{
+    const fretes=g.ctes.map(d=>d.valor_frete).sort((a,b)=>a-b);
+    ecoTotal+=fretes.slice(0,fretes.length-1).reduce((s,v)=>s+v,0);
+    totalCtesConsolid+=fretes.length-1;
+  });
+  document.getElementById('conso_grupos').textContent=N(cliData.length);
+  document.getElementById('conso_txt').innerHTML='<strong>grupos</strong> com potencial de consolidacao - economia estimada de <strong>'+BRL(ecoTotal)+'</strong> (fretes menores dentro de cada grupo).';
+  document.getElementById('cli_k_grupos').textContent=N(cliData.length);
+  document.getElementById('cli_k_eco').textContent=BRL(ecoTotal);
+  document.getElementById('cli_k_ctes').textContent=N(totalCtesConsolid);
+  cliPage=0;renderCliTable();
+}
+function fmtSemana(wk){
+  const m=wk.match(/(\d{4})-W(\d+)/);
+  return m?'Sem. '+m[2]+'/'+m[1]:wk;
+}
+function toggleCliDetails(key){
+  const el=document.getElementById('clidet-'+key);
+  const btn=document.getElementById('clibtn-'+key);
+  if(!el) return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'table-row';
+  btn.textContent=open?'▼ Ver detalhes':'▲ Fechar';
+}

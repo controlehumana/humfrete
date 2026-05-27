@@ -1,0 +1,207 @@
+﻿
+<!-- TAB OPERACIONAL -->
+<div id="tab-operacional" class="tab-panel">
+  <div class="sdiv">Detalhamento Analitico por NF-e</div>
+  <div class="card">
+    <div class="card-title">Detalhes por NF-e</div>
+    <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
+      <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')">Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
+    </div>
+    <div class="pager" id="pager"></div>
+  </div>
+</div>
+
+<!-- TAB MARKETPLACE -->
+<div id="tab-marketplace" class="tab-panel">
+  <div class="mkt-kpi-row">
+    <div class="mkt-card" style="border-top:3px solid #FF6900"><div class="mkt-lbl">Total Frete Shopee</div><div class="mkt-val" id="mkt_shopee_frete">-</div><div class="mkt-sub" id="mkt_shopee_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid #FFE600"><div class="mkt-lbl">Total Frete Mercado Livre</div><div class="mkt-val" id="mkt_ml_frete">-</div><div class="mkt-sub" id="mkt_ml_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="mkt-lbl">Frete Medio Shopee</div><div class="mkt-val" id="mkt_shopee_med">-</div><div class="mkt-sub">por entrega</div></div>
+    <div class="mkt-card" style="border-top:3px solid var(--green2)"><div class="mkt-lbl">Frete Medio Mercado Livre</div><div class="mkt-val" id="mkt_ml_med">-</div><div class="mkt-sub">por entrega</div></div>
+  </div>
+  <div class="card"><div class="card-title">Shopee vs Mercado Livre - Frete Mensal</div><div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div></div>
+  <div class="card">
+    <div class="card-title">Detalhes Marketplace</div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px"><span style="font-size:11px;color:var(--text3);font-weight:600">Exibir:</span>
+      <button class="cat-btn active" id="mkt_f_all" onclick="setMktFilter('')">Todos</button>
+      <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')">Shopee</button>
+      <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')">Mercado Livre</button>
+    </div>
+    <div class="tw dtbl" id="mkt_wrap"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
+    <div class="pager" id="mkt_pager"></div>
+  </div>
+</div>
+
+<!-- TAB CLIENTES -->
+<div id="tab-clientes" class="tab-panel">
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-card"><div class="kpi-lbl">Grupos Consolidaveis</div><div class="kpi-val" id="cli_k_grupos">-</div><div class="kpi-sub">cliente + semana com 2+ entregas</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">se todos os grupos forem consolidados</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
+  </div>
+  <div class="conso-banner" id="conso_banner"><div class="conso-num" id="conso_grupos">-</div><div class="conso-txt" id="conso_txt">Calculando...</div></div>
+  <div class="card">
+    <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana</div>
+    <div class="sr" style="margin-bottom:12px"><input type="text" id="cli_search" placeholder="Buscar por nome do cliente ou numero de NF-e..." style="width:100%;max-width:440px"></div>
+    <div class="tw"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th>Entregas</th><th>Total Frete</th><th>Destino(s)</th><th>Mesmo Destino?</th><th>Econ. Potencial</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
+    <div class="pager" id="cli_pager"></div>
+  </div>
+</div>
+
+<!-- TAB CTe NAO VINCULADOS -->
+<div id="tab-nao-vinculados" class="tab-panel">
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-val" id="nv_k_qtd">-</div><div class="kpi-lbl">CTe sem Vinculo</div><div class="kpi-sub">nao cruzados com faturamento</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="nv_k_frete">-</div><div class="kpi-lbl">Frete sem Vinculo</div><div class="kpi-sub">valor total nao apurado</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="nv_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">distintas envolvidas</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="nv_k_nferefs">-</div><div class="kpi-lbl">NF-e Referenciadas</div><div class="kpi-sub">nao localizadas no ERP</div></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Documentos de Transporte sem NF-e Correspondente</div>
+    <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Conhecimentos de Frete (CTe) cujas Notas Fiscais nao foram localizadas no faturamento.</p>
+    <div class="sr">
+      <input type="text" id="nv_search" placeholder="Buscar transportadora, cidade, chave CTe...">
+      <select id="nv_uf"><option value="">Todos os destinos</option></select>
+      <select id="nv_transp"><option value="">Todas as transportadoras</option></select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
+    <div class="pager" id="nv_pager"></div>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
+    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-val" id="cancel_k_qtd" style="color:var(--red2)">-</div><div class="kpi-lbl">CTe Cancelados</div><div class="kpi-sub">excluidos do processamento</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-val" id="cancel_k_frete" style="color:var(--red2)">-</div><div class="kpi-lbl">Frete Excluido</div><div class="kpi-sub">valor cancelado nao computado</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-val" id="cancel_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">com documentos cancelados</div></div>
+  </div>
+  <div class="card" style="margin-top:16px;border-left:3px solid var(--red2)">
+    <div class="card-title" style="color:var(--red2)"><i class="fa-solid fa-ban"></i> CTe Cancelados</div>
+    <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">CTe com evento de cancelamento na SEFAZ. Excluidos de todos os calculos.</p>
+    <div id="cancel_empty" style="display:none;color:var(--text3);font-size:12px;padding:10px 0"><i class="fa-solid fa-circle-check" style="color:var(--green2)"></i> Nenhum CTe cancelado encontrado.</div>
+    <div id="cancel_list_wrap" class="tw"><table><thead><tr><th>Chave CTe (44 digitos)</th><th>Transportadora</th><th>Valor Frete</th><th style="text-align:center">Acao</th></tr></thead><tbody id="cancel_tbody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- TAB COMPRAS -->
+<div id="tab-compras" class="tab-panel">
+  <div class="sdiv">Frete de Entrada - Custo Logistico nas Compras</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-val" id="comp_qtd">-</div><div class="kpi-lbl">CTe de Compra</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="comp_frete">-</div><div class="kpi-lbl">Frete Total Compras</div><div class="kpi-sub">pago a transportadora</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="comp_peso">-</div><div class="kpi-lbl">Peso Total</div><div class="kpi-sub">kg transportados</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="comp_frete_medio">-</div><div class="kpi-lbl">Frete Medio</div><div class="kpi-sub">por CTe</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Detalhamento por CTe de Compra</div>
+    <div class="sr"><input type="text" id="comp_search" placeholder="Buscar fornecedor, origem, transportadora, NF-e..."><select id="comp_sel_emp"><option value="">Todas as empresas</option></select></div>
+    <div style="overflow-x:auto;margin-top:10px" id="comp_wrap">
+      <table id="comp_table" style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Fornecedor</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Origem</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Vol. (m3)</th></tr></thead>
+        <tbody id="comp_tbody"></tbody>
+      </table>
+    </div>
+    <div id="comp_pager" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- TAB DEVOLUCAO MARKETPLACE -->
+<div id="tab-dev-mkt" class="tab-panel">
+  <div class="sdiv">Devolucao Marketplace</div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FFE600;margin-bottom:6px;padding-left:2px">MERCADO LIVRE</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-val" id="dm_ml_qtd">-</div><div class="kpi-lbl">CTe Devolucoes ML</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="dm_ml_frete">-</div><div class="kpi-lbl">Frete Total ML</div><div class="kpi-sub">pago a EBAZARCOMBR</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="dm_ml_peso">-</div><div class="kpi-lbl">Peso Total ML</div><div class="kpi-sub">kg devolvidos</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="dm_ml_medio">-</div><div class="kpi-lbl">Frete Medio ML</div><div class="kpi-sub">por CTe</div></div>
+  </div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FF6900;margin-bottom:6px;padding-left:2px">SHOPEE</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-val" id="dm_sh_qtd">-</div><div class="kpi-lbl">CTe Devolucoes Shopee</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="dm_sh_frete">-</div><div class="kpi-lbl">Frete Total Shopee</div><div class="kpi-sub">pago a SHPS</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="dm_sh_peso">-</div><div class="kpi-lbl">Peso Total Shopee</div><div class="kpi-sub">kg devolvidos</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="dm_sh_medio">-</div><div class="kpi-lbl">Frete Medio Shopee</div><div class="kpi-sub">por CTe</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Detalhamento por CTe de Devolucao</div>
+    <div class="sr">
+      <input type="text" id="dm_search" placeholder="Buscar remetente, origem, empresa, NF-e...">
+      <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option></select>
+      <select id="dm_sel_emp"><option value="">Todas as empresas</option></select>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Plataforma</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Remetente</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Vol. (m3)</th></tr></thead>
+        <tbody id="dm_tbody"></tbody>
+      </table>
+    </div>
+    <div id="dm_pager" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- TAB POR EMPRESA -->
+<div id="tab-empresa" class="tab-panel">
+  <div id="emp_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:8px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="color:var(--blue2);opacity:.8"></i><span id="emp_periodo_txt">Carregando...</span></div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-card"><div class="kpi-lbl">Empresas Analisadas</div><div class="kpi-val" id="emp_k_qtd">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Maior Gasto em Frete</div><div class="kpi-val" id="emp_k_top_emp" style="font-size:18px">-</div><div class="kpi-sub" id="emp_k_top_val"></div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Principal Transportadora</div><div class="kpi-val" id="emp_k_top_transp" style="font-size:13px;line-height:1.3">-</div><div class="kpi-sub" id="emp_k_top_transp_pct"></div></div>
+  </div>
+  <div class="ch2eq">
+    <div class="card"><div class="card-title">Frete Total por Empresa</div><div class="ch-wrap"><canvas id="ch_emp_frete"></canvas></div></div>
+    <div class="card"><div class="card-title">Concentracao Transportadora x Empresa (Top 5)</div><div class="ch-wrap-lg"><canvas id="ch_emp_stacked"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-title">Resumo por Empresa</div><div class="tw"><table><thead><tr><th>#</th><th>Empresa</th><th>NF-e</th><th>Total Frete</th><th>% do Total</th><th>Transp. Principal</th><th>Frete Transp.</th><th>Concentracao</th><th>N Transp.</th></tr></thead><tbody id="emp_tbody"></tbody></table></div></div>
+  <div class="card"><div class="card-title">Top 5 Transportadoras por Empresa</div><div class="tw"><table><thead><tr><th>Empresa</th><th>Transportadora</th><th>NF-e</th><th>Frete Pago</th><th>% da Empresa</th><th>% do Total</th></tr></thead><tbody id="emp_det_tbody"></tbody></table></div></div>
+  <div class="sdiv" style="margin-top:4px">Frete entre Empresas (Operacional x Comercial)</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="emp_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="emp_frete_com_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Frete Operacional (Transf.)</div><div class="kpi-val" id="emp_frete_op" style="color:var(--purple)">-</div><div class="kpi-sub" id="emp_frete_op_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">NF-e Transferidas</div><div class="kpi-val" id="emp_qtd_transf">-</div><div class="kpi-sub" id="emp_qtd_transf_sub" style="line-height:1.6">NF-e unicas com CTe</div><div class="kpi-sub" id="emp_qtd_transf_fat" style="color:var(--text3);font-size:10px">- no faturamento</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">% Frete Operacional</div><div class="kpi-val" id="emp_pct_op">-</div><div class="kpi-sub">do frete total</div></div>
+  </div>
+  <div id="emp_transf_destinos_wrap" style="margin:2px 0 10px;font-size:11px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="color:var(--text3)" id="emp_transf_destinos_lbl">Destinos com CTe:</span><span id="emp_transf_destinos" style="display:flex;gap:4px;flex-wrap:wrap">-</span></div>
+  <div class="ch2eq">
+    <div class="card"><div class="card-title">Frete Comercial vs Operacional por Empresa</div><div class="ch-wrap-lg"><canvas id="ch_emp_tipo"></canvas></div></div>
+    <div class="card"><div class="card-title">Custo Operacional por Empresa</div><div class="tw"><table><thead><tr><th>Empresa</th><th>NF Transferidas</th><th>Frete Operacional</th><th>% do Frete Total</th><th>UF Destino Principal</th><th>Ticket Medio</th></tr></thead><tbody id="emp_transf_tbody"></tbody></table></div></div>
+  </div>
+  <div class="sdiv" style="margin-top:4px">Transferencias entre Lojas do Grupo</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-card"><div class="kpi-lbl">NF-e Internas (entre Lojas)</div><div class="kpi-val" id="emp_hu_qtd" style="color:var(--amber)">-</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Frete entre Lojas</div><div class="kpi-val" id="emp_hu_frete" style="color:var(--amber)">-</div><div class="kpi-sub" id="emp_hu_pct">do frete total</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Ticket Medio Interno</div><div class="kpi-val" id="emp_hu_ticket" style="font-size:18px">-</div></div>
+  </div>
+  <div class="card"><div class="card-title">Detalhe por Empresa Origem x Loja Destino</div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Loja Destino</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="emp_hu_tbody"></tbody></table></div></div>
+  <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
+  <div class="card"><div class="tw"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="emp_transf_sem_cte_tbody"></tbody></table></div></div>
+  <div class="sdiv" style="margin-top:4px">Evolucao Mensal por Transportadora</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="card-title" style="margin:0">Frete por Transportadora ao Longo do Tempo</div>
+      <select id="emp_tl_emp" onchange="buildEmpTimeline()" style="background:#1E293B;border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer"><option value="">Todas as empresas</option></select>
+    </div>
+    <div class="ch-wrap-xl"><canvas id="ch_emp_tl"></canvas></div>
+  </div>
+</div>
+
+<!-- TAB ADMIN -->
+<div id="tab-admin" class="tab-panel">
+  <div class="card"><div class="card-title">Usuarios Cadastrados</div><div id="admin-users-list"><div style="color:var(--text3);font-size:12px">Carregando usuarios...</div></div></div>
+  <div class="card admin-section">
+    <div class="card-title">Adicionar / Editar Usuario</div>
+    <form id="admin-user-form" class="admin-form">
+      <input type="hidden" id="admin-edit-uid">
+      <input class="login-field" style="margin:0" id="admin-email" type="email" placeholder="E-mail *" required>
+      <input class="login-field" style="margin:0" id="admin-name" type="text" placeholder="Nome de exibicao">
+      <input class="login-field" style="margin:0" id="admin-pass" type="password" placeholder="Senha inicial (obrigatorio para novo usuario)">
+      <div><div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Empresas com acesso:</div><div id="admin-emp-checks" class="permission-checks"></div></div>
+      <div><div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Abas com acesso:</div><div id="admin-tab-checks" class="permission-checks"></div></div>
+      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="admin-is-admin" style="accent-color:var(--purple)"><label for="admin-is-admin" style="font-size:12px;color:var(--text2);cursor:pointer">Administrador (acesso total + aba admin)</label></div>
+      <div style="display:flex;gap:8px;margin-top:4px"><button type="submit" class="admin-btn" id="admin-save-btn">Salvar Usuario</button><button type="button" class="admin-btn secondary" onclick="adminCancelEdit()">Cancelar</button></div>
+      <div id="admin-form-msg" style="font-size:11px;color:var(--green2);display:none;margin-top:4px"></div>
+      <div id="admin-form-err" style="font-size:11px;color:var(--red2);display:none;margin-top:4px"></div>
+    </form>
+  </div>
+  <div class="card"><div class="card-title">Informacoes do Upload de Dados</div><div id="admin-meta-info" style="font-size:12px;color:var(--text2)">Carregando...</div><div style="margin-top:10px;font-size:11px;color:var(--text3)">Para atualizar: execute <code style="background:var(--s2);padding:2px 6px;border-radius:4px">py processar_frete.py</code> na maquina com os arquivos XML/XLS.</div></div>
+</div>
+
+</div><!-- #app -->
+
+<div id="float-hscroll"><div id="float-hscroll-inner"></div></div>

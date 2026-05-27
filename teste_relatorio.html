@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teste — Relatório Técnico de Frete</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg:#0B0F14;--s1:#111827;--s2:#1C2638;--bd:#1E2D42;--bd2:#2A3F58;
+  --blue:#3B82F6;--blue2:#60A5FA;--green:#10B981;--yellow:#F59E0B;
+  --red:#EF4444;--purple:#7C3AED;--cyan:#22D3EE;
+  --text:#F1F5F9;--text2:#94A3B8;--text3:#4E6880;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;padding:24px}
+h1{font-size:18px;font-weight:800;margin-bottom:4px}
+.sub{color:var(--text3);font-size:11px;margin-bottom:24px}
+
+/* BOTÃO */
+.btn-gerar{
+  display:inline-flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,#3B82F6,#7C3AED);
+  color:#fff;border:none;border-radius:10px;padding:14px 28px;
+  font-size:14px;font-weight:700;font-family:'Inter',sans-serif;
+  cursor:pointer;transition:opacity .2s,transform .2s;
+  box-shadow:0 4px 20px rgba(59,130,246,.4);
+}
+.btn-gerar:hover{opacity:.9;transform:translateY(-1px)}
+.btn-gerar:active{transform:translateY(0)}
+.btn-gerar i{font-size:16px}
+
+/* SPINNER */
+.spinner{display:none;width:20px;height:20px;border:3px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RELATÓRIO */
+#relatorio{display:none;margin-top:28px}
+.rel-header{
+  background:linear-gradient(135deg,#0F2040,#1A1040);
+  border:1px solid var(--bd2);border-radius:14px;padding:24px 28px;margin-bottom:20px;
+}
+.rel-titulo{font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+.rel-periodo{font-size:11px;color:var(--text3)}
+.rel-meta{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+.rel-meta-item{font-size:10px;color:var(--text3)}
+.rel-meta-item strong{color:var(--text2);font-size:12px;display:block}
+
+.secao{margin-bottom:20px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.secao-header{
+  display:flex;align-items:center;gap:10px;padding:14px 18px;
+  border-bottom:1px solid var(--bd);background:rgba(255,255,255,.02);
+}
+.secao-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.secao-titulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.secao-body{padding:16px 18px}
+
+.alerta{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:12px}
+.alerta:last-child{margin-bottom:0}
+.alerta-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)}
+.alerta-yellow{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)}
+.alerta-green{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2)}
+.alerta-blue{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2)}
+.alerta i{margin-top:1px;flex-shrink:0}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.kbox{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.kbox-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px}
+.kbox-val{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.kbox-sub{font-size:10px;color:var(--text2);margin-top:2px}
+
+table.rel-table{width:100%;border-collapse:collapse;font-size:11px}
+table.rel-table th{padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--bd);white-space:nowrap}
+table.rel-table td{padding:7px 10px;border-bottom:1px solid rgba(30,45,66,.5);color:var(--text2)}
+table.rel-table tr:last-child td{border-bottom:none}
+table.rel-table td.val{text-align:right;font-weight:700;color:var(--text)}
+table.rel-table td.pct{text-align:right;font-weight:700}
+
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar-bg{flex:1;height:5px;background:var(--bd);border-radius:3px}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.chip-red{background:rgba(239,68,68,.15);color:#F87171}
+.chip-green{background:rgba(16,185,129,.15);color:#34D399}
+.chip-yellow{background:rgba(245,158,11,.15);color:#FCD34D}
+.chip-blue{background:rgba(59,130,246,.15);color:#60A5FA}
+.chip-purple{background:rgba(124,58,237,.15);color:#A78BFA}
+
+.rec{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
+.rec:last-child{border-bottom:none;padding-bottom:0}
+.rec-num{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rec-titulo{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px}
+.rec-body{font-size:11px;color:var(--text2);line-height:1.6}
+.rec-impacto{font-size:10px;color:var(--green);font-weight:600;margin-top:4px}
+
+.rodape{text-align:center;font-size:10px;color:var(--text3);margin-top:20px;padding-top:16px;border-top:1px solid var(--bd)}
+</style>
+</head>
+<body>
+
+<h1>Teste — Relatório Técnico de Frete</h1>
+<p class="sub">Protótipo do relatório gerado sob demanda. Clique no botão para simular a análise com dados reais do dashboard.</p>
+
+<button class="btn-gerar" id="btn" onclick="gerarRelatorio()">
+  <i class="fa-solid fa-chart-line"></i>
+  <span id="btn-txt">Gerar Relatório Técnico</span>
+  <div class="spinner" id="spin"></div>
+</button>
+
+<div id="relatorio"></div>
+
+<script>
+// ── DADOS SINTÉTICOS baseados no processamento real de 2026-05-22 ──────────────
+const DATA = {
+  gerado_em: "22/05/2026 14:30",
+  resumo: {
+    total_cte: 37917, total_nfe_fat: 127726,
+    nfe_com_cte: 37779, nfe_sem_cte: 91378,
+    valor_total_frete: 2471383.78, total_faturamento: 157878490.67,
+  },
+  // Detalhes por empresa (agregado sintético representativo)
+  por_empresa: [
+    { empresa:"BRU1", frete:980000, faturamento:62000000, ctes:15200, pct_anterior:1.7 },
+    { empresa:"RBP",  frete:420000, faturamento:26000000, ctes:5800,  pct_anterior:1.4 },
+    { empresa:"SOR",  frete:340000, faturamento:21000000, ctes:4200,  pct_anterior:1.9 },
+    { empresa:"UBE",  frete:280000, faturamento:18000000, ctes:3800,  pct_anterior:1.5 },
+    { empresa:"CGR",  frete:195000, faturamento:14000000, ctes:2100,  pct_anterior:1.2 },
+    { empresa:"PPE",  frete:130000, faturamento:9000000,  ctes:1600,  pct_anterior:1.8 },
+    { empresa:"CMP",  frete:85000,  faturamento:6000000,  ctes:900,   pct_anterior:1.3 },
+    { empresa:"BRU2", frete:41000,  faturamento:1900000,  ctes:550,   pct_anterior:2.4 },
+  ],
+  // Top transportadoras
+  por_transp: [
+    { nome:"JADLOG LOGISTICA S.A.",        frete:620000, ctes:9800 },
+    { nome:"LATAM CARGO BRASIL LTDA",      frete:390000, ctes:3100 },
+    { nome:"TRANSPORTES JAMEF LTDA",       frete:280000, ctes:4200 },
+    { nome:"TNT MERCURIO CARGAS LTDA",     frete:195000, ctes:2900 },
+    { nome:"SHPS TECNOLOGIA E SERVICO",    frete:165000, ctes:2200 },
+    { nome:"EBAZARCOMBR LTDA",             frete:98000,  ctes:1400 },
+    { nome:"CORREIOS - ECT",               frete:145000, ctes:5100 },
+    { nome:"OUTROS (32 transportadoras)",  frete:578383, ctes:9217 },
+  ],
+  // Tendência mensal (últimos 6 meses)
+  tendencia: [
+    { mes:"Dez/2025", faturamento:11200000, frete:196000 },
+    { mes:"Jan/2026", faturamento:12800000, frete:217600 },
+    { mes:"Fev/2026", faturamento:13400000, frete:214400 },
+    { mes:"Mar/2026", faturamento:14100000, frete:225600 },
+    { mes:"Abr/2026", faturamento:15600000, frete:265200 },
+    { mes:"Mai/2026", faturamento:8900000,  frete:151300 },
+  ],
+  compras:       { total: 126, valor: 89400  },
+  devolucoes_mkt:{ total: 146, ml: 82, shopee: 64, valor_ml: 58200, valor_shopee: 39800 },
+  cobertura:     { sem_cte: 91378, total: 127726 },
+};
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const BRL = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const N   = v => v.toLocaleString('pt-BR');
+const PCT = v => v.toFixed(2)+'%';
+const corPct = p => p < 1.5 ? 'var(--green)' : p < 2.5 ? 'var(--yellow)' : 'var(--red)';
+const chipPct = p => p < 1.5
+  ? `<span class="chip chip-green">${PCT(p)}</span>`
+  : p < 2.5
+  ? `<span class="chip chip-yellow">${PCT(p)}</span>`
+  : `<span class="chip chip-red">${PCT(p)}</span>`;
+
+// ── GERADOR DO RELATÓRIO ──────────────────────────────────────────────────────
+function gerarRelatorio() {
+  const btn = document.getElementById('btn');
+  const btnTxt = document.getElementById('btn-txt');
+  const spin = document.getElementById('spin');
+
+  // Simula processamento
+  btnTxt.textContent = 'Analisando dados...';
+  spin.style.display = 'block';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    spin.style.display = 'none';
+    btnTxt.textContent = 'Atualizar Relatório';
+    btn.disabled = false;
+
+    const r = DATA.resumo;
+    const pctGeral = r.valor_total_frete / r.total_faturamento * 100;
+    const cobertura = r.nfe_com_cte / r.total_nfe_fat * 100;
+    const maxFrete = Math.max(...DATA.por_empresa.map(e => e.frete));
+
+    // ── Alertas automáticos ──────────────────────────────────────────────────
+    const alertas = [];
+    DATA.por_empresa.forEach(e => {
+      const pct = e.frete / e.faturamento * 100;
+      if (pct > 2.5) alertas.push({
+        tipo:'red', icon:'fa-triangle-exclamation',
+        txt:`<strong>${e.empresa}</strong> com % frete elevado: <strong>${PCT(pct)}</strong> (acima de 2,5% — referência crítica)`
+      });
+      const delta = pct - e.pct_anterior;
+      if (delta > 0.4) alertas.push({
+        tipo:'yellow', icon:'fa-arrow-trend-up',
+        txt:`<strong>${e.empresa}</strong> apresentou aumento de <strong>+${delta.toFixed(1)} p.p.</strong> no % frete vs período anterior`
+      });
+    });
+    if (cobertura < 40) alertas.push({
+      tipo:'red', icon:'fa-file-circle-exclamation',
+      txt:`Cobertura de documentos crítica: apenas <strong>${PCT(cobertura)}</strong> das NF-e possuem CTe vinculado`
+    });
+    const devPct = DATA.devolucoes_mkt.valor_ml + DATA.devolucoes_mkt.valor_shopee;
+    const devVsMkt = devPct / (DATA.por_transp.find(t=>t.nome.includes('SHPS')).frete + DATA.por_transp.find(t=>t.nome.includes('EBAZAR')).frete) * 100;
+    alertas.push({
+      tipo:'blue', icon:'fa-rotate-left',
+      txt:`Devoluções marketplace representam <strong>${BRL(devPct)}</strong> — equivalente a <strong>${devVsMkt.toFixed(0)}%</strong> do frete pago às plataformas no período`
+    });
+    // Tendência mais recente
+    const ult = DATA.tendencia[DATA.tendencia.length-1];
+    const pen = DATA.tendencia[DATA.tendencia.length-2];
+    const tendPct = ult.frete/ult.faturamento*100;
+    const tendPen = pen.frete/pen.faturamento*100;
+    if (tendPct < tendPen - 0.1) alertas.push({
+      tipo:'green', icon:'fa-arrow-trend-down',
+      txt:`Tendência positiva: % frete no último mês (<strong>${PCT(tendPct)}</strong>) abaixo do mês anterior (<strong>${PCT(tendPen)}</strong>)`
+    });
+
+    // ── Concentração por transportadora ─────────────────────────────────────
+    const top3Valor = DATA.por_transp.slice(0,3).reduce((s,t)=>s+t.frete,0);
+    const concPct = top3Valor / r.valor_total_frete * 100;
+
+    // ── Render ───────────────────────────────────────────────────────────────
+    document.getElementById('relatorio').style.display = 'block';
+    document.getElementById('relatorio').innerHTML = `
+
+    <!-- CABEÇALHO -->
+    <div class="rel-header">
+      <div class="rel-titulo"><i class="fa-solid fa-file-chart-column" style="color:var(--blue);margin-right:8px"></i>Relatório Técnico — Análise de Frete</div>
+      <div class="rel-periodo">Período: Jan/2025 – Mai/2026 &nbsp;·&nbsp; Gerado em: ${DATA.gerado_em}</div>
+      <div class="rel-meta">
+        <div class="rel-meta-item"><strong>${N(r.total_cte)}</strong>CTe processados</div>
+        <div class="rel-meta-item"><strong>${N(r.total_nfe_fat)}</strong>NF-e no faturamento</div>
+        <div class="rel-meta-item"><strong>${PCT(cobertura)}</strong>cobertura de documentos</div>
+        <div class="rel-meta-item"><strong>${BRL(r.total_faturamento)}</strong>faturamento total</div>
+        <div class="rel-meta-item"><strong>${BRL(r.valor_total_frete)}</strong>frete total pago</div>
+        <div class="rel-meta-item"><strong style="color:${corPct(pctGeral)}">${PCT(pctGeral)}</strong>% frete / venda</div>
+      </div>
+    </div>
+
+    <!-- RESUMO EXECUTIVO -->
+    <div class="secao">
+      <div class="secao-header">
+        <div class="secao-icon" style="background:rgba(59,130,246,.15);color:var(--blue)"><i class="fa-solid fa-gauge-high"></i></div>
+        <span class="secao-titulo">1. Resumo Executivo</span>
+      </div>
+      <div class="secao-body">
+        <div class="grid3" style="margin-bottom:14px">
+          <div class="kbox">
+            <div class="kbox-lbl">% Frete / Venda</div>
+            <div class="kbox-val" style="color:${corPct(pctGeral)}">${PCT(pctGeral)}</div>
+            <div class="kbox-sub">referência de mercado: &lt; 2,0%</div>
+          </div>
+          <div class="kbox">
+            <div class="kbox-lbl">Frete Total Pago</div>
+            <div class="kbox-val">${BRL(r.valor_total_frete)}</div>
+            <div class="kbox-sub">sobre ${BRL(r.total_faturamento)} faturados</div>
+          </div>
+          <div class="kbox">
+            <div class="kbox-lbl">Cobertura CTe</div>
+            <div class="kbox-val" style="color:var(--yellow)">${PCT(cobertura)}</div>
+            <div class="kbox-sub">${N(r.nfe_com_cte)} de ${N(r.total_nfe_fat)} NF-e</div>
+          </div>
+          <div class="kbox">
+            <div class="kbox-lbl">Frete de Entrada</div>
+            <div class="kbox-val">${BRL(DATA.compras.valor)}</div>
+            <div class="kbox-sub">${DATA.compras.total} CTe de compras</div>
+          </div>
+          <div class="kbox">
+            <div class="kbox-lbl">Devolução ML</div>
+            <div class="kbox-val">${BRL(DATA.devolucoes_mkt.valor_ml)}</div>
+            <div class="kbox-sub">${DATA.devolucoes_mkt.ml} CTe devolvidos</div>
+          </div>
+          <div class="kbox">
+            <div class="kbox-lbl">Devolução Shopee</div>
+            <div class="kbox-val">${BRL(DATA.devolucoes_mkt.valor_shopee)}</div>
+            <div class="kbox-sub">${DATA.devolucoes_mkt.shopee} CTe devolvidos</div>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.8">
+          O grupo Humana Alimentar mantém o custo de frete em <strong style="color:${corPct(pctGeral)}">${PCT(pctGeral)}</strong> sobre o faturamento,
+          dentro da faixa aceitável (&lt;2,0%). A cobertura de documentos de <strong>${PCT(cobertura)}</strong>
+          indica que ${N(r.nfe_sem_cte)} NF-e não possuem CTe associado — estas operações são retiradas pelo cliente ou sem custo logístico registrado.
+          O custo de devolução via marketplace soma <strong>${BRL(DATA.devolucoes_mkt.valor_ml + DATA.devolucoes_mkt.valor_shopee)}</strong>
+          e merece monitoramento contínuo dado o crescimento das vendas online.
+        </p>
+      </div>
+    </div>
+
+    <!-- ALERTAS -->
+    <div class="secao">
+      <div class="secao-header">
+        <div class="secao-icon" style="background:rgba(239,68,68,.15);color:var(--red)"><i class="fa-solid fa-bell"></i></div>
+        <span class="secao-titulo">2. Alertas e Destaques Automáticos</span>
+        <span class="chip chip-red" style="margin-left:auto">${alertas.filter(a=>a.tipo==='red').length} crítico${alertas.filter(a=>a.tipo==='red').length!==1?'s':''}</span>
+      </div>
+      <div class="secao-body">
+        ${alertas.map(a=>`
+          <div class="alerta alerta-${a.tipo}">
+            <i class="fa-solid ${a.icon}" style="color:var(--${a.tipo==='red'?'red':a.tipo==='yellow'?'yellow':a.tipo==='green'?'green':'blue'});margin-top:1px"></i>
+            <span>${a.txt}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- POR EMPRESA -->
+    <div class="secao">
+      <div class="secao-header">
+        <div class="secao-icon" style="background:rgba(124,58,237,.15);color:var(--purple)"><i class="fa-solid fa-building"></i></div>
+        <span class="secao-titulo">3. Análise por Empresa</span>
+      </div>
+      <div class="secao-body">
+        <table class="rel-table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th style="text-align:right">Faturamento</th>
+              <th style="text-align:right">Frete Pago</th>
+              <th style="text-align:right">% Frete</th>
+              <th style="text-align:right">Δ vs anterior</th>
+              <th>Participação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${DATA.por_empresa.map(e=>{
+              const pct = e.frete/e.faturamento*100;
+              const delta = pct - e.pct_anterior;
+              const barW = Math.round(e.frete/maxFrete*100);
+              const deltaColor = delta > 0.2 ? 'var(--red)' : delta < -0.2 ? 'var(--green)' : 'var(--text3)';
+              return `<tr>
+                <td><strong style="color:var(--text)">${e.empresa}</strong></td>
+                <td class="val">${BRL(e.faturamento)}</td>
+                <td class="val">${BRL(e.frete)}</td>
+                <td class="pct">${chipPct(pct)}</td>
+                <td style="text-align:right;font-weight:700;color:${deltaColor}">${delta>0?'+':''}${delta.toFixed(2)} p.p.</td>
+                <td style="min-width:120px">
+                  <div class="bar-wrap">
+                    <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:var(--blue)"></div></div>
+                    <span style="font-size:10px;color:var(--text3);white-space:nowrap">${Math.round(e.frete/r.valor_total_frete*100)}%</span>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRANSPORTADORAS -->
+    <div class="secao">
+      <div class="secao-header">
+        <div class="secao-icon" style="background:rgba(34,211,238,.15);color:var(--cyan)"><i class="fa-solid fa-truck"></i></div>
+        <span class="secao-titulo">4. Concentração por Transportadora</span>
+        <span class="chip chip-blue" style="margin-left:auto">Top 3 = ${PCT(concPct)} do custo</span>
+      </div>
+      <div class="secao-body">
+        <table class="rel-table">
+          <thead><tr><th>Transportadora</th><th style="text-align:right">Frete Total</th><th style="text-align:right">CTe</th><th>Participação</th></tr></thead>
+          <tbody>
+            ${DATA.por_transp.map((t,i)=>{
+              const maxT = DATA.por_transp[0].frete;
+              const barW = Math.round(t.frete/maxT*100);
+              const isMkt = t.nome.includes('SHPS')||t.nome.includes('EBAZAR');
+              return `<tr>
+                <td>
+                  <span style="color:var(--text3);font-size:10px;margin-right:6px">${i+1}.</span>
+                  <strong style="color:var(--text)">${t.nome}</strong>
+                  ${isMkt?'<span class="chip chip-purple" style="margin-left:6px;font-size:9px">Marketplace</span>':''}
+                </td>
+                <td class="val">${BRL(t.frete)}</td>
+                <td style="text-align:right;color:var(--text2)">${N(t.ctes)}</td>
+                <td style="min-width:130px">
+                  <div class="bar-wrap">
+                    <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${isMkt?'var(--purple)':'var(--cyan)'}"></div></div>
+                    <span style="font-size:10px;color:var(--text3);white-space:nowrap">${PCT(t.frete/r.valor_total_frete*100)}</span>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        ${concPct > 60 ? `<div class="alerta alerta-yellow" style="margin-top:12px">
+          <i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i>
+          <span>Alta concentração: as 3 principais transportadoras respondem por <strong>${PCT(concPct)}</strong> do custo total. Considere diversificar para reduzir dependência e aumentar poder de negociação.</span>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <!-- TENDÊNCIA -->
+    <div class="secao">
+      <div class="secao-header">
+        <div class="secao-icon" style="background:rgba(16,185,129,.15);color:var(--green)"><i class="fa-solid fa-chart-line"></i></div>
+        <span class="secao-titulo">5. Tendência Mensal — últimos 6 meses</span>
+      </div>
+      <div class="secao-body">
+        <table class="rel-table">
+          <thead><tr><th>Mês</th><th style="text-align:right">Faturamento</th><th style="text-align:right">Frete</th><th style="text-align:right">% Frete</th><th>Variação</th></tr></thead>
+          <tbody>
+            ${DATA.tendencia.map((m,i)=>{
+              const pct = m.frete/m.faturamento*100;
+              const prev = i > 0 ? DATA.tendencia[i-1].frete/DATA.tendencia[i-1].faturamento*100 : null;
+              const delta = prev !== null ? pct - prev : null;
+              const deltaStr = delta === null ? '—'
+                : `<span style="color:${delta>0.1?'var(--red)':delta<-0.1?'var(--green)':'var(--text3)'}">
+                    ${delta>0?'↑':'↓'} ${Math.abs(delta).toFixed(2)} p.p.</span>`;
+              return `<tr>
+                <td style="color:var(--text);font-weight:600">${m.mes}</td>
+                <td class="val">${BRL(m.faturamento)}</td>
+                <td class="val">${BRL(m.frete)}</td>
+                <td class="pct">${chipPct(pct)}</td>
+                <td>${deltaStr}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RECOMENDAÇÕES -->
+    <div class="secao">
+      <div class="secao-header">
+        <div class="secao-icon" style="background:rgba(245,158,11,.15);color:var(--yellow)"><i class="fa-solid fa-lightbulb"></i></div>
+        <span class="secao-titulo">6. Recomendações</span>
+      </div>
+      <div class="secao-body">
+        <div class="rec">
+          <div class="rec-num">1</div>
+          <div>
+            <div class="rec-titulo">Negociação com transportadoras concentradas</div>
+            <div class="rec-body">As 3 principais transportadoras respondem por ${PCT(concPct)} do custo. Com esse volume, existe poder de barganha para renegociar tabelas de frete, especialmente JADLOG e LATAM CARGO que lideram em custo absoluto.</div>
+            <div class="rec-impacto">Impacto estimado: redução de 5–10% no custo total = R$ ${BRL(r.valor_total_frete*0.075)}/ano</div>
+          </div>
+        </div>
+        <div class="rec">
+          <div class="rec-num">2</div>
+          <div>
+            <div class="rec-titulo">Investigar % frete elevado em empresas críticas</div>
+            <div class="rec-body">${DATA.por_empresa.filter(e=>e.frete/e.faturamento*100 > 2.0).map(e=>`<strong>${e.empresa}</strong> (${PCT(e.frete/e.faturamento*100)})`).join(', ')} estão acima de 2,0%. Verificar se é mix de destinos distantes, peso médio dos pedidos ou ausência de consolidação de cargas.</div>
+            <div class="rec-impacto">Ação: revisar rotas e política de entrega mínima por região</div>
+          </div>
+        </div>
+        <div class="rec">
+          <div class="rec-num">3</div>
+          <div>
+            <div class="rec-titulo">Estratégia para redução de devoluções marketplace</div>
+            <div class="rec-body">O custo com devoluções de Mercado Livre e Shopee soma ${BRL(DATA.devolucoes_mkt.valor_ml+DATA.devolucoes_mkt.valor_shopee)} em ${DATA.devolucoes_mkt.total} CTe. Analisar os principais motivos de devolução pode reduzir esse custo sem impactar o volume de vendas.</div>
+            <div class="rec-impacto">Ação: cruzar chaves das NF-e devolvidas com os SKUs para identificar produtos críticos</div>
+          </div>
+        </div>
+        <div class="rec">
+          <div class="rec-num">4</div>
+          <div>
+            <div class="rec-titulo">Ampliar cobertura de documentos de transporte</div>
+            <div class="rec-body">${N(r.nfe_sem_cte)} NF-e (${PCT(100-cobertura)}) não possuem CTe vinculado. Parte é retirada pelo cliente, mas vale mapear quais empresas têm maior índice de "sem CTe" para garantir que o custo logístico está sendo integralmente capturado.</div>
+            <div class="rec-impacto">Ação: solicitar ao ERP relatório de NF-e de saída com modal de entrega</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rodape">
+      Relatório gerado automaticamente com base nos ${N(r.total_cte)} CTe e ${N(r.total_nfe_fat)} NF-e processados em ${DATA.gerado_em}.<br>
+      Os alertas são calculados por regras estatísticas sobre os dados do período. Este documento é de uso interno.
+    </div>`;
+
+    document.getElementById('relatorio').scrollIntoView({behavior:'smooth', block:'start'});
+  }, 1800);
+}
+</script>
+</body>
+</html>
