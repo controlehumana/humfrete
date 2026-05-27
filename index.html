@@ -270,9 +270,9 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 .perm-chip{display:inline-flex;align-items:center;gap:4px;background:var(--s3);border:1px solid var(--bd2);border-radius:4px;padding:2px 8px;font-size:10px;color:var(--text2);cursor:pointer;transition:all .15s}
 .perm-chip.active{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--blue2)}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
 
@@ -623,7 +623,6 @@ const FIREBASE_CONFIG = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const _auth = firebase.auth();
 const _db   = firebase.firestore();
-_db.settings({experimentalForceLongPolling: true, merge: true});
 
 
 // Estado global
