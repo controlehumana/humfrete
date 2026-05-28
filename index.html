@@ -1969,26 +1969,24 @@ function renderEmpresa(){
   _empRenderPeriodo(rows,empList);
 }
 // ── initApp() — called after Firebase data is loaded ────────────────────────
+let _initAppDone=false;
 function initApp(){
   CNPJ_EMPRESA = DATA.cnpj_map || {};
-  // Limpa selects antes de popular (evita duplicatas se initApp for chamado mais de uma vez)
+  // Limpa e repopula selects — unica fonte de opcoes, previne duplicatas
   const clr=(sel,lbl)=>{sel.innerHTML='<option value="">'+lbl+'</option>';};
   clr(selAno,'Ano');clr(selMes,'Mes');clr(selEmpH,'Empresa');
   clr(selLnH,'Linha');clr(selEst,'Estado');clr(selTr,'Transportadora');
-  // Populate filter dropdowns
-  const anos=[...new Set(DATA.detalhes.map(d=>(d.data||'').slice(6,10)).filter(Boolean))].sort();
-  anos.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;selAno.appendChild(o);});
-  const mesesNum=[...new Set(DATA.detalhes.map(d=>(d.data||'').slice(3,5)).filter(Boolean))].sort();
-  mesesNum.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MESES[+m]||m;selMes.appendChild(o);});
-  const emps=[...new Set(DATA.detalhes.map(d=>d.empresa).filter(Boolean))].sort();
-  emps.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;selEmpH.appendChild(o);});
-  const linhas=[...new Set(DATA.detalhes.map(d=>d.linha).filter(Boolean))].sort();
-  linhas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;selLnH.appendChild(o);});
-  const ests=[...new Set(DATA.detalhes.map(d=>d.destino_uf).filter(Boolean))].sort();
-  ests.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;selEst.appendChild(o);});
-  const trs=[...new Set(DATA.detalhes.map(d=>d.transportadora).filter(Boolean))].sort();
-  trs.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=trName(t);selTr.appendChild(o);});
+  const addOpt=(sel,val,txt)=>{const o=document.createElement('option');o.value=val;o.textContent=txt;sel.appendChild(o);};
+  const uniq=arr=>[...new Set(arr.map(v=>(v||'').trim()).filter(Boolean))].sort();
+  uniq(DATA.detalhes.map(d=>(d.data||'').slice(6,10))).forEach(a=>addOpt(selAno,a,a));
+  uniq(DATA.detalhes.map(d=>(d.data||'').slice(3,5))).forEach(m=>addOpt(selMes,m,MESES[+m]||m));
+  uniq(DATA.detalhes.map(d=>d.empresa)).forEach(e=>addOpt(selEmpH,e,e));
+  uniq(DATA.detalhes.map(d=>d.linha)).forEach(l=>addOpt(selLnH,l,l));
+  uniq(DATA.detalhes.map(d=>d.destino_uf)).forEach(e=>addOpt(selEst,e,e));
+  uniq(DATA.detalhes.map(d=>d.transportadora)).forEach(t=>addOpt(selTr,t,trName(t)));
   buildCanalOptions();
+  if(_initAppDone) return; // restante (listeners, renders) so precisa rodar uma vez
+  _initAppDone=true;
 
   // MULTI-SELECT NAT OP
   (function(){
@@ -2276,6 +2274,7 @@ function initApp(){
     document.getElementById('tb_devmkt').textContent=N((DATA.devolucoes_mkt||[]).length);
     renderAll();
   }catch(err){console.error('[FRETE] Erro na inicializacao:',err);}
+  _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
 const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','admin':'Admin'};
