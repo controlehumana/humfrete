@@ -614,7 +614,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="hero-grid">
     <div class="hero-card c-blue"><div class="kpi-tooltip">Tudo que a empresa pagou as transportadoras no periodo selecionado. Considera apenas entregas com comprovante de frete confirmado e associado a uma venda registrada no sistema.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora. Valor positivo: a empresa lucrou no frete. Valor negativo: a empresa bancou parte do custo de entrega.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
-    <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 vendidos, quanto foi gasto com frete. Abaixo de 2% e excelente. Entre 2% e 5% e adequado para a maioria dos segmentos. Acima de 5% vale revisar contratos e rotas de entrega.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 vendidos, quanto foi gasto com frete. Abaixo de 2% e excelente. Entre 2% e 5% e adequado para a maioria dos segmentos. Acima de 5% vale revisar contratos e rotas de entrega.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div style="display:flex;gap:3px;align-items:center;margin-top:6px" title="Benchmark do setor alimenticio"><div style="height:4px;width:20%;background:var(--green);border-radius:2px 0 0 2px;opacity:.7"></div><div style="height:4px;width:30%;background:var(--green2);opacity:.5"></div><div style="height:4px;width:30%;background:var(--yellow);opacity:.6"></div><div style="height:4px;width:20%;background:var(--red);border-radius:0 2px 2px 0;opacity:.7"></div></div><div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3);margin-top:2px"><span>0%</span><span style="color:var(--green2)">ótimo &lt;3%</span><span style="color:var(--yellow)">meta &lt;5%</span><span style="color:var(--red)">alerta &gt;8%</span></div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-amber"><div class="kpi-tooltip">Custo total de frete dividido pelo numero de entregas realizadas no periodo. Se este valor esta subindo, pode indicar entregas mais caras, rotas mais longas ou reajuste de tarifas pelas transportadoras.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
   </div>
   <div class="kpi-row">
@@ -676,6 +676,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card"><div class="card-title">Shopee vs Mercado Livre - Frete Mensal<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo mes a mes do custo de frete entre Shopee e Mercado Livre. Ajuda a identificar em quais periodos cada canal teve mais peso nos custos logisticos. Devolucoes nao estao incluidas aqui.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div></div>
   <div class="card">
     <div class="card-title">Detalhes Marketplace<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada venda realizada via Shopee ou Mercado Livre com o custo de entrega identificado. Use os filtros acima para ver apenas um canal especifico.</span></span></div>
+    <div id="mkt_alerts"></div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--text3);font-weight:600;flex-shrink:0">Exibir:</span>
       <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
@@ -683,6 +684,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
         <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')"><span style="color:#FF6900;font-size:9px">●</span> Shopee</button>
         <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')"><span style="color:#FFE600;font-size:9px">●</span> Mercado Livre</button>
       </div>
+      <input type="text" id="mkt_search" placeholder="Buscar NF, transportadora, destino..." class="hd-filter-item" style="flex:1;min-width:160px;cursor:text">
     </div>
     <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
     <div class="pager" id="mkt_pager"></div>
@@ -1116,20 +1118,42 @@ function showLoading() {
 function hideLoading() {
   document.getElementById('loading-overlay').style.display = 'none';
 }
+const _lf={count:0,lockUntil:0,_tid:null};
 async function doLogin(e) {
   e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  const now = Date.now();
+  if(_lf.lockUntil > now){
+    const s=Math.ceil((_lf.lockUntil-now)/1000);
+    err.textContent='Muitas tentativas. Aguarde '+s+' segundo(s) para tentar novamente.';
+    err.style.display='block'; return;
+  }
   const email = document.getElementById('login-email').value;
   const pass  = document.getElementById('login-pass').value;
-  const btn   = document.getElementById('login-btn');
-  const err   = document.getElementById('login-error');
   btn.disabled = true; btn.textContent = 'Entrando...';
   err.style.display = 'none';
   try {
     await _auth.signInWithEmailAndPassword(email, pass);
+    _lf.count=0; _lf.lockUntil=0;
   } catch(e2) {
+    _lf.count++;
+    const n=_lf.count;
     err.textContent = _authMsg(e2.code);
     err.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Entrar';
+    if(n>=3){
+      const delay=n>=5?60:n>=4?30:10;
+      _lf.lockUntil=Date.now()+delay*1000;
+      err.textContent+=` Aguarde ${delay}s antes de tentar novamente.`;
+      let rem=delay; btn.textContent='Aguarde '+rem+'s';
+      clearInterval(_lf._tid);
+      _lf._tid=setInterval(()=>{
+        rem--; btn.textContent='Aguarde '+rem+'s';
+        if(rem<=0){clearInterval(_lf._tid);btn.disabled=false;btn.textContent='Entrar';_lf.lockUntil=0;}
+      },1000);
+    } else {
+      btn.disabled=false; btn.textContent='Entrar';
+    }
   }
 }
 async function doForgotPassword(e) {
@@ -1429,8 +1453,9 @@ function mkDetailRow(d,rowId){
   const dif=d.diferenca_frete||0;const dC=dif>0?'color:var(--green)':dif<0?'color:var(--red)':'color:var(--text3)';
   const cob=d.frete_cobrado||0;const pct=d.total_nf?d.valor_frete/d.total_nf*100:0;const rowCls=pct>10?' class="row-alert"':'';
   const rid=rowId||'x';
-  const rateioBtn=d.is_rateio?'<button id="rb-'+rid+'" onclick="event.stopPropagation();toggleRateioDetail(\''+rid+'\',\''+d.cte_chave+'\',\''+d.chave_nfe+'\')" style="margin-left:5px;background:#3D2E00;border:1px solid #6B4F00;color:var(--amber);font-size:9px;font-weight:700;padding:1px 7px;border-radius:4px;cursor:pointer;font-family:inherit"><i class="fa-solid fa-circle-info"></i> Rateio</button>':'';
-  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="color:var(--blue2);font-weight:600;white-space:nowrap">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td></tr>';
+  const rateioBtn=d.is_rateio?'<button id="rb-'+rid+'" onclick="event.stopPropagation();toggleRateioDetail(\''+rid+'\',\''+d.cte_chave+'\',\''+d.chave_nfe+'\')" style="margin-left:6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.45);color:var(--yellow);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer;font-family:inherit" title="Frete proporcional — clique para ver o rateio entre as NF-e do mesmo CTe"><i class="fa-solid fa-divide"></i> Rateio</button>':'';
+  const freteCellStyle=d.is_rateio?'color:var(--blue2);font-weight:600;white-space:nowrap;background:rgba(245,158,11,.05)':'color:var(--blue2);font-weight:600;white-space:nowrap';
+  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="'+freteCellStyle+'">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td></tr>';
 }
 function mkPager(total,page,perPage,pagerId,onPage){
   const pages=Math.ceil(total/perPage);const pager=document.getElementById(pagerId);pager.innerHTML='';
@@ -1476,6 +1501,7 @@ function setMktFilter(val){
   document.getElementById('mkt_f_ml').classList.toggle('active',val==='MERCADO LIVRE');
   mktPage=0;renderMktTable();
 }
+let mktSearchQ='';
 function renderMarketplace(){
   mktRows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:true});
   const shopee=mktRows.filter(d=>d.marketplace_type==='shopee');
@@ -1488,6 +1514,26 @@ function renderMarketplace(){
   document.getElementById('mkt_ml_qtd').textContent=N(ml.length)+' CTe';
   document.getElementById('mkt_ml_med').textContent=ml.length?BRL(sumF(ml)/ml.length):'-';
   document.getElementById('tb_mkt').textContent=N(mktRows.length);
+  // Alertas automáticos: compara mes atual vs anterior
+  const mktAlerts=document.getElementById('mkt_alerts');
+  if(mktAlerts){
+    const allPersAll=[...new Set(mktRows.map(d=>per(d.data)).filter(Boolean))].sort();
+    const lastPer=allPersAll[allPersAll.length-1];
+    const prevPer=allPersAll[allPersAll.length-2];
+    if(lastPer&&prevPer){
+      const [lM,lY]=lastPer.split('/');const [pM,pY]=prevPer.split('/');
+      const inLastPer=d=>per(d.data)===lastPer;const inPrevPer=d=>per(d.data)===prevPer;
+      const alerts=[];
+      [['shopee','#FF6900','Shopee'],['ml','#FFE600','Mercado Livre']].forEach(([type,color,lbl])=>{
+        const cur=sumF(mktRows.filter(d=>d.marketplace_type===type&&inLastPer(d)));
+        const prev=sumF(mktRows.filter(d=>d.marketplace_type===type&&inPrevPer(d)));
+        if(prev>0&&cur>0){const chg=(cur-prev)/prev*100;if(Math.abs(chg)>=15){const up=chg>0;
+          alerts.push('<div class="alert '+(up?'a-yellow':'a-green')+'" style="margin-bottom:4px"><span class="alert-icon"><i class="fa-solid '+(up?'fa-arrow-trend-up':'fa-arrow-trend-down')+'"></i></span><span class="alert-text"><strong>'+lbl+':</strong> frete <strong>'+(up?'subiu':'caiu')+' '+Math.abs(chg).toFixed(1)+'%</strong> vs '+(MESES[+pM]||pM)+'/'+pY+' &nbsp;<span style="color:var(--text3);font-size:10px">'+BRL(prev)+' → '+BRL(cur)+'</span></span></div>');}
+        }
+      });
+      mktAlerts.innerHTML=alerts.join('');
+    }else{mktAlerts.innerHTML='';}
+  }
   const allPers=[...new Set(DATA.detalhes.map(d=>per(d.data)).filter(Boolean))].sort();
   const byPerSh={},byPerMl={};
   shopee.forEach(d=>{const p=per(d.data);if(p) byPerSh[p]=(byPerSh[p]||0)+d.valor_frete;});
@@ -1497,10 +1543,19 @@ function renderMarketplace(){
     {label:'Mercado Livre',data:allPers.map(p=>byPerMl[p]||0),borderColor:'#FFE600',backgroundColor:'#FFE60022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FFE600',pointBorderColor:'#fff',pointBorderWidth:2},
   ]);
   mktPage=0;renderMktTable();
+  const mktSrch=document.getElementById('mkt_search');
+  if(mktSrch&&!mktSrch._bound){mktSrch._bound=true;mktSrch.addEventListener('input',()=>{mktSearchQ=mktSrch.value.toLowerCase();mktPage=0;renderMktTable();});}
 }
 function renderMktTable(){
   const tbody=document.getElementById('mkt_tbody');
-  const filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktRows;
+  let filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktRows;
+  if(mktSearchQ){const q=mktSearchQ;filtered=filtered.filter(d=>{
+    return(d.numero||'').toLowerCase().includes(q)
+      ||(d.transportadora||'').toLowerCase().includes(q)
+      ||(d.destino_cidade||'').toLowerCase().includes(q)
+      ||(d.empresa||'').toLowerCase().includes(q)
+      ||(d.canal||'').toLowerCase().includes(q);
+  });}
   const slice=filtered.slice(mktPage*PAGE,mktPage*PAGE+PAGE);
   tbody.innerHTML=slice.map(d=>mkDetailRow(d)).join('');
   mkPager(filtered.length,mktPage,PAGE,'mkt_pager',pg=>{mktPage=pg;renderMktTable();});
@@ -2180,6 +2235,11 @@ function initApp(){
   // INIT
   try{
     document.getElementById('hd_gen').textContent='Gerado em '+DATA.gerado_em;
+    try{
+      const parts=(DATA.gerado_em||'').split(/[\/ :]/);
+      if(parts.length>=3){const dt=new Date(+parts[2],+parts[1]-1,+parts[0]);const daysOld=Math.floor((Date.now()-dt)/86400000);
+      if(daysOld>2){const warn=document.createElement('div');warn.style.cssText='background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--yellow);font-size:11px;padding:6px 14px;border-radius:8px;margin:8px 20px 0;display:flex;align-items:center;gap:8px';warn.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Dados gerados há <strong>'+daysOld+' dias</strong>. Execute <code style="background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px">py atualizar.py</code> para atualizar.';document.querySelector('.main-wrap').prepend(warn);}}
+    }catch(e){}
     document.getElementById('tb_naov').textContent=N(nvBase.length);
     document.getElementById('tb_emp').textContent=N([...new Set(DATA.detalhes.map(d=>d.empresa).filter(Boolean))].length);
     document.getElementById('tb_comp').textContent=N((DATA.compras||[]).length);
