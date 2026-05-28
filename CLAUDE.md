@@ -4,47 +4,77 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Como executar
 
-```bash
+```powershell
+# Atualização diária D-1 (sem interação — ideal para Agendador de Tarefas)
+py atualizar.py
+
+# Reprocessamento manual com período personalizado
+py atualizar.py --interativo
+
+# Período fixo sem perguntas
+py atualizar.py --data-inicio 01-01-2025 --data-fim 31-05-2026
+
+# Pular download (XMLs já baixados)
+py atualizar.py --pular-download
+
+# Encoding obrigatório no PowerShell antes de rodar só o frete
+$env:PYTHONIOENCODING = "utf-8"
 py processar_frete.py
 ```
-
-Isso lê os dados, processa tudo e gera `dashboard_frete.html` na raiz da pasta. Abrir o HTML diretamente no navegador — não requer servidor.
 
 ## Estrutura do projeto
 
 ```
-Frete/
-  processar_frete.py       # Script único de ETL + geração do dashboard
-  dashboard_frete.html     # Saída gerada (não editar manualmente)
-  CTe/
-    LISTAGEM_FATURAMENTO*.xls   # Exportação do ERP (HTML disfarçado de .xls)
-    Geral/
-      Tomador/             # ~4.300 XMLs de CTe (CT-e versão 4.0)
-      Eventos de cancelamento/  # XMLs de cancelamento de CTe
+ClaudeCode/
+  atualizar.py               # Orquestrador: D-1 automático por padrão
+  QUIVE/
+    buscar_cte.py            # Baixa CTe da API Qive → cte.db
+    criar_view.py            # Parseia XMLs → tabelas cte_campos, cte_nf
+    cte.db                   # SQLite com CTe (não versionado)
+  Frete/
+    processar_frete.py       # ETL: cte.db + faturamento → Firestore
+    index.html               # Web app GitHub Pages (arquivo único)
+    CTe/
+      FATURAMENTO.csv        # Exportação do ERP (aceita .csv, .xls, .html)
+      Geral/
+        Tomador/             # XMLs de CTe (CT-e versão 4.0)
+        Eventos de cancelamento/
 ```
+
+## Fluxo de atualização
+
+```
+py atualizar.py
+  → QUIVE/buscar_cte.py  (baixa CTe da API Qive para cte.db)
+  → QUIVE/criar_view.py  (parseia XMLs → tabelas cte_campos, cte_nf)
+  → Frete/processar_frete.py  (cruza com faturamento → Firestore)
+```
+
+- `atualizar.py` sem argumentos: D-1 automático, zero interação
+- Sem risco de duplicatas: INSERT OR IGNORE, DROP+recreate views, Firestore `.set()` sobrescreve
+- Base sincronizada até 27/05/2026; a partir daí roda em D-1 diário
+
+## Arquivo de faturamento
+
+`parse_faturamento()` aceita qualquer arquivo na pasta `CTe/` que:
+- Tenha extensão `.xls`, `.csv`, `.html` ou `.htm`
+- Contenha `"faturamento"` ou `"listagem"` no nome
+
+O arquivo `FATURAMENTO.csv` é válido — sem prefixo de empresa (`BRU1_`, `BRU2_` etc.), vai para `generic_files` e a empresa é derivada da coluna `Empresa` dentro do arquivo.
+
+Detecção automática de separador CSV (`;` ou `,`). Encoding UTF-8 com `errors="replace"`.
 
 ## Arquitetura do processar_frete.py
 
-O script tem quatro etapas em sequência:
+1. **`parse_faturamento()`** — lê CSV/XLS do ERP. Agrupa por chave NF-e (44 dígitos), soma itens da mesma nota. Detecta linha de produto por "LINHAHUM" na coluna `DESCRICAO Item`.
 
-1. **`parse_faturamento()`** — lê o arquivo `.xls` (HTML com tabela) da pasta `CTe/`. O ERP exporta com `<th>` nos primeiros 40 cabeçalhos e `<td>` nos 10 restantes; `TableParser` trata isso unificando ambos como cabeçalho quando está dentro de `<thead>`. Valores numéricos usam formato brasileiro (`1.234,56`). A coluna `Chave` vem com wrapper `="..."` do Excel. Agrupa por chave de NF-e (44 dígitos), somando itens da mesma nota. Detecta linha de produto por "LINHAHUM" na coluna `DESCRICAO Item`.
+2. **`parse_ctes_from_db()`** — lê `../QUIVE/cte.db` (tabelas `cte_campos` e `cte_nf`). Fallback automático para `parse_ctes()` (XMLs) se banco não encontrado.
 
-2. **`parse_ctes()`** — lê todos os XMLs em `CTe/Geral/Tomador/`. Namespace: `http://www.portalfiscal.inf.br/cte`. Cada CTe pode referenciar NF-e via `infDoc/infNFe/chave` ou DCe via `infDoc/infDCe/chave` (~4% dos casos). O valor do frete está em `vPrest/vTPrest`. Retorna `cte_list` e `nfe_to_cte` (dict: chave_nfe → lista de CTe que a transportam).
+3. **`cruzar()`** — join por chave NF-e de 44 dígitos. Calcula frete rateado proporcionalmente ao valor de cada NF-e quando um CTe cobre múltiplas notas. Produz `ctes_nao_vinculados` com campo `nfe_refs` (chaves NF-e referenciadas pelo CTe).
 
-3. **`cruzar()`** — join entre `nfe_map` e `nfe_to_cte` pela chave de 44 dígitos da NF-e. Para cada NF-e vinculada, calcula:
-   - Frete Linhahum e Humana Alimentar proporcionalmente ao valor de cada linha na NF-e
-   - `frete_cobrado` = `vlr_frete_nf` (campo "Vlr Frete" da NF-e, o que foi cobrado do cliente)
-   - `diferenca_frete` = cobrado - pago à transportadora
-   - Identifica CTe sem nenhuma NF-e no faturamento (`ctes_nao_vinculados`)
-   - Agrega por estado, transportadora, canal, empresa, linha de produto e natureza de operação
+4. **Upload Firestore** — chunked: doc principal sem `detalhes` + docs `{emp}_det_000..N` com 800 itens cada (limite 1MB por doc).
 
-4. **Template HTML** — string raw Python com placeholder `__DATA__`. O JSON é injetado via `replace("__DATA__", json_str)`. O `</` no JSON é escapado para `<\/` para evitar encerramento prematuro da tag `<script>`. O HTML resultante é completamente autocontido (dados + JS + CSS em um único arquivo).
-
-## Join key
-
-`CTe infDoc/infNFe/chave` = coluna `Chave` do faturamento (chave NF-e de 44 dígitos, formato SEFAZ)
-
-## Empresas / filiais
+## Empresas / CNPJs
 
 ```python
 CNPJ_MAP = {
@@ -57,25 +87,93 @@ CNPJ_MAP = {
 }
 ```
 
-A empresa é extraída da coluna `Empresa` do faturamento; o CNPJ (posições 6–20 da chave NF-e) é usado como fallback.
+**Derivar empresa a partir de chave NF-e (JS):**
+```javascript
+const emp = CNPJ_EMPRESA[chave.slice(6, 20)];  // posições 6–19 = CNPJ emitente
+```
 
-## Dashboard (JavaScript)
+**Derivar número da NF a partir de chave NF-e (JS):**
+```javascript
+const num = parseInt(ch.slice(25, 34));  // posições 25–33 = nNF (sem zeros à esquerda)
+```
 
-Todo o estado de filtro é mantido no objeto `state` e tudo passa por `renderAll()`:
-- Filtra `DATA.detalhes` (array de NF-e vinculadas) com os filtros ativos
-- Chama `aggregate(rows)` para recomputar KPIs e dados de gráficos
-- Destrói e recria cada Chart.js via `chartRefs[id].destroy()` antes de recriar
-- Atualiza tabela com `renderTable()`
+## Arquitetura web (index.html)
 
-Os dados pré-computados no JSON (`por_estado`, `por_transp`, etc.) **não são mais usados pelo JS** — existem apenas como referência. Toda agregação é dinâmica a partir de `DATA.detalhes`.
+- **GitHub Pages** serve `index.html` estático
+- **Firebase Auth v8.10.1 compat** (email/senha) — v10 causava falha no WebChannel
+- **Firestore `/users/{uid}`**: `email`, `displayName`, `isAdmin`, `empresas[]`, `tabs[]`
+- **Firestore `/dados/{empresa}`**: payload sem detalhes + `det_chunks` chunks
+- `_loadData()` carrega chunks em paralelo e remonta `DATA.detalhes`
 
-## Regra obrigatória — Tooltips em todos os cards
+## Layout e componentes do index.html
 
-**Todo card com valor numérico deve ter um `<div class="kpi-tooltip">` explicando como o valor é calculado.** Cards de gráfico/tabela (`.card`) usam um ícone `<span class="card-tip">` ao lado do `.card-title`. A lógica de exibição é CSS-only via `:hover`. Nunca adicionar um card sem tooltip.
+### Sidebar
+- Expandido: 224px (`--sb-w`). Colapsado: 60px.
+- Botão de colapso: `id="sb-collapse"`, 26px, borda visível.
+- **Colapsado**: logo oculto, botão centralizado, `overflow:visible` no sidebar para os tooltips escaparem.
+- **Tooltips CSS-only**: `.sb-label` vira `position:absolute` flutuando à direita no hover quando colapsado.
+- **Mobile (≤580px)**: sidebar oculto. Barra de navegação fixa no rodapé (`.mob-nav`) com 8 abas.
+
+### Topbar
+- `topbar-row1`: breadcrumb, data geração, tema, avatar.
+- `topbar-row2`: pills Todos/B2B/Online (`.tb-cat-pill`) + separador + filtros Ano/Mês/Empresa/Mais filtros.
+- `hd-adv` (Mais filtros): linha separada abaixo do topbar com `display:flex;flex-wrap:wrap` — nunca inline no row2.
+
+### Filtros
+- **Todos/B2B/Online**: `.tb-cat-pill` no topbar-row2, IDs `cat_all`, `cat_b2b`, `cat_online`.
+- **Nat. Operação multiselect**: IDs `ms_natop_btn`, `ms_natop_drop`, `ms_natop_wrap`. Posicionado via `getBoundingClientRect()`. Estado: `state.natop` (array de valores incluídos; vazio = sem filtro).
+- **state**: `{ano, mes, empresa, linha, natop[], estado, transp, canal, q, categoria}`
+
+### Tabelas — regra obrigatória
+**Toda tabela de dados deve usar `class="tw dtbl"` + `style="max-height:70vh;overflow-y:auto"`.**
+
+- `.tw`: `overflow-x:auto`, estilos padrão thead/tbody.
+- `.dtbl`: primeiras 3 colunas sticky (left: 0, 58px, 128px), thead sticky no topo.
+- Exceção: tabela CTe Cancelados usa `max-height:400px` (menor volume).
+
+### Heatmap % Frete/Venda
+- Tema escuro: `hsl(hue, 72%, 30%)` com texto `rgba(255,255,255,.92)` — verde/vermelho vívidos.
+- Tema claro (ocean): `hsl(hue, 65%, 87%)` com texto `hsl(hue, 60%, 22%)`.
+- Detecta tema via `document.documentElement.classList.contains('ocean')`.
+
+### Cobertura de Dados (CTe não vinculados)
+- Campo `nfe_refs`: array de chaves NF-e referenciadas no CTe (44 dígitos cada).
+- Coluna **NF-e(s)**: mostra `parseInt(ch.slice(25,34))` em chips azuis.
+- Coluna **Empresa**: derivada de `CNPJ_EMPRESA[ch.slice(6,20)]` da primeira ref com match.
+- Busca inclui número de NF e código de empresa.
+
+### Login
+- Botão olho para mostrar/ocultar senha: `id="login-toggle-pass"`, função `togglePassVisibility()`.
+- Erros Firebase humanizados via `_authMsg(code)` — nunca expor `e.message` bruto.
+- Cobre: `auth/invalid-credential`, `auth/wrong-password`, `auth/user-not-found`, `auth/too-many-requests`, `auth/network-request-failed`, `auth/user-disabled`, e outros.
+
+### Responsivo
+- **≥1600px**: sem `max-width` — ocupa tela inteira.
+- **≤900px**: sidebar colapsado automaticamente (60px), sem labels.
+- **≤580px**: sidebar oculto, mob-nav no rodapé, `padding-bottom:64px` no main-wrap.
+
+### Marketplace — filtros de canal
+- Wrapper: `background:var(--input-bg);border:1px solid var(--bd2)` — nunca `#EAEEF3`.
+- Botões `.cat-btn`: sem background por padrão, ativo em `rgba(94,106,210,.2)`.
+- Indicadores de cor: `●` laranja para Shopee, `●` amarelo para ML.
+
+## Regras obrigatórias
+
+1. **Tooltips em todos os cards** — `<div class="kpi-tooltip">` em todo card com valor numérico. Cards de gráfico usam `<span class="card-tip">`. Lógica CSS-only via `:hover`. Nunca adicionar card sem tooltip.
+
+2. **Tabelas com dtbl** — toda tabela de listagem usa `.tw.dtbl` + `max-height:70vh;overflow-y:auto`.
+
+3. **Erros Firebase** — sempre usar `_authMsg(e.code)` no catch de auth. Nunca expor `e.message`.
+
+4. **Cores do heatmap** — sempre tema-aware via `_isOcean()`. Nunca hardcode de cor única.
+
+5. **IDs únicos** — cada elemento com ID aparece exatamente uma vez. Ao mover componentes entre sidebar e topbar, remover do local original.
 
 ## Pitfalls conhecidos
 
-- **Tamanho do HTML**: não embutir arrays com 100k+ registros no JSON. A lista `nfe_sem_cte` (~123k itens) foi removida do output por isso; apenas o count fica em `resumo.nfe_sem_cte`.
-- **Python 3.13 + ElementTree**: nunca usar `elem1 or elem2` com elementos XML — o operador `or` é sempre truthy. Usar sempre `if el is None` explícito.
-- **Encoding**: sempre rodar com `$env:PYTHONIOENCODING = "utf-8"` no PowerShell antes de `py processar_frete.py`.
-- **Período do faturamento**: o arquivo `.xls` exportado deve ser do mesmo mês/ano dos CTe importados, senão o cruzamento retorna zero vínculos.
+- **SDK Firebase v8** — usar v8.10.1 compat. v10 causava falha no WebChannel no GitHub Pages.
+- **Tamanho do HTML/JSON** — não embutir arrays com 100k+ registros. `nfe_sem_cte` foi removido; só o count fica em `resumo.nfe_sem_cte`.
+- **Python 3.13 + ElementTree** — nunca `elem1 or elem2` com elementos XML (sempre truthy). Usar `if el is None`.
+- **Encoding** — sempre `$env:PYTHONIOENCODING = "utf-8"` no PowerShell antes de rodar scripts Python.
+- **Período do faturamento** — o CSV/XLS deve cobrir o mesmo período dos CTe, senão cruzamento retorna zero vínculos.
+- **Conflito de push** — uploads via interface web do GitHub criam commits que divergem do local. Ao receber "rejected: non-fast-forward", usar `git fetch origin && git reset --soft origin/main` para realinhar sem perder mudanças.
