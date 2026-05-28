@@ -746,6 +746,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       <input type="text" id="nv_search" placeholder="Buscar transportadora, cidade, chave CTe, numero NF...">
       <select id="nv_uf"><option value="">Todos os destinos</option></select>
       <select id="nv_transp"><option value="">Todas as transportadoras</option></select>
+      <select id="nv_motivo"><option value="">Todos os motivos</option></select>
     </div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Nº CTe</th><th>Valor Frete</th><th>Empresa</th><th>Remetente</th><th>Destinatário / CNPJ</th><th>Origem</th><th>Destino</th><th>NF-e(s) Referenciadas</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
     <div class="pager" id="nv_pager"></div>
@@ -2231,18 +2232,35 @@ function initApp(){
   const nvBaseData=DATA.ctes_nao_vinculados.filter(c=>!isMarketplace(c.transportadora));
   nvBase=nvBaseData;
   nvRows=nvBase;
-  const nvSelUf=document.getElementById('nv_uf');
-  const nvSelTr=document.getElementById('nv_transp');
-  const nvInp=document.getElementById('nv_search');
+  const nvSelUf    =document.getElementById('nv_uf');
+  const nvSelTr    =document.getElementById('nv_transp');
+  const nvSelMotivo=document.getElementById('nv_motivo');
+  const nvInp      =document.getElementById('nv_search');
   [...new Set(nvBase.map(c=>c.destino_uf).filter(Boolean))].sort()
     .forEach(uf=>{const o=document.createElement('option');o.value=uf;o.textContent=uf;nvSelUf.appendChild(o);});
   [...new Set(nvBase.map(c=>c.transportadora).filter(Boolean))].sort()
     .forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=trName(t);nvSelTr.appendChild(o);});
+  // Popula motivos — agrupa por categoria simplificada
+  const motivoMap={};
+  nvBase.forEach(c=>{
+    const m=c.motivo||'Motivo nao identificado';
+    // simplifica: "Nota fiscal não encontrada no faturamento (N NF...)" → mesma categoria
+    const cat=m.startsWith('Nota fiscal')?'Nota fiscal nao encontrada no faturamento':m;
+    motivoMap[cat]=(motivoMap[cat]||0)+1;
+  });
+  Object.entries(motivoMap).sort((a,b)=>b[1]-a[1]).forEach(([m,q])=>{
+    const o=document.createElement('option');o.value=m;
+    o.textContent=m+' ('+q+')';nvSelMotivo.appendChild(o);
+  });
   function nvFilter(){
-    const q=nvInp.value.toLowerCase(),uf=nvSelUf.value,tr=nvSelTr.value;
+    const q=nvInp.value.toLowerCase(),uf=nvSelUf.value,tr=nvSelTr.value,mot=nvSelMotivo.value;
     nvRows=nvBase.filter(c=>{
       if(uf&&c.destino_uf!==uf) return false;
       if(tr&&c.transportadora!==tr) return false;
+      if(mot){
+        const cat=(c.motivo||'').startsWith('Nota fiscal')?'Nota fiscal nao encontrada no faturamento':(c.motivo||'Motivo nao identificado');
+        if(cat!==mot) return false;
+      }
       if(q){
         const _cteNum=c.cte_chave&&c.cte_chave.length>=34?String(parseInt(c.cte_chave.slice(25,34))):'';
         const h=(c.cte_chave+' '+_cteNum+' '+(c.numero_cte||'')+' '+c.transportadora+' '+c.origem_cidade+' '+c.destino_cidade+' '+(c.rem_nome||'')+' '+(c.dest_nome||'')+' '+(c.dest_cnpj||'')).toLowerCase();
@@ -2298,7 +2316,7 @@ function initApp(){
     }).join('');
     mkPager(nvRows.length,nvPage,PAGE,'nv_pager',pg=>{nvPage=pg;nvRender();});
   }
-  nvInp.addEventListener('input',nvFilter);nvSelUf.addEventListener('change',nvFilter);nvSelTr.addEventListener('change',nvFilter);
+  nvInp.addEventListener('input',nvFilter);nvSelUf.addEventListener('change',nvFilter);nvSelTr.addEventListener('change',nvFilter);nvSelMotivo.addEventListener('change',nvFilter);
   nvRender();
   document.getElementById('nv_k_qtd').textContent=N(nvBase.length);
   document.getElementById('nv_k_frete').textContent=BRL(nvBase.reduce((s,c)=>s+c.valor_frete,0));
