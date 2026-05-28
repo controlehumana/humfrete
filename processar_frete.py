@@ -232,8 +232,10 @@ def parse_ctes_from_db(db_path):
                COALESCE(cc.uf_origem,        '') AS origem_uf,
                COALESCE(cc.municipio_destino,'') AS destino_cidade,
                COALESCE(cc.uf_destino,       '') AS destino_uf,
-               COALESCE(cc.cnpj_destinatario,'') AS dest_cnpj,
+               COALESCE(cc.cnpj_destinatario, '') AS dest_cnpj,
+               COALESCE(cc.nome_destinatario,'') AS dest_nome,
                COALESCE(cc.nome_remetente,   '') AS rem_nome,
+               COALESCE(cc.numero_cte,       '') AS numero_cte,
                COALESCE(cc.valor_total_prestacao, 0) AS valor_frete,
                COALESCE(cc.peso_bruto, 0)            AS peso_kg
         FROM cte_campos cc
@@ -267,7 +269,9 @@ def parse_ctes_from_db(db_path):
             "destino_cidade": row["destino_cidade"],
             "destino_uf":    row["destino_uf"],
             "dest_cnpj":     row["dest_cnpj"],
+            "dest_nome":     row["dest_nome"],
             "rem_nome":      row["rem_nome"],
+            "numero_cte":    row["numero_cte"],
             "valor_frete":   round(float(row["valor_frete"] or 0), 2),
             "nfe_chaves":    nfe_chaves,
             "peso_kg":       round(float(row["peso_kg"] or 0), 2),
@@ -341,16 +345,19 @@ def parse_ctes(cte_xml_dir, chaves_canceladas=None):
             return _txt(el)
         data_emissao=ide_txt("dhEmi"); origem_cidade=ide_txt("xMunIni"); origem_uf=ide_txt("UFIni")
         destino_cidade=ide_txt("xMunFim"); destino_uf=ide_txt("UFFim")
-        dest_cnpj=""
+        dest_cnpj=""; dest_nome=""
         dest_el=_find(infcte,"dest")
         if dest_el is not None:
             cnpj_el=_find(dest_el,"CNPJ")
             if cnpj_el is not None and cnpj_el.text: dest_cnpj=cnpj_el.text.strip()
+            xn_dest=_find(dest_el,"xNome")
+            if xn_dest is not None and xn_dest.text: dest_nome=xn_dest.text.strip()
         rem_nome=""
         rem_el=_find(infcte,"rem")
         if rem_el is not None:
             xn=_find(rem_el,"xNome")
             if xn is not None and xn.text: rem_nome=xn.text.strip()
+        numero_cte=ide_txt("nCT")
         vprest = _find_deep(infcte, "vPrest")
         vTPrest=0.0
         if vprest is not None:
@@ -379,7 +386,8 @@ def parse_ctes(cte_xml_dir, chaves_canceladas=None):
                 if ch is not None and ch.text: nfe_chaves.append(ch.text.strip())
         cte_data={"cte_chave":cte_chave,"transportadora":transportadora,"data_emissao":data_emissao,
             "origem_cidade":origem_cidade,"origem_uf":origem_uf,"destino_cidade":destino_cidade,
-            "destino_uf":destino_uf,"dest_cnpj":dest_cnpj,"rem_nome":rem_nome,"valor_frete":vTPrest,
+            "destino_uf":destino_uf,"dest_cnpj":dest_cnpj,"dest_nome":dest_nome,
+            "rem_nome":rem_nome,"numero_cte":numero_cte,"valor_frete":vTPrest,
             "nfe_chaves":nfe_chaves,"peso_kg":round(peso_kg,2),"volume_m3":round(volume_m3,3),
             "qtd_nfe":len(nfe_chaves)}
         cte_list.append(cte_data)
@@ -477,7 +485,8 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
         "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
         "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
-        "dest_cnpj":cte["dest_cnpj"],"rem_nome":cte["rem_nome"],
+        "dest_cnpj":cte["dest_cnpj"],"dest_nome":cte.get("dest_nome",""),
+        "rem_nome":cte["rem_nome"],"numero_cte":cte.get("numero_cte",""),
         "valor_frete":cte["valor_frete"],"nfe_refs":cte["nfe_chaves"],
         "motivo":_motivo_sem_vinculo(cte),
     } for cte in cte_list if cte["cte_chave"] not in linked_cte_chaves]

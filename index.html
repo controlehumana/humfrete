@@ -2245,7 +2245,7 @@ function initApp(){
       if(tr&&c.transportadora!==tr) return false;
       if(q){
         const _cteNum=c.cte_chave&&c.cte_chave.length>=34?String(parseInt(c.cte_chave.slice(25,34))):'';
-        const h=(c.cte_chave+' '+_cteNum+' '+c.transportadora+' '+c.origem_cidade+' '+c.destino_cidade+' '+(c.rem_nome||'')+' '+(c.dest_cnpj||'')).toLowerCase();
+        const h=(c.cte_chave+' '+_cteNum+' '+(c.numero_cte||'')+' '+c.transportadora+' '+c.origem_cidade+' '+c.destino_cidade+' '+(c.rem_nome||'')+' '+(c.dest_nome||'')+' '+(c.dest_cnpj||'')).toLowerCase();
         const nfeMatch=(c.nfe_refs||[]).some(n=>n.includes(q)||String(parseInt(n.slice(25,34))).includes(q));
         const empMatch=_nvEmpresa(c.nfe_refs).toLowerCase().includes(q);
         const destEmpMatch=(c.dest_cnpj&&(CNPJ_EMPRESA[c.dest_cnpj]||'').toLowerCase().includes(q));
@@ -2274,16 +2274,19 @@ function initApp(){
         : '<span style="color:var(--text3);font-size:10px">CTe sem NF</span>';
       const remNome=esc(c.rem_nome||'');
       const destEmp=c.dest_cnpj?CNPJ_EMPRESA[c.dest_cnpj]:'';
+      const destName=esc(c.dest_nome||'');
       const destCell=destEmp
         ?`<span class="chip chip-blue" style="font-size:10px;font-weight:700">${esc(destEmp)}</span>`
-        :(c.dest_cnpj
-          ?`<span style="font-family:monospace;font-size:10px;color:var(--text2)">${esc(c.dest_cnpj)}</span>`
-          :'<span style="color:var(--text3);font-size:10px">—</span>');
+        :(destName
+          ?`<span style="font-size:11px;color:var(--text2)" title="${esc(c.dest_cnpj||'')}">${destName}</span>`
+          :(c.dest_cnpj
+            ?`<span style="font-family:monospace;font-size:10px;color:var(--text2)">${esc(c.dest_cnpj)}</span>`
+            :'<span style="color:var(--text3);font-size:10px">—</span>'));
       return '<tr>'
         +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
         +'<td>'+(c.data_emissao||'-')+'</td>'
         +'<td title="'+esc(c.transportadora||'')+'">'+esc(trName(c.transportadora||'-'))+'</td>'
-        +'<td style="font-family:monospace;font-weight:700;color:var(--text)">'+(c.cte_chave&&c.cte_chave.length>=34?parseInt(c.cte_chave.slice(25,34)):'—')+'</td>'
+        +'<td style="font-family:monospace;font-weight:700;color:var(--text)">'+(c.numero_cte||( c.cte_chave&&c.cte_chave.length>=34?parseInt(c.cte_chave.slice(25,34)):'')||'—')+'</td>'
         +'<td>'+empCell+'</td>'
         +'<td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+remNome+'">'+(remNome||'<span style="color:var(--text3)">—</span>')+'</td>'
         +'<td>'+destCell+'</td>'
