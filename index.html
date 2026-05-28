@@ -582,12 +582,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <button class="hd-filter-item hd-adv-btn" id="hd_adv_btn" type="button" onclick="toggleAdvFilters()" style="cursor:pointer;font-weight:600">Mais filtros <span id="hd_adv_arrow" style="font-size:9px">&#x25BC;</span></button>
   </div>
   <div class="hd-adv hidden" id="hd_adv_wrap">
-    <select id="filter_linha_h" class="hd-filter-item">
-      <option value="">Linha</option>
-      <option value="Linhahum">Linhahum</option>
-      <option value="Humana Alimentar">Humana Alimentar</option>
-      <option value="Misto">Misto</option>
-    </select>
+    <select id="filter_linha_h" class="hd-filter-item"><option value="">Linha</option></select>
     <div class="ms-wrap" id="ms_natop_wrap">
       <button class="ms-btn" id="ms_natop_btn" type="button" style="height:28px">Nat. Op. <span class="ms-arrow">v</span></button>
       <div class="ms-dropdown" id="ms_natop_drop"></div>
@@ -1976,6 +1971,10 @@ function renderEmpresa(){
 // ── initApp() — called after Firebase data is loaded ────────────────────────
 function initApp(){
   CNPJ_EMPRESA = DATA.cnpj_map || {};
+  // Limpa selects antes de popular (evita duplicatas se initApp for chamado mais de uma vez)
+  const clr=(sel,lbl)=>{sel.innerHTML='<option value="">'+lbl+'</option>';};
+  clr(selAno,'Ano');clr(selMes,'Mes');clr(selEmpH,'Empresa');
+  clr(selLnH,'Linha');clr(selEst,'Estado');clr(selTr,'Transportadora');
   // Populate filter dropdowns
   const anos=[...new Set(DATA.detalhes.map(d=>(d.data||'').slice(6,10)).filter(Boolean))].sort();
   anos.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;selAno.appendChild(o);});
