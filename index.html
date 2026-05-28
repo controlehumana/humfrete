@@ -44,8 +44,8 @@ body.sb-collapsed .sidebar{width:60px}
 .sb-logo{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;letter-spacing:-.5px;box-shadow:0 2px 10px var(--accent-glow);}
 .sb-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.3px;white-space:nowrap;overflow:hidden;transition:opacity .2s,width .25s;}
 body.sb-collapsed .sb-title{opacity:0;width:0;}
-.sb-collapse{margin-left:auto;flex-shrink:0;width:22px;height:22px;border:none;background:rgba(255,255,255,.06);border-radius:5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .25s;font-size:10px;padding:0;}
-.sb-collapse:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.sb-collapse{margin-left:auto;flex-shrink:0;width:26px;height:26px;border:1px solid var(--bd2);background:rgba(255,255,255,.08);border-radius:6px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .25s,border-color .15s;font-size:13px;padding:0;}
+.sb-collapse:hover{background:rgba(94,106,210,.2);border-color:rgba(94,106,210,.5);color:#fff}
 body.sb-collapsed .sb-collapse{transform:rotate(180deg)}
 body.sb-collapsed .sb-logo-wrap{justify-content:center;padding:15px 0;}
 body.sb-collapsed .sb-logo-wrap .sb-logo{display:none;}
@@ -219,7 +219,16 @@ html.ocean .tb-cat-pill.active{background:rgba(94,106,210,.12);color:#3730A3;bor
 .dtbl thead th:nth-child(1),.dtbl thead th:nth-child(2),.dtbl thead th:nth-child(3){z-index:5}
 .dtbl tbody td:nth-child(1),.dtbl tbody td:nth-child(2),.dtbl tbody td:nth-child(3){background:#161719}
 .dtbl tbody tr:hover td:nth-child(1),.dtbl tbody tr:hover td:nth-child(2),.dtbl tbody tr:hover td:nth-child(3){background:rgba(94,106,210,.06)}
-@media(min-width:1600px){.main-wrap,#active-filters,.tab-panel.active{max-width:1600px;margin-left:auto;margin-right:auto}.hero-val{font-size:32px}}
+@media(min-width:1600px){.hero-val{font-size:32px}}
+/* MOBILE BOTTOM NAV */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:1px solid var(--bd);z-index:190;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.mob-nav::-webkit-scrollbar{display:none}
+.mob-nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px 8px;border:none;background:none;color:var(--text3);font-size:9px;font-weight:600;cursor:pointer;flex-shrink:0;letter-spacing:.3px;text-transform:uppercase;min-width:56px;font-family:inherit;transition:color .15s;}
+.mob-nav-btn svg{width:19px;height:19px;opacity:.7;transition:opacity .15s;}
+.mob-nav-btn.active{color:var(--blue2);}
+.mob-nav-btn.active svg{opacity:1;}
+html.ocean .mob-nav{background:#FFFFFF;border-color:var(--bd)}
+html.ocean .mob-nav-btn.active{color:#3730A3}
 #float-hscroll{display:none;position:fixed;bottom:0;height:12px;overflow-x:auto;overflow-y:hidden;z-index:600;background:#111214;border-top:1px solid var(--bd);scrollbar-width:thin;}
 #float-hscroll::-webkit-scrollbar{height:6px}
 #float-hscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
@@ -398,7 +407,8 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
 }
 @media(max-width:580px){
   .sidebar{display:none}
-  .main-wrap{margin-left:0!important}
+  .main-wrap{margin-left:0!important;padding-bottom:64px}
+  .mob-nav{display:flex}
   .topbar-row1{padding:0 10px;height:44px}
   .topbar-row2{padding:0 10px}
   .tab-panel.active{padding:10px 8px 20px;gap:12px}
@@ -412,6 +422,11 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   .dtbl th:nth-child(3),.dtbl td:nth-child(3){border-right:none}
   .tab-badge{display:none}
   .hd-stamp{display:none}
+  #login-card{padding:32px 22px;border-radius:14px;margin:0 12px}
+  .tw.dtbl{max-height:55vh!important}
+  .ch2,.ch2eq{grid-template-columns:1fr}
+  .hero-grid{grid-template-columns:1fr 1fr}
+  .kpi-row{grid-template-columns:1fr 1fr!important}
 }
 </style>
 
@@ -834,6 +849,18 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
 </div>
 
 </div><!-- .main-wrap -->
+
+<nav class="mob-nav" id="mob-nav">
+  <button class="mob-nav-btn active" data-tab="visao-geral"><i data-lucide="bar-chart-2"></i><span>Geral</span></button>
+  <button class="mob-nav-btn" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span>Mkt</span></button>
+  <button class="mob-nav-btn" data-tab="compras"><i data-lucide="package"></i><span>Compras</span></button>
+  <button class="mob-nav-btn" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span>Dev.Mkt</span></button>
+  <button class="mob-nav-btn" data-tab="empresa"><i data-lucide="building-2"></i><span>Empresa</span></button>
+  <button class="mob-nav-btn" data-tab="operacional"><i data-lucide="list"></i><span>Operat.</span></button>
+  <button class="mob-nav-btn" data-tab="clientes"><i data-lucide="users"></i><span>Clientes</span></button>
+  <button class="mob-nav-btn" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span>Cobert.</span></button>
+</nav>
+
 </div><!-- #app -->
 
 <div id="float-hscroll"><div id="float-hscroll-inner"></div></div>
@@ -929,7 +956,7 @@ function _applyPermissions() {
   if (_currentUser.isAdmin) return;
   const tabs = _currentUser.tabs;
   if (tabs && Array.isArray(tabs)) {
-    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    document.querySelectorAll('.tab-btn[data-tab],.mob-nav-btn[data-tab]').forEach(btn => {
       const t = btn.dataset.tab;
       if (t !== 'admin' && !tabs.includes(t)) btn.style.display = 'none';
     });
@@ -2046,12 +2073,13 @@ const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compr
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
-document.querySelectorAll('.tab-btn').forEach(btn=>{
+document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const tab=btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');document.getElementById('tab-'+tab).classList.add('active');
+    document.querySelectorAll('[data-tab="'+tab+'"]').forEach(b=>b.classList.add('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
     const _bc=document.getElementById('tb-bc-page');if(_bc)_bc.textContent=_TAB_NAMES[tab]||tab;
     if(tab==='empresa') renderEmpresa();
     else if(tab==='marketplace') renderMarketplace();
