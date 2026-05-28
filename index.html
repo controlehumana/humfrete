@@ -246,6 +246,12 @@ html.ocean .mob-nav-btn.active{color:#3730A3}
 .ms-opt label{cursor:pointer;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)}
 .ms-all{border-bottom:1px solid var(--bd);margin-bottom:4px;font-weight:600}
 .ms-all label{color:var(--text)}
+.cat-btn{padding:3px 13px;border-radius:6px;border:none;background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;height:26px;white-space:nowrap;}
+.cat-btn:hover:not(.active){background:rgba(255,255,255,.07);color:var(--text);}
+.cat-btn.active{background:rgba(94,106,210,.2);color:var(--blue2);}
+html.ocean .cat-btn{color:#475569}
+html.ocean .cat-btn.active{background:rgba(94,106,210,.12);color:#3730A3;}
+html.ocean .cat-btn:hover:not(.active){background:rgba(0,0,0,.05)}
 .insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:1100px){.insights-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.insights-grid{grid-template-columns:1fr}}
@@ -625,11 +631,12 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card"><div class="card-title">Shopee vs Mercado Livre - Frete Mensal<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo mes a mes do custo de frete entre Shopee e Mercado Livre. Ajuda a identificar em quais periodos cada canal teve mais peso nos custos logisticos. Devolucoes nao estao incluidas aqui.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div></div>
   <div class="card">
     <div class="card-title">Detalhes Marketplace<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada venda realizada via Shopee ou Mercado Livre com o custo de entrega identificado. Use os filtros acima para ver apenas um canal especifico.</span></span></div>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><span style="font-size:11px;color:var(--text3);font-weight:600">Exibir:</span>
-      <div style="background:#EAEEF3;border-radius:9px;padding:2px;display:flex;gap:0">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text3);font-weight:600;flex-shrink:0">Exibir:</span>
+      <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
         <button class="cat-btn active" id="mkt_f_all" onclick="setMktFilter('')">Todos</button>
-        <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')">Shopee</button>
-        <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')">Mercado Livre</button>
+        <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')"><span style="color:#FF6900;font-size:9px">●</span> Shopee</button>
+        <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')"><span style="color:#FFE600;font-size:9px">●</span> Mercado Livre</button>
       </div>
     </div>
     <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
