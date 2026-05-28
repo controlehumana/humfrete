@@ -1770,32 +1770,55 @@ function initApp(){
   // MULTI-SELECT NAT OP
   (function(){
     const allNats=[...new Set(DATA.detalhes.map(d=>d.nat_operacao).filter(Boolean))].sort();
-    const panel=document.getElementById('nat_panel');
-    if(!panel) return;
+    const drop=document.getElementById('ms_natop_drop');
+    const btn=document.getElementById('ms_natop_btn');
+    const wrap=document.getElementById('ms_natop_wrap');
+    if(!drop||!btn) return;
+    // Linha "Todos"
+    const allDiv=document.createElement('div');allDiv.className='ms-opt ms-all';
+    const allCb=document.createElement('input');allCb.type='checkbox';allCb.id='natop_all';allCb.checked=true;
+    const allLbl=document.createElement('label');allLbl.htmlFor='natop_all';allLbl.textContent='Todos';
+    allDiv.appendChild(allCb);allDiv.appendChild(allLbl);drop.appendChild(allDiv);
+    // Opções individuais
     allNats.forEach(nat=>{
-      const lbl=document.createElement('label');lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--text2);transition:background .15s';
-      lbl.onmouseenter=()=>lbl.style.background='rgba(255,255,255,.07)';
-      lbl.onmouseleave=()=>lbl.style.background='';
-      const cb=document.createElement('input');cb.type='checkbox';cb.value=nat;cb.style.cssText='accent-color:var(--blue);width:13px;height:13px;cursor:pointer';
-      cb.addEventListener('change',()=>{
-        if(cb.checked) state.nats.add(nat);else state.nats.delete(nat);
-        renderAll();
-      });
-      lbl.appendChild(cb);lbl.appendChild(document.createTextNode(nat));
-      panel.appendChild(lbl);
+      const id='nop_'+nat.replace(/\W/g,'_');
+      const div=document.createElement('div');div.className='ms-opt';
+      const cb=document.createElement('input');cb.type='checkbox';cb.id=id;cb.value=nat;cb.checked=true;
+      const lbl=document.createElement('label');lbl.htmlFor=id;lbl.textContent=nat;
+      div.appendChild(cb);div.appendChild(lbl);drop.appendChild(div);
     });
-    const btn=document.getElementById('nat_btn');
-    if(btn){
-      btn.addEventListener('click',(e)=>{
-        e.stopPropagation();
-        const open=panel.style.display==='block';
-        panel.style.display=open?'none':'block';
-        btn.setAttribute('aria-expanded',String(!open));
-      });
+    function syncState(){
+      const cbs=[...drop.querySelectorAll('input:not(#natop_all)')];
+      const checked=cbs.filter(c=>c.checked).map(c=>c.value);
+      const allChecked=checked.length===allNats.length;
+      allCb.checked=allChecked;
+      state.natop=allChecked?[]:checked;
+      btn.innerHTML=(allChecked?'Nat. Op.':checked.length+' sel.')+' <span class="ms-arrow">v</span>';
+      if(!allChecked){const s=btn.querySelector('span');if(s)s.className='ms-count';}
+      renderAll();
     }
+    drop.querySelectorAll('input:not(#natop_all)').forEach(cb=>cb.addEventListener('change',syncState));
+    allCb.addEventListener('change',()=>{
+      drop.querySelectorAll('input:not(#natop_all)').forEach(cb=>cb.checked=allCb.checked);
+      syncState();
+    });
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const isOpen=drop.classList.contains('open');
+      document.querySelectorAll('.ms-dropdown.open').forEach(d=>d.classList.remove('open'));
+      document.querySelectorAll('.ms-btn.open').forEach(b=>b.classList.remove('open'));
+      if(!isOpen){
+        const r=btn.getBoundingClientRect();
+        drop.style.top=(r.bottom+4)+'px';
+        drop.style.left=r.left+'px';
+        drop.style.right='auto';
+        drop.classList.add('open');btn.classList.add('open');
+      }
+    });
     document.addEventListener('click',(e)=>{
-      const wrap=document.getElementById('nat_wrap');
-      if(wrap&&!wrap.contains(e.target)){panel.style.display='none';if(btn)btn.setAttribute('aria-expanded','false');}
+      if(!wrap.contains(e.target)&&!drop.contains(e.target)){
+        drop.classList.remove('open');btn.classList.remove('open');
+      }
     });
   })();
 
