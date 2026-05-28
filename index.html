@@ -47,6 +47,9 @@ body.sb-collapsed .sb-title{opacity:0;width:0;}
 .sb-collapse{margin-left:auto;flex-shrink:0;width:22px;height:22px;border:none;background:rgba(255,255,255,.06);border-radius:5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .25s;font-size:10px;padding:0;}
 .sb-collapse:hover{background:rgba(255,255,255,.1);color:var(--text)}
 body.sb-collapsed .sb-collapse{transform:rotate(180deg)}
+body.sb-collapsed .sb-logo-wrap{justify-content:center;padding:15px 0;}
+body.sb-collapsed .sb-logo-wrap .sb-logo{display:none;}
+body.sb-collapsed .sb-collapse{margin-left:0;}
 .sb-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px;flex:1;}
 .sb-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);padding:10px 8px 4px;white-space:nowrap;overflow:hidden;transition:opacity .2s;}
 body.sb-collapsed .sb-section{opacity:0;height:0;padding:0;overflow:hidden}
@@ -80,6 +83,10 @@ body.sb-collapsed .main-wrap{margin-left:60px}
 .topbar-row1{display:flex;align-items:center;gap:10px;padding:0 20px;height:50px;flex-shrink:0;}
 .topbar-row2{display:flex;align-items:center;gap:6px;padding:0 20px;height:36px;overflow-x:auto;overflow-y:hidden;flex-shrink:0;scrollbar-width:none;background:rgba(0,0,0,.15);}
 .topbar-row2::-webkit-scrollbar{display:none}
+.tb-cat-pill{height:24px;padding:0 11px;border-radius:6px;border:1px solid var(--bd2);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;flex-shrink:0;}
+.tb-cat-pill:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.tb-cat-pill.active{background:rgba(94,106,210,.18);color:var(--blue2);border-color:rgba(94,106,210,.4);}
+html.ocean .tb-cat-pill.active{background:rgba(94,106,210,.12);color:#3730A3;border-color:rgba(94,106,210,.35);}
 .tb-breadcrumb{display:flex;align-items:center;gap:7px;flex:1;min-width:0;}
 .tb-bc-root{font-size:12px;color:var(--text2);flex-shrink:0;}
 .tb-bc-sep{color:var(--text3);font-size:14px;flex-shrink:0}
@@ -282,6 +289,10 @@ body.sb-collapsed .main-wrap{margin-left:60px}
 .login-btn:hover{opacity:.9;box-shadow:0 6px 26px var(--accent-glow)}
 .login-btn:active{transform:translateY(1px)}
 .login-btn:disabled{opacity:.45;cursor:default;transform:none}
+.login-pass-wrap{position:relative;}
+.login-field.with-toggle{padding-right:44px;}
+.login-toggle-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
+.login-toggle-btn:hover{color:var(--text2);}
 #login-error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);color:var(--red);border-radius:10px;padding:10px 14px;font-size:12px;margin-top:14px;display:none;line-height:1.5}
 .login-link{display:block;text-align:center;margin-top:22px;font-size:12px;color:var(--text2);cursor:pointer;text-decoration:none;transition:color .15s;letter-spacing:.1px}
 .login-link:hover{color:var(--blue2)}
@@ -431,7 +442,12 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       </div>
       <div class="login-field-wrap">
         <label class="login-label" for="login-pass">Senha</label>
-        <input id="login-pass" type="password" class="login-field" placeholder="••••••••" required autocomplete="current-password">
+        <div class="login-pass-wrap">
+          <input id="login-pass" type="password" class="login-field with-toggle" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" id="login-toggle-pass" class="login-toggle-btn" onclick="togglePassVisibility()" tabindex="-1" aria-label="Mostrar ou ocultar senha">
+            <i id="login-pass-eye" class="fa fa-eye-slash" style="font-size:15px"></i>
+          </button>
+        </div>
       </div>
       <button type="submit" id="login-btn" class="login-btn">Entrar</button>
     </form>
@@ -468,19 +484,6 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <button class="tab-btn tab-highlight" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span class="sb-label">Cobertura de Dados</span><span class="tab-badge" id="tb_naov">-</span></button>
     <button class="tab-btn" data-tab="admin" id="tab-btn-admin" style="display:none"><i data-lucide="settings"></i><span class="sb-label">Admin</span></button>
   </nav>
-  <div class="sb-footer">
-    <div class="sb-cat-pills">
-      <div class="cat-pill-wrap" title="Exibe todos os canais sem filtro de categoria">
-        <button class="cat-pill active" id="cat_all" onclick="setCategoria('')">Todos</button>
-      </div>
-      <div class="cat-pill-wrap" title="B2B - distribuidores, revendas e atacado. Exclui os canais Online.">
-        <button class="cat-pill" id="cat_b2b" onclick="setCategoria('B2B')">B2B</button>
-      </div>
-      <div class="cat-pill-wrap" title="Online - AMAZON, ECOMMERCE, MAGALU, MERCADO LIVRE, SHOPPE, SITE LINHAHUM">
-        <button class="cat-pill" id="cat_online" onclick="setCategoria('Online')">Online</button>
-      </div>
-    </div>
-  </div>
 </aside>
 
 <div class="main-wrap">
@@ -509,6 +512,12 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     </div>
   </div>
   <div class="topbar-row2">
+    <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+      <button class="tb-cat-pill active" id="cat_all" onclick="setCategoria('')">Todos</button>
+      <button class="tb-cat-pill" id="cat_b2b" onclick="setCategoria('B2B')">B2B</button>
+      <button class="tb-cat-pill" id="cat_online" onclick="setCategoria('Online')">Online</button>
+    </div>
+    <div class="hd-sep"></div>
     <select id="filter_ano" class="hd-filter-item"><option value="">Ano</option></select>
     <select id="filter_mes" class="hd-filter-item"><option value="">Mes</option></select>
     <select id="filter_empresa_h" class="hd-filter-item"><option value="">Empresa</option></select>
@@ -977,13 +986,44 @@ document.addEventListener('click', function(e) {
   }
 });
 
+function togglePassVisibility() {
+  const inp = document.getElementById('login-pass');
+  const ico = document.getElementById('login-pass-eye');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.className = 'fa fa-eye';
+  } else {
+    inp.type = 'password';
+    ico.className = 'fa fa-eye-slash';
+  }
+}
+function _authMsg(code) {
+  const map = {
+    'auth/invalid-credential':     'E-mail ou senha incorretos.',
+    'auth/wrong-password':         'E-mail ou senha incorretos.',
+    'auth/user-not-found':         'Nenhuma conta encontrada com este e-mail.',
+    'auth/invalid-email':          'E-mail invalido. Verifique o formato digitado.',
+    'auth/user-disabled':          'Esta conta foi desativada. Entre em contato com o administrador.',
+    'auth/too-many-requests':      'Muitas tentativas incorretas. Aguarde alguns minutos antes de tentar novamente.',
+    'auth/network-request-failed': 'Sem conexao com o servidor. Verifique sua internet e tente novamente.',
+    'auth/email-already-in-use':   'Este e-mail ja esta cadastrado.',
+    'auth/weak-password':          'Senha muito fraca. Use ao menos 6 caracteres.',
+    'auth/missing-password':       'Digite a senha.',
+    'auth/missing-email':          'Digite o e-mail.',
+    'auth/requires-recent-login':  'Sessao expirada. Faca login novamente.',
+    'auth/operation-not-allowed':  'Operacao nao permitida. Contate o administrador.',
+  };
+  return map[code] || 'Nao foi possivel entrar. Tente novamente mais tarde.';
+}
 function showLoginScreen(err) {
   document.getElementById('login-overlay').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('loading-overlay').style.display = 'none';
   const el = document.getElementById('login-error');
-  if (err) { el.textContent = err; el.style.display = 'block'; }
-  else { el.style.display = 'none'; }
+  if (err) {
+    el.textContent = (typeof err === 'object' && err.code) ? _authMsg(err.code) : (typeof err === 'string' && err.startsWith('auth/')) ? _authMsg(err) : err;
+    el.style.display = 'block';
+  } else { el.style.display = 'none'; }
 }
 function showLoading() {
   document.getElementById('login-overlay').style.display = 'none';
@@ -1003,8 +1043,7 @@ async function doLogin(e) {
   try {
     await _auth.signInWithEmailAndPassword(email, pass);
   } catch(e2) {
-    err.textContent = e2.code === 'auth/wrong-password' || e2.code === 'auth/user-not-found'
-      ? 'E-mail ou senha incorretos.' : e2.message;
+    err.textContent = _authMsg(e2.code);
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Entrar';
   }
@@ -1016,7 +1055,14 @@ async function doForgotPassword(e) {
   try {
     await _auth.sendPasswordResetEmail(email);
     alert('E-mail de recuperacao enviado para ' + email + '. Verifique sua caixa de entrada.');
-  } catch(e2) { alert('Erro: ' + e2.message); }
+  } catch(e2) {
+    const msgs = {
+      'auth/user-not-found':         'Nenhuma conta encontrada com este e-mail.',
+      'auth/invalid-email':          'E-mail invalido. Verifique o formato digitado.',
+      'auth/network-request-failed': 'Sem conexao com o servidor. Verifique sua internet.',
+    };
+    alert(msgs[e2.code] || 'Nao foi possivel enviar o e-mail. Tente novamente.');
+  }
 }
 async function doLogout() {
   if (confirm('Deseja sair do sistema?')) await _auth.signOut();
@@ -1060,8 +1106,9 @@ function renderYoY(){
   const allVals=[];
   allEmps.forEach(emp=>{allPers.forEach(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=byYME[ano+'|'+emp]&&byYME[ano+'|'+emp][mes];if(v&&v.nf) allVals.push(v.fr/v.nf*100);});});
   const vMin=allVals.length?Math.min(...allVals):0;const vMax=allVals.length?Math.max(...allVals):5;
-  function cellBg(val){if(val===null) return '#F1F5F9';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return`hsl(${hue},65%,90%)`;}
-  function cellFg(val){if(val===null) return '#94A3B8';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return`hsl(${hue},60%,30%)`;}
+  const _isOcean=()=>document.documentElement.classList.contains('ocean');
+  function cellBg(val){if(val===null) return _isOcean()?'#EEF3F8':'rgba(255,255,255,.04)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},65%,87%)`:`hsl(${hue},72%,30%)`;}
+  function cellFg(val){if(val===null) return _isOcean()?'#94A3B8':'rgba(255,255,255,.25)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},60%,22%)`:'rgba(255,255,255,.92)';}
   const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
   const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
   let html='<table style="border-collapse:separate;border-spacing:2px;min-width:100%">';
@@ -1078,7 +1125,8 @@ function renderYoY(){
     html+=`<td style="text-align:center;padding:5px 10px;background:${avgBg};color:${avgFg};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-left:2px solid #D8E6F0">${avg!==null?avg.toFixed(1)+'%':'--'}</td></tr>`;
   });
   html+='</tbody></table>';
-  html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:#8099B4"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,hsl(142,65%,80%),hsl(71,65%,80%),hsl(0,65%,82%))"></div><span style="color:#059669">${vMin.toFixed(1)}% (minimo)</span><span>-&gt;</span><span style="color:#DC2626">${vMax.toFixed(1)}% (maximo)</span></div>`;
+  const _leg=_isOcean();
+  html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:var(--text2)"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,${_leg?'hsl(142,65%,87%)':'hsl(142,72%,30%)'},${_leg?'hsl(71,65%,87%)':'hsl(71,72%,30%)'},${_leg?'hsl(0,65%,87%)':'hsl(0,72%,30%)'})"></div><span style="color:${_leg?'#059669':'#34D399'}">${vMin.toFixed(1)}% (minimo)</span><span>-&gt;</span><span style="color:${_leg?'#DC2626':'#F87171'}">${vMax.toFixed(1)}% (maximo)</span></div>`;
   container.innerHTML=html;
 }
 
