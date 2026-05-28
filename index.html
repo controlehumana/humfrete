@@ -645,7 +645,8 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="sdiv">Evolucao Temporal</div>
   <div class="card"><div class="card-title">Frete Mensal por Empresa (R$)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Evolucao mes a mes do gasto com frete por filial. Permite identificar sazonalidade, picos de custo e comparar se uma unidade esta crescendo mais rapido que as demais em termos de despesa logistica.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_timeline"></canvas></div></div>
   <div class="card"><div class="card-title">% Frete / Venda por Empresa e Mes<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">De cada R$ 100 vendidos por cada filial, quanto foi gasto com frete mes a mes. Permite comparar eficiencia entre unidades independente do tamanho: uma filial menor pode ser mais eficiente logisticamente que uma maior.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_pct_emp_mes"></canvas></div></div>
-  <div class="card"><div class="card-title">% Frete / Venda - Mapa de Desempenho<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de cores cruzando cada filial com cada mes. Verde indica meses com frete eficiente (baixo percentual sobre vendas); vermelho indica meses com custo de frete elevado. Celulas em branco sao meses sem dados.</span></span></div><div id="yoy_heatmap" style="overflow-x:auto;overflow-y:visible"></div></div>
+  <div class="card"><div class="card-title">% Frete / Venda - Mapa de Desempenho por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de cores cruzando cada filial com cada mes. Verde indica meses com frete eficiente (baixo percentual sobre vendas); vermelho indica meses com custo de frete elevado. Celulas em branco sao meses sem dados.</span></span></div><div id="yoy_heatmap" style="overflow-x:auto;overflow-y:visible"></div></div>
+  <div class="card"><div class="card-title">% Frete / Venda - Mapa de Desempenho por Transportadora (Top 10)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">As 10 transportadoras com maior volume de frete pago, cruzadas com cada mes. Permite identificar quais transportadoras encarecem em determinados periodos, detectar reajustes de tabela e comparar a eficiencia de cada parceiro logistico ao longo do tempo. A linha Total Grupo e a media geral de todas as empresas — serve como benchmark de comparacao.</span></span></div><div id="yoy_heatmap_tr" style="overflow-x:auto;overflow-y:visible"></div></div>
   <div class="sdiv">Distribuicao Geografica</div>
   <div class="ch2">
     <div class="card"><div class="card-title">Custo de Frete por Estado - Top 15<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Os 15 estados que mais custam em frete para a empresa. Permite identificar regioes mais onerosas e avaliar se vale renegociar tarifas ou buscar transportadoras mais competitivas para aqueles destinos.</span></span></div><div class="ch-wrap"><canvas id="ch_estado"></canvas></div></div>
@@ -1245,14 +1246,55 @@ function mkStacked(id,lbs,ds){_chartUpdate(id,'bar',{labels:lbs,datasets:ds},{re
 function mkLine(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#8A8F98',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
 function mkLinePct(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#8A8F98',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw.toFixed(2)+'%'},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>v.toFixed(1)+'%',font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
 
+function _heatmapCellFns(vMin,vMax){
+  const _isOcean=()=>document.documentElement.classList.contains('ocean');
+  const bg=val=>{if(val===null) return _isOcean()?'#EEF3F8':'rgba(255,255,255,.04)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},65%,87%)`:`hsl(${hue},72%,30%)`;};
+  const fg=val=>{if(val===null) return _isOcean()?'#94A3B8':'rgba(255,255,255,.25)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},60%,22%)`:'rgba(255,255,255,.92)';};
+  return{bg,fg,_isOcean};
+}
+function _buildHeatmap(container,rows,keyFn,rowLabel,byYME_total,allPers,tlLbs,labelFn){
+  if(!container) return;
+  const allVals=[];
+  rows.forEach(r=>allPers.forEach(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=keyFn(r,ano,mes);if(v&&v.nf)allVals.push(v.fr/v.nf*100);}));
+  const vMin=allVals.length?Math.min(...allVals):0,vMax=allVals.length?Math.max(...allVals):5;
+  const {bg:cellBg,fg:cellFg,_isOcean}=_heatmapCellFns(vMin,vMax);
+  const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
+  const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
+  let html=`<table style="border-collapse:separate;border-spacing:2px;min-width:100%"><thead><tr><th style="${thBase};text-align:left;${stickyBase}">${rowLabel}</th>`;
+  allPers.forEach((p,i)=>{const isJan=p.startsWith('01');html+=`<th style="${thBase}${isJan?';border-left:2px solid var(--bd2)':''}">${tlLbs[i]}</th>`;});
+  html+=`<th style="${thBase};border-left:2px solid var(--bd2)">Media</th></tr></thead><tbody>`;
+  rows.forEach(row=>{
+    let totFr=0,totNf=0;
+    const cells=allPers.map(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=keyFn(row,ano,mes);const val=v&&v.nf?v.fr/v.nf*100:null;if(val!==null){totFr+=v.fr;totNf+=v.nf;}return{val,isJan:p.startsWith('01')};});
+    const avg=totNf?totFr/totNf*100:null;
+    const lbl=labelFn?labelFn(row):row;
+    html+=`<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;${stickyBase}" title="${esc(lbl)}">${esc(lbl)}</td>`;
+    cells.forEach(({val,isJan})=>{const bg=cellBg(val),fg=cellFg(val);html+=`<td style="text-align:center;padding:5px 8px;background:${bg};color:${fg};border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap${isJan?';border-left:2px solid var(--bd2)':''}">${val!==null?val.toFixed(1)+'%':'--'}</td>`;});
+    const ab=cellBg(avg),af=cellFg(avg);
+    html+=`<td style="text-align:center;padding:5px 10px;background:${ab};color:${af};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-left:2px solid var(--bd2)">${avg!==null?avg.toFixed(1)+'%':'--'}</td></tr>`;
+  });
+  // Linha Total Grupo
+  let totFrAll=0,totNfAll=0;
+  const totalCells=allPers.map(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=byYME_total[ano]&&byYME_total[ano][mes];const val=v&&v.nf?v.fr/v.nf*100:null;if(val!==null){totFrAll+=v.fr;totNfAll+=v.nf;}return{val,isJan:p.startsWith('01')};});
+  const totalAvg=totNfAll?totFrAll/totNfAll*100:null;
+  html+=`<tr style="border-top:2px solid var(--accent)"><td style="padding:5px 12px;font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap;${stickyBase};border-top:2px solid var(--accent)">Total Grupo</td>`;
+  totalCells.forEach(({val,isJan})=>{const bg=cellBg(val),fg=cellFg(val);html+=`<td style="text-align:center;padding:5px 8px;background:${bg};color:${fg};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-top:2px solid var(--accent)${isJan?';border-left:2px solid var(--bd2)':''}">${val!==null?val.toFixed(1)+'%':'--'}</td>`;});
+  const tb=cellBg(totalAvg),tf=cellFg(totalAvg);
+  html+=`<td style="text-align:center;padding:5px 10px;background:${tb};color:${tf};border-radius:4px;font-size:11px;font-weight:900;white-space:nowrap;border-left:2px solid var(--bd2);border-top:2px solid var(--accent)">${totalAvg!==null?totalAvg.toFixed(1)+'%':'--'}</td></tr>`;
+  html+='</tbody></table>';
+  const _leg=_isOcean();
+  html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:var(--text2)"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,${_leg?'hsl(142,65%,87%)':'hsl(142,72%,30%)'},${_leg?'hsl(71,65%,87%)':'hsl(71,72%,30%)'},${_leg?'hsl(0,65%,87%)':'hsl(0,72%,30%)'})"></div><span style="color:${_leg?'#059669':'#34D399'}">${vMin.toFixed(1)}% (min)</span><span>→</span><span style="color:${_leg?'#DC2626':'#F87171'}">${vMax.toFixed(1)}% (max)</span></div>`;
+  container.innerHTML=html;
+}
 function renderYoY(){
   const d=window._yoyData;if(!d) return;
-  const {allEmps,byYME,allPers,tlLbs}=d;
+  const {allEmps,byYME,byYMT,top10Tr,allPers,tlLbs}=d;
   const container=document.getElementById('yoy_heatmap');if(!container) return;
+  // Heatmap por empresa (mantém lógica antiga, agora via helper)
+  const _isOcean=()=>document.documentElement.classList.contains('ocean');
   const allVals=[];
   allEmps.forEach(emp=>{allPers.forEach(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=byYME[ano+'|'+emp]&&byYME[ano+'|'+emp][mes];if(v&&v.nf) allVals.push(v.fr/v.nf*100);});});
   const vMin=allVals.length?Math.min(...allVals):0;const vMax=allVals.length?Math.max(...allVals):5;
-  const _isOcean=()=>document.documentElement.classList.contains('ocean');
   function cellBg(val){if(val===null) return _isOcean()?'#EEF3F8':'rgba(255,255,255,.04)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},65%,87%)`:`hsl(${hue},72%,30%)`;}
   function cellFg(val){if(val===null) return _isOcean()?'#94A3B8':'rgba(255,255,255,.25)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},60%,22%)`:'rgba(255,255,255,.92)';}
   const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
@@ -1294,6 +1336,18 @@ function renderYoY(){
   const _leg=_isOcean();
   html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:var(--text2)"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,${_leg?'hsl(142,65%,87%)':'hsl(142,72%,30%)'},${_leg?'hsl(71,65%,87%)':'hsl(71,72%,30%)'},${_leg?'hsl(0,65%,87%)':'hsl(0,72%,30%)'})"></div><span style="color:${_leg?'#059669':'#34D399'}">${vMin.toFixed(1)}% (minimo)</span><span>-&gt;</span><span style="color:${_leg?'#DC2626':'#F87171'}">${vMax.toFixed(1)}% (maximo)</span></div>`;
   container.innerHTML=html;
+  // Heatmap por transportadora (Top 10 por volume)
+  if(byYMT&&top10Tr){
+    _buildHeatmap(
+      document.getElementById('yoy_heatmap_tr'),
+      top10Tr,
+      (tr,ano,mes)=>byYMT[ano+'|'+tr]&&byYMT[ano+'|'+tr][mes],
+      'Transportadora',
+      byYME,
+      allPers,tlLbs,
+      tr=>trName(tr)
+    );
+  }
 }
 
 const state={ano:'',meses:[],empresas:[],linha:'',natop:[],estado:'',transp:'',canal:'',q:'',categoria:''};
@@ -1463,9 +1517,23 @@ function renderAll(){
   const pctDs=allEmps.map((emp,i)=>({label:emp,data:allPers.map(p=>{const v=byPE_nf[p]&&byPE_nf[p][emp];return v&&v.nf?+(v.fr/v.nf*100).toFixed(2):null;}),borderColor:COLORS[i%COLORS.length],backgroundColor:COLORS[i%COLORS.length]+'22',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:COLORS[i%COLORS.length],pointBorderColor:'#fff',pointBorderWidth:2,spanGaps:true}));
   mkLinePct('ch_pct_emp_mes',tlLbs,pctDs);
   const allYears=[...new Set(tableRows.map(d=>dataAno(d)).filter(Boolean))].sort();
-  const byYME={};
-  tableRows.forEach(d=>{const a=dataAno(d),m=dataMes(d),e=d.empresa||'N/A';if(!a||!m) return;if(!byYME[a])byYME[a]={};if(!byYME[a][m])byYME[a][m]={fr:0,nf:0};byYME[a][m].fr+=d.valor_frete;byYME[a][m].nf+=d.total_nf;const ke=a+'|'+e;if(!byYME[ke])byYME[ke]={};if(!byYME[ke][m])byYME[ke][m]={fr:0,nf:0};byYME[ke][m].fr+=d.valor_frete;byYME[ke][m].nf+=d.total_nf;});
-  window._yoyData={allYears,allEmps,byYME,allPers,tlLbs};renderYoY();
+  const byYME={},byYMT={},trTotals={};
+  tableRows.forEach(d=>{
+    const a=dataAno(d),m=dataMes(d),e=d.empresa||'N/A',t=d.transportadora||'N/A';
+    if(!a||!m) return;
+    // totais gerais
+    if(!byYME[a])byYME[a]={};if(!byYME[a][m])byYME[a][m]={fr:0,nf:0};
+    byYME[a][m].fr+=d.valor_frete;byYME[a][m].nf+=d.total_nf;
+    // por empresa
+    const ke=a+'|'+e;if(!byYME[ke])byYME[ke]={};if(!byYME[ke][m])byYME[ke][m]={fr:0,nf:0};
+    byYME[ke][m].fr+=d.valor_frete;byYME[ke][m].nf+=d.total_nf;
+    // por transportadora
+    const kt=a+'|'+t;if(!byYMT[kt])byYMT[kt]={};if(!byYMT[kt][m])byYMT[kt][m]={fr:0,nf:0};
+    byYMT[kt][m].fr+=d.valor_frete;byYMT[kt][m].nf+=d.total_nf;
+    trTotals[t]=(trTotals[t]||0)+d.valor_frete;
+  });
+  const top10Tr=Object.entries(trTotals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([t])=>t);
+  window._yoyData={allYears,allEmps,byYME,byYMT,top10Tr,allPers,tlLbs};renderYoY();
   const top15E=agg.byEst.slice(0,15);mkMultiBar('ch_estado',top15E.map(x=>x.label),top15E.map(x=>x.frete),top15E.map((_,i)=>'hsl('+(215-i*6)+',70%,'+(52-i)+'%)'));
   const top10T=agg.byTr.slice(0,10);mkDonut('ch_transp',top10T.map(x=>trName(x.label)),top10T.map(x=>x.frete));
   mkBar('ch_empresa',agg.byEmp.map(x=>x.label),agg.byEmp.map(x=>x.frete),'#059669');
