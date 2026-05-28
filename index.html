@@ -617,7 +617,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
         <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')">Mercado Livre</button>
       </div>
     </div>
-    <div class="tw dtbl" id="mkt_wrap"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
+    <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
     <div class="pager" id="mkt_pager"></div>
   </div>
 </div>
@@ -633,7 +633,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card">
     <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as oportunidades de consolidacao ordenadas pela maior economia potencial. Cada linha e um cliente que recebeu 2 ou mais entregas na mesma semana. A coluna Econ. Potencial mostra quanto poderia ser economizado juntando tudo em uma unica viagem.</span></span></div>
     <div class="sr" style="margin-bottom:12px"><input type="text" id="cli_search" placeholder="Buscar por nome do cliente ou numero de NF-e..." style="width:100%;max-width:440px"></div>
-    <div class="tw"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th>Entregas</th><th>Total Frete</th><th>Destino(s)</th><th>Mesmo Destino?</th><th>Econ. Potencial</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th>Entregas</th><th>Total Frete</th><th>Destino(s)</th><th>Mesmo Destino?</th><th>Econ. Potencial</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
     <div class="pager" id="cli_pager"></div>
   </div>
 </div>
@@ -654,7 +654,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       <select id="nv_uf"><option value="">Todos os destinos</option></select>
       <select id="nv_transp"><option value="">Todas as transportadoras</option></select>
     </div>
-    <div class="tw"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
     <div class="pager" id="nv_pager"></div>
   </div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
@@ -666,7 +666,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="card-title" style="color:var(--red2)"><i class="fa-solid fa-ban"></i> CTe Cancelados</div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Comprovantes de frete anulados. Excluidos de todos os calculos do dashboard.</p>
     <div id="cancel_empty" style="display:none;color:var(--text3);font-size:12px;padding:10px 0"><i class="fa-solid fa-circle-check" style="color:var(--green2)"></i> Nenhum CTe cancelado encontrado.</div>
-    <div id="cancel_list_wrap" class="tw"><table><thead><tr><th>Chave CTe (44 digitos)</th><th>Transportadora</th><th>Valor Frete</th><th style="text-align:center">Acao</th></tr></thead><tbody id="cancel_tbody"></tbody></table></div>
+    <div id="cancel_list_wrap" class="tw" style="max-height:400px;overflow-y:auto"><table><thead><tr><th>Chave CTe (44 digitos)</th><th>Transportadora</th><th>Valor Frete</th><th style="text-align:center">Acao</th></tr></thead><tbody id="cancel_tbody"></tbody></table></div>
   </div>
 </div>
 
@@ -682,7 +682,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card">
     <div class="card-title">Detalhamento por CTe de Compra<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada recebimento de mercadoria de fornecedor com o custo de frete de entrada. Inclui o nome do fornecedor, origem, destino, transportadora e valor pago.</span></span></div>
     <div class="sr"><input type="text" id="comp_search" placeholder="Buscar fornecedor, origem, transportadora, NF-e..."><select id="comp_sel_emp"><option value="">Todas as empresas</option></select></div>
-    <div style="overflow-x:auto;margin-top:10px" id="comp_wrap">
+    <div class="tw dtbl" id="comp_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table id="comp_table" style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Fornecedor</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Origem</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Vol. (m3)</th></tr></thead>
         <tbody id="comp_tbody"></tbody>
@@ -716,7 +716,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option></select>
       <select id="dm_sel_emp"><option value="">Todas as empresas</option></select>
     </div>
-    <div style="overflow-x:auto;margin-top:10px">
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Plataforma</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Remetente</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Vol. (m3)</th></tr></thead>
         <tbody id="dm_tbody"></tbody>
@@ -760,7 +760,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   </div>
   <div class="card"><div class="card-title">Detalhe por Empresa Origem x Loja Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de quem enviou para quem: cada linha mostra uma rota de redistribuicao de estoque entre lojas, com o custo total e o custo medio por envio. Identifica quais trajetos internos sao mais caros.</span></span></div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Loja Destino</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="emp_hu_tbody"></tbody></table></div></div>
   <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
-  <div class="card"><div class="tw"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="emp_transf_sem_cte_tbody"></tbody></table></div></div>
+  <div class="card"><div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="emp_transf_sem_cte_tbody"></tbody></table></div></div>
   <div class="sdiv" style="margin-top:4px">Evolucao Mensal por Transportadora</div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
