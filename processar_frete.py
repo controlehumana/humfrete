@@ -477,6 +477,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
         "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
         "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
+        "dest_cnpj":cte["dest_cnpj"],"rem_nome":cte["rem_nome"],
         "valor_frete":cte["valor_frete"],"nfe_refs":cte["nfe_chaves"],
         "motivo":_motivo_sem_vinculo(cte),
     } for cte in cte_list if cte["cte_chave"] not in linked_cte_chaves]
