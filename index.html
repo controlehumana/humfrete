@@ -93,8 +93,8 @@ html.ocean .tb-cat-pill.active{background:rgba(94,106,210,.12);color:#3730A3;bor
 .tb-bc-page{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hd-stamp{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0;}
 .hd-sep{width:1px;height:20px;background:var(--bd2);flex-shrink:0;margin:0 2px}
-.hd-adv{display:contents}
-.hd-adv.hidden{display:none}
+.hd-adv{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 20px 8px;background:rgba(0,0,0,.18);border-top:1px solid var(--bd);}
+.hd-adv.hidden{display:none;}
 .hd-adv-btn{gap:4px;display:flex;align-items:center}
 .hd-filter-item{background:var(--input-bg);border:1px solid var(--bd2);border-radius:7px;padding:3px 8px;color:var(--text);font-size:11px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .15s;white-space:nowrap;flex-shrink:0;height:28px;}
 .hd-filter-item:focus{border-color:rgba(94,106,210,.6);box-shadow:0 0 0 3px rgba(94,106,210,.12)}
@@ -522,22 +522,22 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <select id="filter_mes" class="hd-filter-item"><option value="">Mes</option></select>
     <select id="filter_empresa_h" class="hd-filter-item"><option value="">Empresa</option></select>
     <button class="hd-filter-item hd-adv-btn" id="hd_adv_btn" type="button" onclick="toggleAdvFilters()" style="cursor:pointer;font-weight:600">Mais filtros <span id="hd_adv_arrow" style="font-size:9px">&#x25BC;</span></button>
-    <div class="hd-adv hidden" id="hd_adv_wrap">
-      <select id="filter_linha_h" class="hd-filter-item">
-        <option value="">Linha</option>
-        <option value="Linhahum">Linhahum</option>
-        <option value="Humana Alimentar">Humana Alimentar</option>
-        <option value="Misto">Misto</option>
-      </select>
-      <div class="ms-wrap" id="ms_natop_wrap">
-        <button class="ms-btn" id="ms_natop_btn" type="button" style="height:28px">Nat. Op. <span class="ms-arrow">v</span></button>
-        <div class="ms-dropdown" id="ms_natop_drop"></div>
-      </div>
-      <select id="filter_estado" class="hd-filter-item"><option value="">Estado</option></select>
-      <select id="filter_transp" class="hd-filter-item"><option value="">Transportadora</option></select>
-      <select id="filter_canal" class="hd-filter-item"><option value="">Canal</option></select>
-      <input type="text" id="hd_search" placeholder="Buscar cliente, NF..." class="hd-filter-item" style="width:140px;cursor:text">
+  </div>
+  <div class="hd-adv hidden" id="hd_adv_wrap">
+    <select id="filter_linha_h" class="hd-filter-item">
+      <option value="">Linha</option>
+      <option value="Linhahum">Linhahum</option>
+      <option value="Humana Alimentar">Humana Alimentar</option>
+      <option value="Misto">Misto</option>
+    </select>
+    <div class="ms-wrap" id="ms_natop_wrap">
+      <button class="ms-btn" id="ms_natop_btn" type="button" style="height:28px">Nat. Op. <span class="ms-arrow">v</span></button>
+      <div class="ms-dropdown" id="ms_natop_drop"></div>
     </div>
+    <select id="filter_estado" class="hd-filter-item"><option value="">Estado</option></select>
+    <select id="filter_transp" class="hd-filter-item"><option value="">Transportadora</option></select>
+    <select id="filter_canal" class="hd-filter-item"><option value="">Canal</option></select>
+    <input type="text" id="hd_search" placeholder="Buscar cliente, NF..." class="hd-filter-item" style="width:140px;cursor:text">
   </div>
 </header>
 
