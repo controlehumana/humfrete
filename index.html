@@ -692,7 +692,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       <select id="nv_uf"><option value="">Todos os destinos</option></select>
       <select id="nv_transp"><option value="">Todas as transportadoras</option></select>
     </div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>NF-e(s) Referenciadas</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Empresa</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>NF-e(s) Referenciadas</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
     <div class="pager" id="nv_pager"></div>
   </div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
@@ -1891,17 +1891,26 @@ function initApp(){
       if(q){
         const h=(c.cte_chave+' '+c.transportadora+' '+c.origem_cidade+' '+c.destino_cidade).toLowerCase();
         const nfeMatch=(c.nfe_refs||[]).some(n=>n.includes(q)||String(parseInt(n.slice(25,34))).includes(q));
-        if(!h.includes(q)&&!nfeMatch) return false;
+        const empMatch=_nvEmpresa(c.nfe_refs).toLowerCase().includes(q);
+        if(!h.includes(q)&&!nfeMatch&&!empMatch) return false;
       }
       return true;
     });
     nvPage=0;nvRender();
+  }
+  function _nvEmpresa(refs){
+    for(const ch of (refs||[])){if(ch.length>=20){const emp=CNPJ_EMPRESA[ch.slice(6,20)];if(emp)return emp;}}
+    return '';
   }
   function nvRender(){
     const tbody=document.getElementById('nv_tbody');
     const slice=nvRows.slice(nvPage*PAGE,nvPage*PAGE+PAGE);
     tbody.innerHTML=slice.map(c=>{
       const refs=c.nfe_refs||[];
+      const emp=_nvEmpresa(refs);
+      const empCell=emp
+        ?`<span class="chip chip-blue" style="font-size:10px;font-weight:700">${emp}</span>`
+        :`<span style="color:var(--text3);font-size:10px">—</span>`;
       const nfeCells=refs.length
         ? refs.slice(0,4).map(ch=>{const num=parseInt(ch.slice(25,34));return`<span title="Chave completa: ${ch}" style="display:inline-block;font-family:monospace;font-size:10px;background:rgba(94,106,210,.12);color:var(--blue2);padding:1px 6px;border-radius:4px;margin:1px">${num}</span>`;}).join('')
           +(refs.length>4?`<span style="font-size:9px;color:var(--text3)"> +${refs.length-4}</span>`:'')
@@ -1910,6 +1919,7 @@ function initApp(){
         +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
         +'<td>'+(c.data_emissao||'-')+'</td>'
         +'<td title="'+(c.transportadora||'')+'">'+trName(c.transportadora||'-')+'</td>'
+        +'<td>'+empCell+'</td>'
         +'<td style="font-size:10px">'+(c.origem_cidade||'')+(c.origem_uf?'/'+c.origem_uf:'')+'</td>'
         +'<td style="font-size:10px">'+(c.destino_cidade||'')+(c.destino_uf?'/'+c.destino_uf:'')+'</td>'
         +'<td style="color:var(--blue2);font-weight:600">'+BRL(c.valor_frete)+'</td>'
