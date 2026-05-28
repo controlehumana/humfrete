@@ -1270,6 +1270,26 @@ function renderYoY(){
     const avgBg=cellBg(avg),avgFg=cellFg(avg);
     html+=`<td style="text-align:center;padding:5px 10px;background:${avgBg};color:${avgFg};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-left:2px solid #D8E6F0">${avg!==null?avg.toFixed(1)+'%':'--'}</td></tr>`;
   });
+  // Linha totalizadora: todas as empresas juntas por mês
+  let totFrAll=0,totNfAll=0;
+  const totalCells=allPers.map(p=>{
+    const ano=p.slice(3,7),mes=p.slice(0,2);
+    const v=byYME[ano]&&byYME[ano][mes];
+    const val=v&&v.nf?v.fr/v.nf*100:null;
+    if(val!==null){totFrAll+=v.fr;totNfAll+=v.nf;}
+    return{val,isJan:p.startsWith('01')};
+  });
+  const totalAvg=totNfAll?totFrAll/totNfAll*100:null;
+  const sepStyle='border-top:2px solid var(--accent);';
+  html+=`<tr style="${sepStyle}">`;
+  html+=`<td style="padding:5px 12px;font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap;${stickyBase};border-top:2px solid var(--accent)">Total Grupo</td>`;
+  totalCells.forEach(({val,isJan})=>{
+    const bg=cellBg(val),fg=cellFg(val);
+    const txt=val!==null?val.toFixed(1)+'%':'--';
+    html+=`<td style="text-align:center;padding:5px 8px;background:${bg};color:${fg};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-top:2px solid var(--accent)${isJan?';border-left:2px solid var(--bd2)':''}">${txt}</td>`;
+  });
+  const tAvgBg=cellBg(totalAvg),tAvgFg=cellFg(totalAvg);
+  html+=`<td style="text-align:center;padding:5px 10px;background:${tAvgBg};color:${tAvgFg};border-radius:4px;font-size:11px;font-weight:900;white-space:nowrap;border-left:2px solid var(--bd2);border-top:2px solid var(--accent)">${totalAvg!==null?totalAvg.toFixed(1)+'%':'--'}</td></tr>`;
   html+='</tbody></table>';
   const _leg=_isOcean();
   html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:var(--text2)"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,${_leg?'hsl(142,65%,87%)':'hsl(142,72%,30%)'},${_leg?'hsl(71,65%,87%)':'hsl(71,72%,30%)'},${_leg?'hsl(0,65%,87%)':'hsl(0,72%,30%)'})"></div><span style="color:${_leg?'#059669':'#34D399'}">${vMin.toFixed(1)}% (minimo)</span><span>-&gt;</span><span style="color:${_leg?'#DC2626':'#F87171'}">${vMax.toFixed(1)}% (maximo)</span></div>`;
