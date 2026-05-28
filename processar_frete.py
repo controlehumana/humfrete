@@ -3449,6 +3449,26 @@ def main():
 
     nfe_map = parse_faturamento(BASE_DIR)
 
+    if nfe_map:
+        fat_dates = [nf.get("data_emissao","") for nf in nfe_map.values() if nf.get("data_emissao")]
+        if fat_dates:
+            try:
+                parsed = []
+                for d in fat_dates:
+                    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"):
+                        try: parsed.append(datetime.strptime(d, fmt)); break
+                        except ValueError: pass
+                if parsed:
+                    max_dt = max(parsed)
+                    days_old = (datetime.now() - max_dt).days
+                    if days_old > 45:
+                        print(f"\n{'!' * 60}")
+                        print(f"  AVISO: Faturamento mais recente em {max_dt.strftime('%d/%m/%Y')} ({days_old} dias atras)")
+                        print(f"  Verifique se o arquivo FATURAMENTO.csv esta atualizado!")
+                        print(f"{'!' * 60}\n")
+            except Exception:
+                pass
+
     db_result = parse_ctes_from_db(QUIVE_DB)
     if db_result is not None:
         cte_list, nfe_to_cte, n_cancel, c_lista = db_result
