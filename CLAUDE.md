@@ -69,6 +69,10 @@ Todo o estado de filtro é mantido no objeto `state` e tudo passa por `renderAll
 
 Os dados pré-computados no JSON (`por_estado`, `por_transp`, etc.) **não são mais usados pelo JS** — existem apenas como referência. Toda agregação é dinâmica a partir de `DATA.detalhes`.
 
+## Regra obrigatória — Tooltips em todos os cards
+
+**Todo card com valor numérico deve ter um `<div class="kpi-tooltip">` explicando como o valor é calculado.** Cards de gráfico/tabela (`.card`) usam um ícone `<span class="card-tip">` ao lado do `.card-title`. A lógica de exibição é CSS-only via `:hover`. Nunca adicionar um card sem tooltip.
+
 ## Pitfalls conhecidos
 
 - **Tamanho do HTML**: não embutir arrays com 100k+ registros no JSON. A lista `nfe_sem_cte` (~123k itens) foi removida do output por isso; apenas o count fica em `resumo.nfe_sem_cte`.

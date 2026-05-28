@@ -5,145 +5,173 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gestão de Fretes - Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#0B0F14;--s1:#111827;--s2:#1C2638;--s3:#243348;
-  --bd:#1E2D42;--bd2:#2A3F58;
-  --blue:#3B82F6;--blue2:#60A5FA;--cyan:#22D3EE;
-  --green:#10B981;--green2:#34D399;
-  --yellow:#F59E0B;--amber:#FCD34D;
-  --red:#EF4444;--red2:#F87171;--purple:#7C3AED;--purple2:#A78BFA;
-  --text:#F1F5F9;--text2:#94A3B8;--text3:#4E6880;
-  --r:10px;--rL:14px;
-  --shadow:0 4px 24px rgba(0,0,0,.5);
-  --shadow-md:0 8px 40px rgba(0,0,0,.65);
-  --card-bg:#111827;--header-bg:#0D1320;--input-bg:#1C2638;
-  --pill-bg:#1C2638;--sticky-bg:#111827;--row-border:#0F172A;
-  --hero-blue:#0F1D32;--hero-green:#0A1F18;--hero-amber:#1A1500;--hero-dyn:#120E28;
-  --tooltip-bg:#1E2D42;--heatmap-empty:#0A1628;
+  --bg:#0A0A0C;--s1:#111214;--s2:#161719;--s3:#1C1E22;
+  --bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.13);
+  --accent:#5E6AD2;--accent-h:#6872D9;--accent-glow:rgba(94,106,210,.25);
+  --blue:#5E6AD2;--blue2:#818CF8;--cyan:#67E8F9;
+  --green:#34D399;--green2:#6EE7B7;
+  --yellow:#F59E0B;--amber:#D97706;
+  --red:#F87171;--red2:#EF4444;--orange:#FB923C;--orange2:#FDBA74;--purple:#A78BFA;--purple2:#8B5CF6;
+  --text:#EDEDEF;--text2:#8A8F98;--text3:rgba(255,255,255,.38);
+  --r:12px;--rL:16px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);--shadow-md:0 8px 40px rgba(0,0,0,.55);
+  --card-bg:rgba(255,255,255,.035);--header-bg:rgba(10,10,12,.92);--input-bg:rgba(255,255,255,.06);
+  --pill-bg:rgba(255,255,255,.06);--sticky-bg:#111214;--row-border:rgba(255,255,255,.05);
+  --hero-blue:rgba(94,106,210,.12);--hero-green:rgba(52,211,153,.10);
+  --hero-amber:rgba(245,158,11,.10);--hero-dyn:rgba(167,139,250,.10);
+  --tooltip-bg:#1A1C21;--heatmap-empty:rgba(255,255,255,.04);
+  --sb-w:224px;
 }
-html.ocean{
-  --bg:#071B2E;--s1:#0D2744;--s2:#102F52;--s3:#143860;
-  --bd:#1A4A78;--bd2:#235E96;
-  --text:#E8F4FD;--text2:#7EC8E3;--text3:#4A90B8;
-  --shadow:0 4px 24px rgba(0,0,0,.6);--shadow-md:0 8px 40px rgba(0,0,0,.7);
-  --card-bg:#0D2744;--header-bg:#040F1C;--input-bg:#091D30;
-  --pill-bg:#091D30;--sticky-bg:#0D2744;--row-border:#071525;
-  --hero-blue:#091E3A;--hero-green:#071E24;--hero-amber:#1A1204;--hero-dyn:#0C0A28;
-  --tooltip-bg:#0D2744;--heatmap-empty:#040F1C;
-}
-html.ocean body{background:var(--bg);background-image:radial-gradient(ellipse 900px 600px at 10% 0%,rgba(0,180,255,.10) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 90% 100%,rgba(0,80,180,.08) 0%,transparent 65%);}
-html.ocean header{background:var(--header-bg);border-color:var(--bd)}
-html.ocean .tabs{background:var(--header-bg);border-color:var(--bd)}
-html.ocean .kpi-card:hover{border-color:var(--blue2)}
-html.ocean .cat-pill{background:var(--pill-bg)}
-html.ocean .hd-filter-item{background:var(--input-bg)}
 *{box-sizing:border-box;margin:0;padding:0}
-html{scrollbar-color:#1E3A52 #0B0F14;scrollbar-width:thin}
+html{scrollbar-color:rgba(255,255,255,.15) transparent;scrollbar-width:thin}
 ::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:#0B0F14}
-::-webkit-scrollbar-thumb{background:#1E3A52;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#2D5070}
-body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:13px;line-height:1.5;background-image:radial-gradient(ellipse 900px 600px at 10% 0%,rgba(0,212,255,.06) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 90% 100%,rgba(124,58,237,.05) 0%,transparent 65%);}
-header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;display:flex;flex-direction:column;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.5);}
-.hd-row1{display:flex;align-items:center;gap:10px;padding:0 16px;height:44px;border-bottom:1px solid var(--bd);flex-shrink:0;}
-.hd-row2{display:flex;align-items:center;gap:6px;padding:0 16px;height:38px;overflow-x:auto;overflow-y:hidden;flex-shrink:0;scrollbar-width:none;}
-.hd-row2::-webkit-scrollbar{display:none}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(94,106,210,.6)}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Outfit','Segoe UI',system-ui,sans-serif;font-size:13px;line-height:1.5;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 900px 600px at 15% 0%,rgba(94,106,210,.09) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 85% 85%,rgba(52,211,153,.06) 0%,transparent 65%),radial-gradient(ellipse 600px 400px at 55% 30%,rgba(167,139,250,.05) 0%,transparent 60%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;height:100vh;width:var(--sb-w);background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;z-index:200;overflow-y:auto;overflow-x:hidden;transition:width .25s cubic-bezier(.4,0,.2,1);}
+.sidebar::-webkit-scrollbar{width:3px}
+body.sb-collapsed .sidebar{width:60px}
+.sb-logo-wrap{display:flex;align-items:center;gap:10px;padding:15px 12px;border-bottom:1px solid var(--bd);flex-shrink:0;min-height:56px;}
+.sb-logo{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;letter-spacing:-.5px;box-shadow:0 2px 10px var(--accent-glow);}
+.sb-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.3px;white-space:nowrap;overflow:hidden;transition:opacity .2s,width .25s;}
+body.sb-collapsed .sb-title{opacity:0;width:0;}
+.sb-collapse{margin-left:auto;flex-shrink:0;width:22px;height:22px;border:none;background:rgba(255,255,255,.06);border-radius:5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .25s;font-size:10px;padding:0;}
+.sb-collapse:hover{background:rgba(255,255,255,.1);color:var(--text)}
+body.sb-collapsed .sb-collapse{transform:rotate(180deg)}
+.sb-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px;flex:1;}
+.sb-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);padding:10px 8px 4px;white-space:nowrap;overflow:hidden;transition:opacity .2s;}
+body.sb-collapsed .sb-section{opacity:0;height:0;padding:0;overflow:hidden}
+.tab-btn{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:12px;font-weight:500;color:var(--text2);text-align:left;width:100%;white-space:nowrap;border:none;background:transparent;cursor:pointer;font-family:inherit;transition:background .18s,color .18s;position:relative;overflow:hidden;}
+.tab-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.8;}
+.tab-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.tab-btn.active{background:rgba(94,106,210,.12);color:var(--text)}
+.tab-btn.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:2px;background:var(--accent);border-radius:0 2px 2px 0;}
+.tab-btn.active svg{opacity:1}
+.sb-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .2s,width .2s;}
+body.sb-collapsed .sb-label{opacity:0;width:0;overflow:hidden;}
+body.sb-collapsed .tab-btn{justify-content:center;gap:0;padding:10px 0;}
+body.sb-collapsed .tab-btn::before{left:0;top:8px;bottom:8px;}
+.tab-badge{display:inline-block;background:rgba(255,255,255,.08);color:var(--text2);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:600;margin-left:auto;flex-shrink:0;}
+.tab-btn.active .tab-badge{background:rgba(94,106,210,.22);color:var(--blue2);}
+body.sb-collapsed .tab-badge{display:none}
+.sb-footer{padding:10px 8px 14px;border-top:1px solid var(--bd);flex-shrink:0;}
+body.sb-collapsed .sb-footer{display:none}
+.sb-cat-pills{display:flex;flex-direction:column;gap:2px;}
+.cat-pill-wrap{position:relative;display:block}
+.cat-pill{width:100%;text-align:left;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .18s;font-family:inherit;display:block;}
+.cat-pill.active{background:rgba(94,106,210,.12);color:var(--text);font-weight:600}
+.cat-pill:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text)}
+.cat-pill-tip{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--tooltip-bg);color:var(--text2);font-size:10px;line-height:1.7;padding:10px 14px;border-radius:8px;min-width:220px;z-index:9999;border:1px solid var(--bd2);box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none;white-space:normal;}
+.sb-footer .cat-pill-tip{display:none!important}
+/* MAIN WRAP */
+.main-wrap{margin-left:var(--sb-w);min-height:100vh;position:relative;z-index:1;transition:margin-left .25s cubic-bezier(.4,0,.2,1);}
+body.sb-collapsed .main-wrap{margin-left:60px}
+/* TOPBAR */
+.topbar{background:rgba(10,10,12,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;z-index:150;box-shadow:0 1px 0 rgba(255,255,255,.04);}
+.topbar-row1{display:flex;align-items:center;gap:10px;padding:0 20px;height:50px;flex-shrink:0;}
+.topbar-row2{display:flex;align-items:center;gap:6px;padding:0 20px;height:36px;overflow-x:auto;overflow-y:hidden;flex-shrink:0;scrollbar-width:none;background:rgba(0,0,0,.15);}
+.topbar-row2::-webkit-scrollbar{display:none}
+.tb-breadcrumb{display:flex;align-items:center;gap:7px;flex:1;min-width:0;}
+.tb-bc-root{font-size:12px;color:var(--text2);flex-shrink:0;}
+.tb-bc-sep{color:var(--text3);font-size:14px;flex-shrink:0}
+.tb-bc-page{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hd-stamp{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0;}
+.hd-sep{width:1px;height:20px;background:var(--bd2);flex-shrink:0;margin:0 2px}
 .hd-adv{display:contents}
 .hd-adv.hidden{display:none}
 .hd-adv-btn{gap:4px;display:flex;align-items:center}
-.hd-logo{width:28px;height:28px;flex-shrink:0;border-radius:7px;background:linear-gradient(135deg,#3B82F6,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;letter-spacing:-.5px;}
-.hd-title{font-size:13px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;color:var(--text)}
-.hd-sep{width:1px;height:20px;background:var(--bd2);flex-shrink:0;margin:0 2px}
-.hd-stamp{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0;margin-left:auto}
-.hd-filters{display:contents}
-.hd-filter-item{background:var(--input-bg);border:1px solid var(--bd2);border-radius:6px;padding:3px 7px;color:var(--text);font-size:11px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .15s;white-space:nowrap;flex-shrink:0;height:28px;}
-.hd-filter-item:focus{border-color:var(--blue2)}
-.cat-pills{display:flex;gap:3px;flex-shrink:0}
-.cat-pill-wrap{position:relative;display:inline-block}
-.cat-pill{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd2);background:var(--pill-bg);color:var(--text2);transition:all .15s;}
-.cat-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
-.cat-pill:hover:not(.active){border-color:var(--blue2);color:var(--blue2)}
-.cat-pill-tip{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--tooltip-bg);color:#CBD5E1;font-size:10px;line-height:1.7;padding:10px 14px;border-radius:8px;min-width:260px;z-index:9999;border:1px solid var(--bd2);box-shadow:0 8px 24px rgba(0,0,0,.7);pointer-events:none;white-space:normal;}
-.cat-pill-tip::before{content:'';position:absolute;bottom:100%;left:18px;border:5px solid transparent;border-bottom-color:var(--bd2)}
-.cat-pill-tip strong{color:var(--text);display:block;margin-bottom:4px}
-.cat-pill-tip span{color:#8AA4C8;font-size:9px}
-.cat-pill-wrap:hover .cat-pill-tip{display:block}
-#active-filters{display:flex;gap:5px;flex-wrap:wrap;padding:6px 20px 0;min-height:0}
-.ftag{display:inline-flex;align-items:center;gap:4px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--blue);padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;}
+.hd-filter-item{background:var(--input-bg);border:1px solid var(--bd2);border-radius:7px;padding:3px 8px;color:var(--text);font-size:11px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .15s;white-space:nowrap;flex-shrink:0;height:28px;}
+.hd-filter-item:focus{border-color:rgba(94,106,210,.6);box-shadow:0 0 0 3px rgba(94,106,210,.12)}
+.hd-filter-item option{background:#1C1E22;color:var(--text)}
+.user-menu-wrap{position:relative;flex-shrink:0;margin-left:6px}
+.user-avatar-btn{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:box-shadow .18s,transform .15s;box-shadow:0 2px 8px var(--accent-glow);}
+.user-avatar-btn:hover{transform:scale(1.06);box-shadow:0 4px 14px var(--accent-glow);}
+.user-drop{display:none;position:absolute;top:calc(100% + 10px);right:0;background:#1A1C21;border:1px solid var(--bd2);border-radius:14px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:9999;overflow:hidden;}
+.user-drop.open{display:block;}
+.user-drop-hd{padding:14px 16px 12px;border-bottom:1px solid var(--bd);}
+.user-drop-name{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.user-drop-email{font-size:10px;color:var(--text2);margin-top:2px;word-break:break-all}
+.user-drop-body{padding:6px 0}
+.user-drop-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;font-family:inherit;transition:background .15s;}
+.user-drop-item:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.user-drop-item i{width:16px;text-align:center;color:var(--text3);font-size:13px}
+.user-drop-div{height:1px;background:var(--bd);margin:4px 0}
+.user-drop-item.danger{color:#F87171}
+.user-drop-item.danger:hover{background:rgba(239,68,68,.08);color:#EF4444}
+#active-filters{display:flex;gap:5px;flex-wrap:wrap;padding:6px 20px 0;min-height:0;position:relative;z-index:1;}
+.ftag{display:inline-flex;align-items:center;gap:4px;background:rgba(94,106,210,.1);border:1px solid rgba(94,106,210,.25);color:var(--blue2);padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;}
 .ftag .rm{cursor:pointer;opacity:.6;font-size:12px}
 .ftag .rm:hover{opacity:1;color:var(--red2)}
-.tabs{display:flex;padding:0 20px;background:var(--header-bg);border-bottom:1px solid var(--bd);margin-top:0;overflow-x:auto;}
-.tab-btn{padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;white-space:nowrap;}
-.tab-btn:hover{color:var(--text2)}
-.tab-btn.active{color:var(--blue2);border-bottom-color:var(--blue)}
-.tab-badge{display:inline-block;background:rgba(255,255,255,.06);color:var(--text3);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;margin-left:4px;}
-.tab-btn.active .tab-badge{background:rgba(0,212,255,.15);color:var(--blue)}
-.tab-highlight{border-top:2px solid rgba(0,212,255,.45);border-left:1px solid rgba(0,212,255,.2);border-right:1px solid rgba(0,212,255,.2);border-radius:5px 5px 0 0;background:rgba(0,212,255,.04);color:var(--text2)!important;margin-top:3px;}
-.tab-highlight.active{border-top-color:var(--blue);border-left-color:rgba(0,212,255,.35);border-right-color:rgba(0,212,255,.35);background:rgba(0,212,255,.07);}
 .tab-panel{display:none}
-.tab-panel.active{display:flex;flex-direction:column;gap:16px;padding:18px 20px 32px}
-.card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--rL);padding:18px;box-shadow:var(--shadow);}
-.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:14px}
+.tab-panel.active{display:flex;flex-direction:column;gap:16px;padding:18px 20px 32px;position:relative;z-index:1;}
+.card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--rL);padding:18px;box-shadow:var(--shadow);position:relative;backdrop-filter:blur(8px);}
+.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.card-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.07);color:var(--text3);font-size:9px;cursor:help;flex-shrink:0;vertical-align:middle;}
+.card-tip:hover{background:rgba(94,106,210,.18);color:var(--blue2);}
+.card-tip:hover .kpi-tooltip{display:block;top:calc(100% + 8px);left:50%;transform:translateX(-50%)}
 .hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:1200px){.hero-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:580px){.hero-grid{grid-template-columns:1fr}}
-.hero-card{border:1px solid var(--bd);border-radius:var(--rL);padding:22px 20px;position:relative;overflow:visible;cursor:default;transition:transform .2s,box-shadow .2s;}
-.hero-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);z-index:10}
-.hero-card.c-blue{background:var(--hero-blue);border-color:#1E3A5A}
-.hero-card.c-blue::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#3B82F6,#7C3AED);border-radius:var(--rL) var(--rL) 0 0;}
-.hero-card.c-green{background:var(--hero-green);border-color:#1A3D2B}
-.hero-card.c-green::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#10B981,#3B82F6);border-radius:var(--rL) var(--rL) 0 0;}
-.hero-card.c-amber{background:var(--hero-amber);border-color:#3D3000}
-.hero-card.c-amber::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#F59E0B,#EF4444);border-radius:var(--rL) var(--rL) 0 0;}
-.hero-card.c-dynamic{background:var(--hero-dyn);border-color:#2A1F50}
-.hero-card.c-dynamic::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C3AED,#3B82F6,#10B981);border-radius:var(--rL) var(--rL) 0 0;}
+.hero-card{border:1px solid var(--bd);border-radius:var(--rL);padding:22px 20px;position:relative;overflow:visible;cursor:default;transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s,border-color .25s;}
+.hero-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);z-index:10}
+.hero-card.c-blue{background:var(--hero-blue);border-color:rgba(94,106,210,.3)}
+.hero-card.c-blue::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:var(--rL) var(--rL) 0 0;}
+.hero-card.c-green{background:var(--hero-green);border-color:rgba(52,211,153,.25)}
+.hero-card.c-green::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--blue2));border-radius:var(--rL) var(--rL) 0 0;}
+.hero-card.c-amber{background:var(--hero-amber);border-color:rgba(245,158,11,.25)}
+.hero-card.c-amber::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:var(--rL) var(--rL) 0 0;}
+.hero-card.c-dynamic{background:var(--hero-dyn);border-color:rgba(167,139,250,.25)}
+.hero-card.c-dynamic::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--purple),var(--blue2),var(--green2));border-radius:var(--rL) var(--rL) 0 0;}
 .hero-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px}
-.hero-icon.ib{background:#1E3A5A}.hero-icon.ig{background:#1A3D2B}.hero-icon.ia{background:#3D3000}.hero-icon.ip{background:#2A1F50}
+.hero-icon.ib{background:rgba(94,106,210,.2)}.hero-icon.ig{background:rgba(52,211,153,.2)}.hero-icon.ia{background:rgba(245,158,11,.2)}.hero-icon.ip{background:rgba(167,139,250,.2)}
 .hero-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);margin-bottom:6px}
 .hero-val{font-size:30px;font-weight:900;color:var(--text);line-height:1;margin-bottom:8px;letter-spacing:-1px}
 .hero-sub{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.hero-card{position:relative}
-.kpi-tooltip{display:none;position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--tooltip-bg);color:var(--text2);font-size:11px;line-height:1.6;padding:10px 14px;border-radius:10px;width:260px;z-index:9999;pointer-events:none;border:1px solid var(--bd2);box-shadow:0 12px 40px rgba(0,0,0,.8);}
-.kpi-tooltip::after{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1E2D42}
-.hero-card:hover{z-index:100}
 .hero-card:hover .kpi-tooltip{display:block}
+.kpi-tooltip{display:none;position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--tooltip-bg);color:#CBD5E1;font-size:11px;line-height:1.65;padding:11px 15px;border-radius:10px;width:270px;z-index:9999;pointer-events:none;border:1px solid var(--bd2);box-shadow:0 8px 28px rgba(0,0,0,.5);}
+.kpi-tooltip::after{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:var(--tooltip-bg)}
 .kpi-card:hover{z-index:100}
 .kpi-card:hover .kpi-tooltip{display:block}
 .insight-card:hover .kpi-tooltip{display:block}
 .kpi-card{position:relative}
-.chip{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;letter-spacing:.2px}
-.chip-green{background:#1A3D2B;color:var(--green2);border:1px solid #2A5C3F}
-.chip-red{background:#3D1515;color:var(--red2);border:1px solid #6B2020}
-.chip-amber{background:#3D2E00;color:var(--amber);border:1px solid #6B4F00}
-.chip-blue{background:#1A2D4A;color:var(--blue2);border:1px solid #2A4A7A}
-.chip-gray{background:#1C2638;color:var(--text2);border:1px solid var(--bd2)}
+.chip{padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;display:inline-block;letter-spacing:.2px}
+.chip-green{background:rgba(52,211,153,.15);color:var(--green2);border:1px solid rgba(52,211,153,.25)}
+.chip-red{background:rgba(248,113,113,.15);color:#FCA5A5;border:1px solid rgba(248,113,113,.25)}
+.chip-amber{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.25)}
+.chip-blue{background:rgba(94,106,210,.15);color:var(--blue2);border:1px solid rgba(94,106,210,.25)}
+.chip-gray{background:rgba(255,255,255,.07);color:var(--text2);border:1px solid var(--bd)}
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 @media(max-width:1200px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:400px){.kpi-row{grid-template-columns:1fr}}
-.kpi-card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--r);padding:14px 15px;display:flex;flex-direction:column;gap:3px;transition:border-color .2s,box-shadow .2s;}
-.kpi-card:hover{border-color:var(--bd2);box-shadow:var(--shadow)}
+.kpi-card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--r);padding:14px 15px;display:flex;flex-direction:column;gap:3px;transition:border-color .2s,box-shadow .2s,transform .2s;}
+.kpi-card:hover{border-color:rgba(94,106,210,.35);box-shadow:0 4px 20px rgba(0,0,0,.3);transform:translateY(-2px)}
 .kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text2)}
 .kpi-val{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.5px}
 .kpi-sub{font-size:10px;color:var(--text2);margin-top:1px}
 .lp-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 @media(max-width:1200px){.lp-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.lp-grid{grid-template-columns:repeat(2,1fr)}}
-.lp-card-lh{border-color:#2A5C3F!important}
-.lp-card-hu{border-color:#2A4A7A!important}
+.lp-card-lh{border-color:rgba(52,211,153,.2)!important}
+.lp-card-hu{border-color:rgba(94,106,210,.2)!important}
 #alerts-row{display:flex;flex-direction:column;gap:6px}
 .alert{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--r);font-size:12px}
-.alert.a-red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red2)}
-.alert.a-yellow{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:var(--amber)}
-.alert.a-green{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);color:var(--green2)}
+.alert.a-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#FCA5A5}
+.alert.a-yellow{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#FCD34D}
+.alert.a-green{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);color:var(--green2)}
 .alert-icon{font-size:14px;flex-shrink:0;margin-top:1px}
 .alert-text strong{font-weight:700}
 .sdiv{display:flex;align-items:center;gap:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3)}
-.sdiv::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,212,255,.2),transparent)}
+.sdiv::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--bd),transparent)}
 .ch2{display:grid;grid-template-columns:3fr 2fr;gap:12px}
 .ch2eq{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:1000px){.ch2,.ch2eq{grid-template-columns:1fr}}
@@ -151,153 +179,232 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 .ch-wrap-lg{position:relative;height:300px}
 .ch-wrap-xl{position:relative;height:320px}
 .sr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-.sr input,.sr select{background:var(--input-bg);border:1px solid var(--bd2);border-radius:6px;padding:6px 11px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .15s;}
+.sr input,.sr select{background:var(--input-bg);border:1px solid var(--bd2);border-radius:7px;padding:6px 11px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .15s;}
 .sr input{flex:1;min-width:180px}
-.sr input:focus,.sr select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,212,255,.12)}
+.sr input:focus,.sr select:focus{border-color:rgba(94,106,210,.5);box-shadow:0 0 0 2px rgba(94,106,210,.1)}
+.sr input::placeholder{color:var(--text2)}
+.sr select option{background:#1C1E22;color:var(--text)}
 .tw{overflow-x:auto}
 .tw table{width:100%;border-collapse:collapse;font-size:12px}
-.tw thead th{background:#0D1525;padding:8px 11px;text-align:left;color:#E2E8F0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid rgba(0,212,255,.15);white-space:nowrap;}
+.tw thead th{background:rgba(255,255,255,.04);padding:8px 12px;text-align:left;color:var(--text2);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bd);white-space:nowrap;}
 .tw tbody tr{transition:background .12s}
-.tw tbody tr:hover td{background:var(--s2)!important}
-.tw tbody td{padding:7px 11px;border-bottom:1px solid var(--bd);white-space:nowrap;color:var(--text2);background:var(--card-bg)}
+.tw tbody tr:hover td{background:rgba(94,106,210,.06)!important}
+.tw tbody td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap;color:var(--text2);background:transparent}
 .tw tbody td strong{color:var(--text)}
-.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
-.tg{background:#1A3D2B;color:var(--green2);border:1px solid #2A5C3F}
-.ty{background:#3D2E00;color:var(--amber);border:1px solid #6B4F00}
-.tr{background:#3D1515;color:var(--red2);border:1px solid #6B2020}
-.tb{background:#1A2D4A;color:var(--blue2);border:1px solid #2A4A7A}
-.row-alert td{background:#2A1515!important;color:var(--red2)!important}
-.row-alert:hover td{background:#3D1515!important}
+.tag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700}
+.tg{background:rgba(52,211,153,.15);color:var(--green2);border:1px solid rgba(52,211,153,.2)}
+.ty{background:rgba(245,158,11,.12);color:#FCD34D;border:1px solid rgba(245,158,11,.2)}
+.tr{background:rgba(239,68,68,.12);color:#FCA5A5;border:1px solid rgba(239,68,68,.2)}
+.tb{background:rgba(94,106,210,.12);color:var(--blue2);border:1px solid rgba(94,106,210,.2)}
+.row-alert td{background:rgba(239,68,68,.07)!important;color:#FCA5A5!important}
+.row-alert:hover td{background:rgba(239,68,68,.12)!important}
 .pager{display:flex;gap:4px;align-items:center;margin-top:12px;justify-content:flex-end}
-.pager button{background:rgba(28,38,56,.9);border:1px solid var(--bd2);border-radius:5px;padding:4px 9px;color:var(--text2);cursor:pointer;font-size:10px;font-family:inherit;transition:all .15s;}
-.pager button:hover{border-color:var(--blue);color:var(--blue)}
-.pager button.active{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+.pager button{background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:6px;padding:4px 9px;color:var(--text2);cursor:pointer;font-size:10px;font-family:inherit;transition:all .15s;}
+.pager button:hover{border-color:var(--accent);color:var(--accent)}
+.pager button.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .pager button:disabled{opacity:.3;cursor:default}
 .pager .pinfo{font-size:10px;color:var(--text3);margin-right:4px}
 .dtbl{overflow-x:auto}
 .dtbl th:nth-child(1),.dtbl td:nth-child(1){position:sticky;left:0;z-index:3;min-width:58px}
 .dtbl th:nth-child(2),.dtbl td:nth-child(2){position:sticky;left:58px;z-index:3;min-width:70px}
-.dtbl th:nth-child(3),.dtbl td:nth-child(3){position:sticky;left:128px;z-index:3;min-width:60px;border-right:1px solid rgba(0,212,255,.15)}
-.dtbl thead th{position:sticky;top:0;z-index:4;background:#0A1220;border-bottom:1px solid #2A3F58;}
+.dtbl th:nth-child(3),.dtbl td:nth-child(3){position:sticky;left:128px;z-index:3;min-width:60px;border-right:1px solid rgba(94,106,210,.15)}
+.dtbl thead th{position:sticky;top:0;z-index:4;background:#161719;border-bottom:1px solid var(--bd);}
 .dtbl thead th:nth-child(1),.dtbl thead th:nth-child(2),.dtbl thead th:nth-child(3){z-index:5}
-.dtbl tbody td:nth-child(1),.dtbl tbody td:nth-child(2),.dtbl tbody td:nth-child(3){background:#0D1525}
-.dtbl tbody tr:hover td:nth-child(1),.dtbl tbody tr:hover td:nth-child(2),.dtbl tbody tr:hover td:nth-child(3){background:#0F1E35}
-@media(min-width:1600px){header,.tabs,#active-filters,.tab-panel.active{max-width:1600px;margin-left:auto;margin-right:auto}.hero-val{font-size:32px}}
-@media(max-width:900px){header{padding:8px 12px;min-height:auto;flex-wrap:wrap;gap:8px}.hd-sep{display:none}.hd-filter-item{font-size:10px;padding:2px 5px;height:26px}.tabs{padding:0 10px;overflow-x:auto}.tab-panel.active{padding:14px 12px 24px}#active-filters{padding:5px 12px 0}.ch-wrap{height:200px}.ch-wrap-lg{height:240px}.ch-wrap-xl{height:260px}.hero-val{font-size:24px}.kpi-val{font-size:18px}}
-@media(max-width:580px){header{padding:8px 10px}.hd-stamp{display:none}.hd-row1{padding:0 10px}.hd-row2{padding:0 10px}.cat-pills{flex-shrink:0}.tab-panel.active{padding:10px 8px 20px;gap:12px}#active-filters{padding:4px 8px 0}.card{padding:12px}.hero-card{padding:14px 12px}.hero-val{font-size:22px;letter-spacing:-0.5px}.hero-lbl{font-size:9px}.kpi-val{font-size:16px}.kpi-lbl{font-size:8px}.kpi-card{padding:10px 12px}.ch-wrap,.ch-wrap-lg,.ch-wrap-xl{height:180px}.sr{flex-direction:column;align-items:stretch}.sr input{min-width:0}.dtbl th:nth-child(1),.dtbl td:nth-child(1),.dtbl th:nth-child(2),.dtbl td:nth-child(2),.dtbl th:nth-child(3),.dtbl td:nth-child(3){position:static}.dtbl th:nth-child(3),.dtbl td:nth-child(3){border-right:none}.tab-badge{display:none}}
-#float-hscroll{display:none;position:fixed;bottom:0;height:12px;overflow-x:auto;overflow-y:hidden;z-index:600;background:#0A1220;border-top:1px solid rgba(0,212,255,.15);scrollbar-width:thin;scrollbar-color:#1E3A52 #0A1220;}
+.dtbl tbody td:nth-child(1),.dtbl tbody td:nth-child(2),.dtbl tbody td:nth-child(3){background:#161719}
+.dtbl tbody tr:hover td:nth-child(1),.dtbl tbody tr:hover td:nth-child(2),.dtbl tbody tr:hover td:nth-child(3){background:rgba(94,106,210,.06)}
+@media(min-width:1600px){.main-wrap,#active-filters,.tab-panel.active{max-width:1600px;margin-left:auto;margin-right:auto}.hero-val{font-size:32px}}
+#float-hscroll{display:none;position:fixed;bottom:0;height:12px;overflow-x:auto;overflow-y:hidden;z-index:600;background:#111214;border-top:1px solid var(--bd);scrollbar-width:thin;}
 #float-hscroll::-webkit-scrollbar{height:6px}
-#float-hscroll::-webkit-scrollbar-track{background:#0A1220}
-#float-hscroll::-webkit-scrollbar-thumb{background:#1E3A52;border-radius:3px}
-#float-hscroll::-webkit-scrollbar-thumb:hover{background:#00D4FF55}
+#float-hscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
 #float-hscroll-inner{height:1px}
 .ms-wrap{position:relative}
-.ms-btn{background:#1C2638;border:1px solid var(--bd2);border-radius:6px;padding:4px 8px;color:var(--text);font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:border-color .15s;min-width:88px;}
-.ms-btn.open,.ms-btn:focus{border-color:var(--blue2);outline:none}
+.ms-btn{background:var(--input-bg);border:1px solid var(--bd2);border-radius:7px;padding:4px 9px;color:var(--text2);font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:border-color .15s;min-width:88px;height:28px;}
+.ms-btn.open,.ms-btn:focus{border-color:rgba(94,106,210,.5);outline:none;box-shadow:0 0 0 3px rgba(94,106,210,.12)!important}
 .ms-arrow{font-size:9px;color:var(--text3);margin-left:auto}
-.ms-count{background:var(--blue);color:#fff;border-radius:10px;padding:0 6px;font-size:9px;font-weight:700}
-.ms-dropdown{display:none;position:fixed;top:0;right:0;background:var(--card-bg);border:1px solid var(--bd2);border-radius:10px;min-width:270px;max-height:260px;overflow-y:auto;z-index:300;box-shadow:0 16px 40px rgba(0,0,0,.7),0 0 20px rgba(0,212,255,.05);padding:6px 0;}
+.ms-count{background:var(--accent);color:#fff;border-radius:10px;padding:0 6px;font-size:9px;font-weight:700}
+.ms-dropdown{display:none;position:fixed;top:0;right:0;background:#1A1C21;border:1px solid var(--bd2);border-radius:10px;min-width:270px;max-height:260px;overflow-y:auto;z-index:300;box-shadow:0 16px 40px rgba(0,0,0,.5);padding:6px 0;}
 .ms-dropdown.open{display:block}
 .ms-opt{display:flex;align-items:center;gap:9px;padding:6px 14px;cursor:pointer;font-size:12px;transition:background .1s}
-.ms-opt:hover{background:rgba(0,212,255,.06)}
-.ms-opt input[type=checkbox]{width:13px;height:13px;accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+.ms-opt:hover{background:rgba(255,255,255,.06)}
+.ms-opt input[type=checkbox]{width:13px;height:13px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
 .ms-opt label{cursor:pointer;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)}
 .ms-all{border-bottom:1px solid var(--bd);margin-bottom:4px;font-weight:600}
 .ms-all label{color:var(--text)}
 .insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:1100px){.insights-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.insights-grid{grid-template-columns:1fr}}
-.insight-card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s,box-shadow .2s;}
+.insight-card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s,box-shadow .2s;position:relative;}
 .insight-card:hover{border-color:var(--bd2);box-shadow:var(--shadow)}
 .insight-icon{font-size:18px}
-.insight-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)}
+.insight-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)}
 .insight-body{font-size:12px;color:var(--text2);line-height:1.6}
 .insight-body strong{color:var(--text);font-weight:600}
 .insight-body .ok{color:var(--green2);font-weight:600}
 .insight-body .hi{color:var(--yellow);font-weight:600}
 .insight-body .bad{color:var(--red);font-weight:600}
-.warn-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:var(--r);padding:10px 14px;color:var(--amber);font-size:12px}
+.warn-box{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:var(--r);padding:10px 14px;color:#FCD34D;font-size:12px}
 .footer{font-size:10px;color:var(--text3);text-align:center;padding:4px 0 6px}
 .sort-th{cursor:pointer;user-select:none}
 .sort-th:hover{color:var(--text)!important}
-.sort-th.sort-asc::after{content:' ↑';color:var(--blue);font-size:9px;font-weight:900}
-.sort-th.sort-desc::after{content:' ↓';color:var(--blue);font-size:9px;font-weight:900}
+.sort-th.sort-asc::after{content:' ↑';color:var(--green2);font-size:9px;font-weight:900}
+.sort-th.sort-desc::after{content:' ↓';color:var(--green2);font-size:9px;font-weight:900}
 .pct-bar-wrap{display:flex;align-items:center;gap:5px;min-width:92px}
-.pct-bar-bg{flex:1;height:3px;background:#1C2638;border-radius:2px;min-width:38px}
+.pct-bar-bg{flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px;min-width:38px}
 .pct-bar-fill{height:100%;border-radius:2px}
 .mkt-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
-.mkt-card{background:rgba(17,24,39,.9);backdrop-filter:blur(8px);border:1px solid var(--bd);border-radius:var(--r);padding:16px;transition:border-color .2s;position:relative;}
-.mkt-card:hover{border-color:var(--bd2);z-index:100}
+.mkt-card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--r);padding:16px;transition:border-color .2s,box-shadow .2s,transform .2s;position:relative;box-shadow:var(--shadow);}
+.mkt-card:hover{border-color:var(--bd2);z-index:100;transform:translateY(-2px)}
 .mkt-card:hover .kpi-tooltip{display:block}
 .mkt-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);margin-bottom:4px}
 .mkt-val{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.5px}
 .mkt-sub{font-size:10px;color:var(--text2);margin-top:2px}
-.conso-banner{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(16,185,129,.06));border:1px solid rgba(0,212,255,.15);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:16px;}
-.conso-num{font-size:32px;font-weight:900;color:var(--blue)}
+.conso-banner{background:linear-gradient(135deg,rgba(94,106,210,.08),rgba(52,211,153,.06));border:1px solid rgba(94,106,210,.18);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:16px;}
+.conso-num{font-size:32px;font-weight:900;color:var(--accent)}
 .conso-txt{font-size:12px;color:var(--text2);line-height:1.6}
 .conso-txt strong{color:var(--text)}
 /* LOGIN OVERLAY */
-#login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;background-image:radial-gradient(ellipse 900px 700px at 20% 10%,rgba(59,130,246,.08) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 80% 90%,rgba(124,58,237,.07) 0%,transparent 65%)}
-#login-card{background:var(--s1);border:1px solid var(--bd);border-radius:22px;padding:48px 52px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.03)}
+#login-overlay{position:fixed;inset:0;background:#050506;display:flex;align-items:center;justify-content:center;z-index:9999;background-image:radial-gradient(ellipse 900px 700px at 20% 10%,rgba(94,106,210,.12) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 80% 90%,rgba(52,211,153,.08) 0%,transparent 65%)}
+#login-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:48px 52px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(94,106,210,.1);backdrop-filter:blur(16px);}
 #login-brand{display:flex;align-items:center;gap:16px;margin-bottom:32px}
-#login-logo-mark{width:46px;height:46px;background:linear-gradient(135deg,var(--blue) 0%,var(--purple) 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;flex-shrink:0;box-shadow:0 4px 16px rgba(59,130,246,.35)}
+#login-logo-mark{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;flex-shrink:0;box-shadow:0 4px 20px var(--accent-glow)}
 #login-brand-info{display:flex;flex-direction:column;gap:3px}
 #login-brand-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px;line-height:1}
-#login-brand-sub{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.8px;text-transform:uppercase}
-#login-divider{height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent);margin-bottom:32px}
+#login-brand-sub{font-size:10px;color:var(--text2);font-weight:500;letter-spacing:.8px;text-transform:uppercase}
+#login-divider{height:1px;background:linear-gradient(90deg,transparent,var(--bd2),transparent);margin-bottom:32px}
 #login-card h2{font-size:21px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin-bottom:6px}
 #login-card .login-subtitle{font-size:12px;color:var(--text2);margin-bottom:28px;line-height:1.6}
 .login-field-wrap{margin-bottom:18px}
-.login-label{display:block;font-size:10px;font-weight:700;color:var(--text3);margin-bottom:7px;letter-spacing:.8px;text-transform:uppercase}
-.login-field{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 16px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;display:block}
-.login-field:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.13)}
+.login-label{display:block;font-size:10px;font-weight:700;color:var(--text2);margin-bottom:7px;letter-spacing:.8px;text-transform:uppercase}
+.login-field{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;display:block}
+.login-field:focus{border-color:rgba(94,106,210,.6);box-shadow:0 0 0 3px rgba(94,106,210,.12)}
 .login-field::placeholder{color:var(--text3)}
-.login-btn{width:100%;background:linear-gradient(135deg,var(--blue) 0%,#2563EB 100%);border:none;border-radius:10px;padding:13px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s;margin-top:6px;letter-spacing:.2px;box-shadow:0 4px 18px rgba(59,130,246,.35)}
-.login-btn:hover{opacity:.92;box-shadow:0 6px 22px rgba(59,130,246,.45)}
-.login-btn:active{transform:translateY(1px);box-shadow:0 2px 10px rgba(59,130,246,.3)}
+.login-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;border-radius:10px;padding:13px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s;margin-top:6px;letter-spacing:.2px;box-shadow:0 4px 20px var(--accent-glow)}
+.login-btn:hover{opacity:.9;box-shadow:0 6px 26px var(--accent-glow)}
+.login-btn:active{transform:translateY(1px)}
 .login-btn:disabled{opacity:.45;cursor:default;transform:none}
-#login-error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);color:var(--red2);border-radius:10px;padding:10px 14px;font-size:12px;margin-top:14px;display:none;line-height:1.5}
-.login-link{display:block;text-align:center;margin-top:22px;font-size:12px;color:var(--text3);cursor:pointer;text-decoration:none;transition:color .15s;letter-spacing:.1px}
+#login-error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);color:var(--red);border-radius:10px;padding:10px 14px;font-size:12px;margin-top:14px;display:none;line-height:1.5}
+.login-link{display:block;text-align:center;margin-top:22px;font-size:12px;color:var(--text2);cursor:pointer;text-decoration:none;transition:color .15s;letter-spacing:.1px}
 .login-link:hover{color:var(--blue2)}
 /* LOADING */
 #loading-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:9998;flex-direction:column;gap:16px}
-.loading-spinner{width:36px;height:36px;border:3px solid var(--bd2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+.loading-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 /* ADMIN */
 .admin-section{margin-bottom:20px}
-.admin-form{display:grid;gap:8px;max-width:500px}
-.admin-btn{background:var(--blue);border:none;border-radius:6px;color:#fff;padding:8px 18px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
-.admin-btn:hover{background:#2563EB}
-.admin-btn.danger{background:var(--red)}
-.admin-btn.secondary{background:var(--s2);border:1px solid var(--bd2);color:var(--text2)}
+.admin-form{display:grid;gap:10px;max-width:500px}
+.admin-btn{background:var(--accent);border:none;border-radius:7px;color:#fff;padding:8px 18px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s}
+.admin-btn:hover{background:var(--accent-h)}
+.admin-btn.danger{background:var(--red2)}
+.admin-btn.secondary{background:rgba(255,255,255,.05);border:1px solid var(--bd2);color:var(--text2)}
+.admin-btn.secondary:hover{border-color:var(--accent);color:var(--blue2);background:rgba(94,106,210,.07)}
 .user-card{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .user-card:last-child{margin-bottom:0}
 .user-avatar{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
 .user-info{flex:1;min-width:0}
 .user-email{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.user-meta{font-size:10px;color:var(--text3);margin-top:2px}
-.user-badge{display:inline-block;background:rgba(124,58,237,.15);color:var(--purple2);border:1px solid rgba(124,58,237,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:5px;vertical-align:middle}
+.user-meta{font-size:10px;color:var(--text2);margin-top:2px}
+.user-badge{display:inline-block;background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:5px;vertical-align:middle}
 .permission-checks{display:flex;flex-wrap:wrap;gap:5px}
 .perm-chip{display:inline-flex;align-items:center;background:var(--s3);border:1px solid var(--bd2);border-radius:5px;padding:3px 10px;font-size:10px;color:var(--text2);cursor:pointer;transition:all .15s}
-.perm-chip.active{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--blue2)}
+.perm-chip.active{background:rgba(94,106,210,.15);border-color:var(--accent);color:var(--blue2)}
 .admin-bottom{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
-.admin-form{display:grid;gap:10px}
 .admin-top-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start}
 .admin-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .admin-perm-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.admin-label{display:block;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:5px}
+.admin-label{display:block;font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.7px;text-transform:uppercase;margin-bottom:5px}
 .admin-input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 11px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;display:block}
-.admin-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
-.admin-input::placeholder{color:var(--text3)}
+.admin-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(94,106,210,.1)}
+.admin-input::placeholder{color:var(--text2)}
 .admin-perm-box{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
-.admin-perm-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px}
-.admin-btn{background:var(--blue);border:none;border-radius:7px;color:#fff;padding:8px 20px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s}
-.admin-btn:hover{background:#2563EB}
-.admin-btn.secondary{background:transparent;border:1px solid var(--bd2);color:var(--text2)}
-.admin-btn.secondary:hover{border-color:var(--blue);color:var(--blue2);background:rgba(59,130,246,.07)}
-.admin-del-btn{padding:5px 10px;font-size:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red2);border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;transition:background .15s}
+.admin-perm-title{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px}
+.admin-del-btn{padding:5px 10px;font-size:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red);border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;transition:background .15s}
 .admin-del-btn:hover{background:rgba(239,68,68,.2)}
+/* Light theme override (ocean = light) */
+html.ocean{
+  --bg:#F0F4F8;--s1:#FFFFFF;--s2:#F2F7FB;--s3:#E8EFF6;
+  --bd:#BDD0E0;--bd2:#9AB8CE;
+  --text:#0F172A;--text2:#334155;--text3:#64748B;
+  --card-bg:#FFFFFF;--input-bg:#EEF4FA;
+  --sticky-bg:#FFFFFF;--row-border:#EEF4FA;
+  --hero-blue:#EFF6FF;--hero-green:#F0FDF4;--hero-amber:#FFFBEB;--hero-dyn:#F5F3FF;
+  --tooltip-bg:#FFFFFF;--heatmap-empty:#E8EFF6;
+  --shadow:0 2px 16px rgba(0,0,0,.10);--shadow-md:0 8px 32px rgba(0,0,0,.18);
+}
+html.ocean body{background:var(--bg)}
+html.ocean body::before{background:radial-gradient(ellipse 900px 600px at 10% 0%,rgba(94,106,210,.06) 0%,transparent 65%),radial-gradient(ellipse 700px 500px at 90% 100%,rgba(52,211,153,.04) 0%,transparent 65%);}
+html.ocean body::after{background-image:linear-gradient(rgba(0,0,0,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.025) 1px,transparent 1px);background-size:40px 40px;}
+html.ocean .sidebar{background:#FFFFFF;border-color:var(--bd)}
+html.ocean .topbar{background:rgba(255,255,255,.92);border-color:var(--bd)}
+html.ocean .tab-btn:hover{background:rgba(0,0,0,.05);color:#475569}
+html.ocean .tab-btn.active{background:rgba(94,106,210,.1);color:#1E293B}
+html.ocean .user-drop{background:#FFFFFF;border-color:var(--bd)}
+html.ocean .user-drop-item:hover{background:#F2F7FB}
+html.ocean .ms-dropdown{background:#FFFFFF;border-color:var(--bd)}
+html.ocean .ms-btn{background:#F1F5F9;border-color:rgba(0,0,0,.1);color:#475569}
+html.ocean .dtbl thead th,html.ocean .dtbl tbody td:nth-child(1),html.ocean .dtbl tbody td:nth-child(2),html.ocean .dtbl tbody td:nth-child(3){background:#F8FAFC}
+html.ocean .dtbl tbody tr:hover td:nth-child(1),html.ocean .dtbl tbody tr:hover td:nth-child(2),html.ocean .dtbl tbody tr:hover td:nth-child(3){background:#F0F9FF}
+html.ocean .tw thead th{background:#F8FAFC}
+html.ocean .tw tbody tr:hover td{background:#F0F9FF!important}
+html.ocean .tw tbody td{border-bottom-color:var(--row-border);background:#FFFFFF}
+html.ocean .chip-green{background:#D1FAE5;color:#065F46;border-color:#A7F3D0}
+html.ocean .chip-red{background:#FEE2E2;color:#991B1B;border-color:#FECACA}
+html.ocean .chip-amber{background:#FEF3C7;color:#92400E;border-color:#FDE68A}
+html.ocean .chip-blue{background:#DBEAFE;color:#1E40AF;border-color:#BFDBFE}
+html.ocean .chip-gray{background:#F1F5F9;color:#475569;border-color:#CBD5E1}
+html.ocean .alert.a-red{background:#FEF2F2;border-color:#FECACA;color:#991B1B}
+html.ocean .alert.a-yellow{background:#FFFBEB;border-color:#FDE68A;color:#92400E}
+html.ocean .alert.a-green{background:#F0FDF4;border-color:#A7F3D0;color:#065F46}
+html.ocean .tg{background:#D1FAE5;color:#065F46;border-color:#A7F3D0}
+html.ocean .ty{background:#FEF3C7;color:#92400E;border-color:#FDE68A}
+html.ocean .tr{background:#FEE2E2;color:#991B1B;border-color:#FECACA}
+html.ocean .tb{background:#DBEAFE;color:#1E40AF;border-color:#BFDBFE}
+html.ocean .warn-box{background:#FFFBEB;border-color:#FDE68A;color:#92400E}
+html.ocean .ftag{background:rgba(94,106,210,.07);border-color:rgba(94,106,210,.2);color:#3730A3}
+html.ocean .conso-num{color:#2563EB}
+html.ocean #login-overlay{background:#EEF3F8}
+html.ocean #login-card{background:#FFFFFF;border-color:#D8E6F0;box-shadow:0 8px 40px rgba(0,0,0,.1)}
+html.ocean .login-field{background:#F8FAFC;border-color:#D8E6F0;color:#1E293B}
+html.ocean .pager button{background:#F8FAFC}
+html.ocean .mkt-card{background:#FFFFFF}
+html.ocean .admin-input{background:#F8FAFC}
+html.ocean #float-hscroll{background:#F8FAFC;border-color:#D8E6F0}
+html.ocean .kpi-card:hover{border-color:rgba(94,106,210,.3)}
+html.ocean .sb-section{color:#94A3B8}
+html.ocean .hd-filter-item{background:#EEF4FA;border-color:rgba(0,0,0,.12);color:#334155}
+html.ocean .cat-pill{color:#64748B}
+html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
+/* Responsive */
+@media(max-width:900px){
+  :root{--sb-w:60px}
+  .sb-title,.sb-label,.sb-section{display:none!important}
+  .sb-collapse{display:none}
+  .sb-cat-pills{display:none}
+  .tab-btn{justify-content:center;gap:0;padding:10px 0}
+  .tab-panel.active{padding:14px 12px 24px}
+  #active-filters{padding:5px 12px 0}
+  .ch-wrap{height:200px}.ch-wrap-lg{height:240px}.ch-wrap-xl{height:260px}
+  .hero-val{font-size:24px}.kpi-val{font-size:18px}
+}
+@media(max-width:580px){
+  .sidebar{display:none}
+  .main-wrap{margin-left:0!important}
+  .topbar-row1{padding:0 10px;height:44px}
+  .topbar-row2{padding:0 10px}
+  .tab-panel.active{padding:10px 8px 20px;gap:12px}
+  #active-filters{padding:4px 8px 0}
+  .card{padding:12px}.hero-card{padding:14px 12px}
+  .hero-val{font-size:22px;letter-spacing:-0.5px}
+  .kpi-val{font-size:16px}.kpi-lbl{font-size:8px}.kpi-card{padding:10px 12px}
+  .ch-wrap,.ch-wrap-lg,.ch-wrap-xl{height:180px}
+  .sr{flex-direction:column;align-items:stretch}.sr input{min-width:0}
+  .dtbl th:nth-child(1),.dtbl td:nth-child(1),.dtbl th:nth-child(2),.dtbl td:nth-child(2),.dtbl th:nth-child(3),.dtbl td:nth-child(3){position:static}
+  .dtbl th:nth-child(3),.dtbl td:nth-child(3){border-right:none}
+  .tab-badge{display:none}
+  .hd-stamp{display:none}
+}
 </style>
+
+<script src="https://unpkg.com/lucide@0.471.0/dist/umd/lucide.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -342,27 +449,66 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <!-- MAIN APP (oculto ate autenticacao) -->
 <div id="app" style="display:none">
 
-<header>
-  <div class="hd-row1">
-    <div class="hd-logo">FR</div>
-    <div class="hd-sep"></div>
-    <span class="hd-title">Gestao de Fretes</span>
-    <div class="hd-sep"></div>
-    <div class="cat-pills">
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo-wrap">
+    <div class="sb-logo">FR</div>
+    <span class="sb-title">HumFrete</span>
+    <button class="sb-collapse" id="sb-collapse" onclick="toggleSidebar()" title="Recolher menu">&#x2039;</button>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Principais</div>
+    <button class="tab-btn tab-highlight active" data-tab="visao-geral"><i data-lucide="bar-chart-2"></i><span class="sb-label">Visao Geral</span><span class="tab-badge" id="tb_vinc">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span class="sb-label">Marketplace</span><span class="tab-badge" id="tb_mkt">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="compras"><i data-lucide="package"></i><span class="sb-label">Frete Compras</span><span class="tab-badge" id="tb_comp">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Dev. Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
+    <div class="sb-section">Analise</div>
+    <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="operacional"><i data-lucide="list"></i><span class="sb-label">Operacional</span><span class="tab-badge" id="tb_op">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="clientes"><i data-lucide="users"></i><span class="sb-label">Consolidacao Frete</span><span class="tab-badge" id="tb_cli">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span class="sb-label">Cobertura de Dados</span><span class="tab-badge" id="tb_naov">-</span></button>
+    <button class="tab-btn" data-tab="admin" id="tab-btn-admin" style="display:none"><i data-lucide="settings"></i><span class="sb-label">Admin</span></button>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-cat-pills">
       <div class="cat-pill-wrap" title="Exibe todos os canais sem filtro de categoria">
         <button class="cat-pill active" id="cat_all" onclick="setCategoria('')">Todos</button>
       </div>
       <div class="cat-pill-wrap" title="B2B - distribuidores, revendas e atacado. Exclui os canais Online.">
         <button class="cat-pill" id="cat_b2b" onclick="setCategoria('B2B')">B2B</button>
       </div>
-      <div class="cat-pill-wrap" title="Online - AMAZON, ECOMMERCE, MAGALU, MERCADO LIVRE, SHOPPE, SITE LINHAHUM, TIKTOSHOP, BELEZA WEB">
+      <div class="cat-pill-wrap" title="Online - AMAZON, ECOMMERCE, MAGALU, MERCADO LIVRE, SHOPPE, SITE LINHAHUM">
         <button class="cat-pill" id="cat_online" onclick="setCategoria('Online')">Online</button>
       </div>
     </div>
-    <span class="hd-stamp" id="hd_gen"></span>
-    <button id="theme-toggle" title="Alternar tema claro/escuro" onclick="toggleTheme()" style="margin-left:8px;background:none;border:1px solid var(--bd2);border-radius:7px;color:var(--text2);cursor:pointer;font-size:14px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s;padding:0;">&#x1F319;</button>
   </div>
-  <div class="hd-row2">
+</aside>
+
+<div class="main-wrap">
+<header class="topbar">
+  <div class="topbar-row1">
+    <div class="tb-breadcrumb">
+      <span class="tb-bc-root">HumFrete</span>
+      <span class="tb-bc-sep">/</span>
+      <span class="tb-bc-page" id="tb-bc-page">Visao Geral</span>
+    </div>
+    <span class="hd-stamp" id="hd_gen"></span>
+    <button id="theme-toggle" title="Tema escuro ativo (clique para claro)" onclick="toggleTheme()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text2);cursor:pointer;font-size:15px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;padding:0">&#x2600;&#xFE0F;</button>
+    <div class="user-menu-wrap" id="user-menu-wrap">
+      <button class="user-avatar-btn" id="user-avatar-btn" onclick="toggleUserDrop(event)" title="Menu do usuario">?</button>
+      <div class="user-drop" id="user-drop">
+        <div class="user-drop-hd">
+          <div class="user-drop-name" id="udrop-name">-</div>
+          <div class="user-drop-email" id="udrop-email">-</div>
+        </div>
+        <div class="user-drop-body">
+          <button class="user-drop-item" id="udrop-admin-item" style="display:none" onclick="openAdminFromDrop()"><i class="fa-solid fa-shield-halved"></i> Painel Admin</button>
+          <div class="user-drop-div" id="udrop-admin-div" style="display:none"></div>
+          <button class="user-drop-item danger" onclick="doLogoutFromDrop()"><i class="fa-solid fa-right-from-bracket"></i> Sair do sistema</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-row2">
     <select id="filter_ano" class="hd-filter-item"><option value="">Ano</option></select>
     <select id="filter_mes" class="hd-filter-item"><option value="">Mes</option></select>
     <select id="filter_empresa_h" class="hd-filter-item"><option value="">Empresa</option></select>
@@ -388,58 +534,46 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 
 <div id="active-filters"></div>
 
-<div class="tabs" style="justify-content:flex-start">
-  <button class="tab-btn tab-highlight active" data-tab="visao-geral">Visao Geral <span class="tab-badge" id="tb_vinc">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="marketplace">Marketplace <span class="tab-badge" id="tb_mkt">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="compras">Frete Compras <span class="tab-badge" id="tb_comp">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="dev-mkt">Dev. Marketplace <span class="tab-badge" id="tb_devmkt">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="empresa">Por Empresa <span class="tab-badge" id="tb_emp">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="operacional">Operacional <span class="tab-badge" id="tb_op">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="clientes">Consolidacao Frete <span class="tab-badge" id="tb_cli">-</span></button>
-  <button class="tab-btn tab-highlight" data-tab="nao-vinculados">Cobertura de Dados <span class="tab-badge" id="tb_naov">-</span></button>
-  <button class="tab-btn" data-tab="admin" id="tab-btn-admin" style="display:none;margin-left:8px;color:var(--purple2)"><i class="fa-solid fa-shield-halved"></i> Admin</button>
-  <button onclick="doLogout()" title="Sair do sistema" style="margin-left:auto;background:none;border:1px solid var(--bd2);border-radius:6px;padding:4px 12px;color:var(--text3);font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s" onmouseover="this.style.borderColor='var(--red2)';this.style.color='var(--red2)'" onmouseout="this.style.borderColor='var(--bd2)';this.style.color='var(--text3)'"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
-</div>
-<!-- TAB VISAO GERAL -->
+
 <div id="tab-visao-geral" class="tab-panel active">
   <div class="hero-grid">
-    <div class="hero-card c-blue"><div class="kpi-tooltip">Custo total com transportadoras no periodo.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
-    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre frete cobrado do cliente e pago a transportadora.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
-    <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 vendidos, quanto foi gasto com frete.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
-    <div class="hero-card c-amber"><div class="kpi-tooltip">Custo medio por entrega vinculada a CTe.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-blue"><div class="kpi-tooltip">Tudo que a empresa pagou as transportadoras no periodo selecionado. Considera apenas entregas com comprovante de frete confirmado e associado a uma venda registrada no sistema.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora. Valor positivo: a empresa lucrou no frete. Valor negativo: a empresa bancou parte do custo de entrega.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 vendidos, quanto foi gasto com frete. Abaixo de 2% e excelente. Entre 2% e 5% e adequado para a maioria dos segmentos. Acima de 5% vale revisar contratos e rotas de entrega.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-amber"><div class="kpi-tooltip">Custo total de frete dividido pelo numero de entregas realizadas no periodo. Se este valor esta subindo, pode indicar entregas mais caras, rotas mais longas ou reajuste de tarifas pelas transportadoras.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
   </div>
   <div class="kpi-row">
-    <div class="kpi-card"><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Cobertura de Documentos</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">As demais sao retiradas ou ex-works</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Frete Gratis (Entregas)</div><div class="kpi-val" id="k_gratis">-</div><div class="kpi-sub" id="k_gratis_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Notas fiscais de venda para as quais encontramos o comprovante de frete correspondente. Cada nota vinculada tem seu custo de entrega identificado e incluido nos calculos do dashboard.</div><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual das vendas do periodo com frete rastreado. As vendas sem cobertura sao entregas retiradas pelo proprio cliente no deposito, ou vendas onde o comprador contrata o frete por conta propria.</div><div class="kpi-lbl">Cobertura de Documentos</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">As demais sao retiradas ou ex-works</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantas empresas de transporte diferentes realizaram ao menos uma entrega rastreada no periodo selecionado.</div><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quanto do total gasto com frete vai para a transportadora principal. Acima de 40% indica dependencia elevada: um problema com esse parceiro pode impactar grande parte das entregas da empresa.</div><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Entregas em que a empresa nao cobrou nada de frete do cliente. O custo de transporte foi absorvido internamente. Monitorar esse numero ajuda a identificar politicas de frete gratis e seu impacto no resultado.</div><div class="kpi-lbl">Frete Gratis (Entregas)</div><div class="kpi-val" id="k_gratis">-</div><div class="kpi-sub" id="k_gratis_sub">-</div></div>
   </div>
   <div class="card" style="padding:16px 18px"><div class="card-title">Frete por Linha de Produto</div><div class="lp-grid">
-    <div class="kpi-card lp-card-lh"><div class="kpi-lbl">Frete Linhahum</div><div class="kpi-val" id="k_lh_frete" style="color:var(--green)">-</div><div class="kpi-sub" id="k_lh_pct">-</div></div>
-    <div class="kpi-card lp-card-hu"><div class="kpi-lbl">Frete Humana Alimentar</div><div class="kpi-val" id="k_hu_frete" style="color:var(--blue2)">-</div><div class="kpi-sub" id="k_hu_pct">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Faturamento Linhahum</div><div class="kpi-val" id="k_lh_nf" style="font-size:16px">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Faturamento Humana</div><div class="kpi-val" id="k_hu_nf" style="font-size:16px">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">% Frete/Venda Linhahum</div><div class="kpi-val" id="k_lh_pctvenda" style="font-size:18px">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">% Frete/Venda Humana</div><div class="kpi-val" id="k_hu_pctvenda" style="font-size:18px">-</div></div>
+    <div class="kpi-card lp-card-lh"><div class="kpi-tooltip">Parcela do custo de frete atribuida aos produtos da linha Linhahum. Quando uma entrega tem produtos das duas linhas, o custo e dividido proporcionalmente ao valor de cada linha na venda.</div><div class="kpi-lbl">Frete Linhahum</div><div class="kpi-val" id="k_lh_frete" style="color:var(--green)">-</div><div class="kpi-sub" id="k_lh_pct">-</div></div>
+    <div class="kpi-card lp-card-hu"><div class="kpi-tooltip">Parcela do custo de frete atribuida aos produtos da linha Humana Alimentar. Quando uma entrega mistura as duas linhas, o custo e dividido proporcionalmente ao valor de cada uma na venda.</div><div class="kpi-lbl">Frete Humana Alimentar</div><div class="kpi-val" id="k_hu_frete" style="color:var(--blue2)">-</div><div class="kpi-sub" id="k_hu_pct">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total de vendas de produtos Linhahum no periodo, considerando apenas as notas fiscais com entrega rastreada. Serve de base para calcular o percentual de frete sobre venda desta linha.</div><div class="kpi-lbl">Faturamento Linhahum</div><div class="kpi-val" id="k_lh_nf" style="font-size:16px">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total de vendas de produtos Humana Alimentar no periodo, considerando apenas as notas fiscais com entrega rastreada. Serve de base para calcular o percentual de frete sobre venda desta linha.</div><div class="kpi-lbl">Faturamento Humana</div><div class="kpi-val" id="k_hu_nf" style="font-size:16px">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">De cada R$ 100 vendidos em Linhahum, quanto foi gasto com frete. Quanto menor, mais eficiente a logistica desta linha. Valores entre 1% e 3% sao considerados adequados para vendas B2B.</div><div class="kpi-lbl">% Frete/Venda Linhahum</div><div class="kpi-val" id="k_lh_pctvenda" style="font-size:18px">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">De cada R$ 100 vendidos em Humana Alimentar, quanto foi gasto com frete. Em produtos alimentares com margens menores, controlar este percentual e ainda mais importante para preservar a rentabilidade.</div><div class="kpi-lbl">% Frete/Venda Humana</div><div class="kpi-val" id="k_hu_pctvenda" style="font-size:18px">-</div></div>
   </div></div>
   <div id="alerts-row"></div>
   <div class="sdiv">Insights Executivos Automaticos</div>
   <div class="insights-grid" id="insights-grid"></div>
   <div class="sdiv">Evolucao Temporal</div>
-  <div class="card"><div class="card-title">Frete Mensal por Empresa (R$)</div><div class="ch-wrap-xl"><canvas id="ch_timeline"></canvas></div></div>
-  <div class="card"><div class="card-title">% Frete / Venda por Empresa e Mes</div><div class="ch-wrap-xl"><canvas id="ch_pct_emp_mes"></canvas></div></div>
-  <div class="card"><div class="card-title">% Frete / Venda - Mapa de Desempenho</div><div id="yoy_heatmap" style="overflow-x:auto;overflow-y:visible"></div></div>
+  <div class="card"><div class="card-title">Frete Mensal por Empresa (R$)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Evolucao mes a mes do gasto com frete por filial. Permite identificar sazonalidade, picos de custo e comparar se uma unidade esta crescendo mais rapido que as demais em termos de despesa logistica.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_timeline"></canvas></div></div>
+  <div class="card"><div class="card-title">% Frete / Venda por Empresa e Mes<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">De cada R$ 100 vendidos por cada filial, quanto foi gasto com frete mes a mes. Permite comparar eficiencia entre unidades independente do tamanho: uma filial menor pode ser mais eficiente logisticamente que uma maior.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_pct_emp_mes"></canvas></div></div>
+  <div class="card"><div class="card-title">% Frete / Venda - Mapa de Desempenho<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de cores cruzando cada filial com cada mes. Verde indica meses com frete eficiente (baixo percentual sobre vendas); vermelho indica meses com custo de frete elevado. Celulas em branco sao meses sem dados.</span></span></div><div id="yoy_heatmap" style="overflow-x:auto;overflow-y:visible"></div></div>
   <div class="sdiv">Distribuicao Geografica</div>
   <div class="ch2">
-    <div class="card"><div class="card-title">Custo de Frete por Estado - Top 15</div><div class="ch-wrap"><canvas id="ch_estado"></canvas></div></div>
-    <div class="card"><div class="card-title">Participacao por Transportadora - Top 10</div><div class="ch-wrap"><canvas id="ch_transp"></canvas></div></div>
+    <div class="card"><div class="card-title">Custo de Frete por Estado - Top 15<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Os 15 estados que mais custam em frete para a empresa. Permite identificar regioes mais onerosas e avaliar se vale renegociar tarifas ou buscar transportadoras mais competitivas para aqueles destinos.</span></span></div><div class="ch-wrap"><canvas id="ch_estado"></canvas></div></div>
+    <div class="card"><div class="card-title">Participacao por Transportadora - Top 10<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">As 10 transportadoras que mais receberam pagamentos de frete. A fatia de cada uma mostra quanto ela representa do custo total. Transportadoras com mais de 20% do total merecem atencao especial na renovacao de contratos.</span></span></div><div class="ch-wrap"><canvas id="ch_transp"></canvas></div></div>
   </div>
   <div class="sdiv">Analise por Empresa</div>
-  <div class="card"><div class="card-title">Frete por Empresa</div><div class="ch-wrap"><canvas id="ch_empresa"></canvas></div></div>
+  <div class="card"><div class="card-title">Frete por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo de gasto total com frete entre filiais no periodo. Inclui tanto entregas a clientes quanto movimentacoes internas de estoque entre lojas.</span></span></div><div class="ch-wrap"><canvas id="ch_empresa"></canvas></div></div>
   <div id="warn_box" style="display:none" class="warn-box"><strong id="warn_sem">0</strong> NF-e do faturamento nao encontraram CTe correspondente.</div>
   <div class="sdiv">Performance por Natureza de Operacao</div>
-  <div class="card"><div class="card-title">Ranking - Natureza de Operacao</div><div class="tw"><table><thead><tr><th>#</th><th>Natureza de Operacao</th><th>Qtd NF-e</th><th>Frete Pago</th><th>Frete Cobrado</th><th>Saldo</th><th>% do Total</th><th>Part.</th></tr></thead><tbody id="natop_tbody"></tbody></table></div></div>
+  <div class="card"><div class="card-title">Ranking - Natureza de Operacao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Agrupa as vendas por tipo de operacao comercial. Frete Pago = o que a empresa pagou a transportadora; Frete Cobrado = o que foi cobrado do cliente na nota; Saldo positivo = cliente pagou mais do que o custo real de entrega.</span></span></div><div class="tw"><table><thead><tr><th>#</th><th>Natureza de Operacao</th><th>Qtd NF-e</th><th>Frete Pago</th><th>Frete Cobrado</th><th>Saldo</th><th>% do Total</th><th>Part.</th></tr></thead><tbody id="natop_tbody"></tbody></table></div></div>
   <div class="footer" id="footer_info"></div>
 </div>
 
@@ -448,7 +582,7 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <div id="tab-operacional" class="tab-panel">
   <div class="sdiv">Detalhamento Analitico por NF-e</div>
   <div class="card">
-    <div class="card-title">Detalhes por NF-e</div>
+    <div class="card-title">Detalhes por NF-e<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem completa de todas as vendas com frete rastreado. Total NF = valor da venda; Valor Frete = o que a empresa pagou ao transportador; Fr. Cobrado = o que o cliente pagou de frete na nota; Saldo = diferenca entre os dois.</span></span></div>
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
       <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')">Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
     </div>
@@ -459,18 +593,20 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <!-- TAB MARKETPLACE -->
 <div id="tab-marketplace" class="tab-panel">
   <div class="mkt-kpi-row">
-    <div class="mkt-card" style="border-top:3px solid #FF6900"><div class="mkt-lbl">Total Frete Shopee</div><div class="mkt-val" id="mkt_shopee_frete">-</div><div class="mkt-sub" id="mkt_shopee_qtd">-</div></div>
-    <div class="mkt-card" style="border-top:3px solid #FFE600"><div class="mkt-lbl">Total Frete Mercado Livre</div><div class="mkt-val" id="mkt_ml_frete">-</div><div class="mkt-sub" id="mkt_ml_qtd">-</div></div>
-    <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="mkt-lbl">Frete Medio Shopee</div><div class="mkt-val" id="mkt_shopee_med">-</div><div class="mkt-sub">por entrega</div></div>
-    <div class="mkt-card" style="border-top:3px solid var(--green2)"><div class="mkt-lbl">Frete Medio Mercado Livre</div><div class="mkt-val" id="mkt_ml_med">-</div><div class="mkt-sub">por entrega</div></div>
+    <div class="mkt-card" style="border-top:3px solid #FF6900"><div class="kpi-tooltip">Total pago a transportadora pelas entregas realizadas via Shopee no periodo. Inclui vendas normais. Devolucoes da Shopee aparecem separadas na aba Dev. Marketplace.</div><div class="mkt-lbl">Total Frete Shopee</div><div class="mkt-val" id="mkt_shopee_frete">-</div><div class="mkt-sub" id="mkt_shopee_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid #FFE600"><div class="kpi-tooltip">Total pago pela logistica das entregas realizadas via Mercado Livre no periodo. O Mercado Livre utiliza sua propria rede de distribuicao para essas entregas.</div><div class="mkt-lbl">Total Frete Mercado Livre</div><div class="mkt-val" id="mkt_ml_frete">-</div><div class="mkt-sub" id="mkt_ml_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Shopee. Se este valor estiver subindo, pode indicar que os pedidos estao indo para regioes mais distantes ou que a Shopee ajustou suas tarifas de envio.</div><div class="mkt-lbl">Frete Medio Shopee</div><div class="mkt-val" id="mkt_shopee_med">-</div><div class="mkt-sub">por entrega</div></div>
+    <div class="mkt-card" style="border-top:3px solid var(--green2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Mercado Livre. Comparar este valor ao da Shopee ajuda a entender qual plataforma tem o custo logistico mais eficiente para o perfil de pedidos da empresa.</div><div class="mkt-lbl">Frete Medio Mercado Livre</div><div class="mkt-val" id="mkt_ml_med">-</div><div class="mkt-sub">por entrega</div></div>
   </div>
-  <div class="card"><div class="card-title">Shopee vs Mercado Livre - Frete Mensal</div><div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div></div>
+  <div class="card"><div class="card-title">Shopee vs Mercado Livre - Frete Mensal<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo mes a mes do custo de frete entre Shopee e Mercado Livre. Ajuda a identificar em quais periodos cada canal teve mais peso nos custos logisticos. Devolucoes nao estao incluidas aqui.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div></div>
   <div class="card">
-    <div class="card-title">Detalhes Marketplace</div>
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px"><span style="font-size:11px;color:var(--text3);font-weight:600">Exibir:</span>
-      <button class="cat-btn active" id="mkt_f_all" onclick="setMktFilter('')">Todos</button>
-      <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')">Shopee</button>
-      <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')">Mercado Livre</button>
+    <div class="card-title">Detalhes Marketplace<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada venda realizada via Shopee ou Mercado Livre com o custo de entrega identificado. Use os filtros acima para ver apenas um canal especifico.</span></span></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><span style="font-size:11px;color:var(--text3);font-weight:600">Exibir:</span>
+      <div style="background:#EAEEF3;border-radius:9px;padding:2px;display:flex;gap:0">
+        <button class="cat-btn active" id="mkt_f_all" onclick="setMktFilter('')">Todos</button>
+        <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')">Shopee</button>
+        <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')">Mercado Livre</button>
+      </div>
     </div>
     <div class="tw dtbl" id="mkt_wrap"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
     <div class="pager" id="mkt_pager"></div>
@@ -480,13 +616,13 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <!-- TAB CLIENTES -->
 <div id="tab-clientes" class="tab-panel">
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-    <div class="kpi-card"><div class="kpi-lbl">Grupos Consolidaveis</div><div class="kpi-val" id="cli_k_grupos">-</div><div class="kpi-sub">cliente + semana com 2+ entregas</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">se todos os grupos forem consolidados</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Situacoes em que o mesmo cliente recebeu duas ou mais entregas separadas na mesma semana. Cada caso e uma oportunidade de economia: juntar tudo em um unico caminhao reduz o custo total de frete.</div><div class="kpi-lbl">Grupos Consolidaveis</div><div class="kpi-val" id="cli_k_grupos">-</div><div class="kpi-sub">cliente + semana com 2+ entregas</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quanto poderia ser economizado se todas as entregas da mesma semana para o mesmo cliente fossem feitas de uma so vez. Calculo conservador: considera o custo das entregas extras que seriam eliminadas.</div><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">se todos os grupos forem consolidados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de viagens de entrega que poderiam ser eliminadas. Se um cliente recebeu 3 entregas na semana, 2 delas sao consolidaveis em uma unica visita, reduzindo custos e emissoes.</div><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
   </div>
   <div class="conso-banner" id="conso_banner"><div class="conso-num" id="conso_grupos">-</div><div class="conso-txt" id="conso_txt">Calculando...</div></div>
   <div class="card">
-    <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana</div>
+    <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as oportunidades de consolidacao ordenadas pela maior economia potencial. Cada linha e um cliente que recebeu 2 ou mais entregas na mesma semana. A coluna Econ. Potencial mostra quanto poderia ser economizado juntando tudo em uma unica viagem.</span></span></div>
     <div class="sr" style="margin-bottom:12px"><input type="text" id="cli_search" placeholder="Buscar por nome do cliente ou numero de NF-e..." style="width:100%;max-width:440px"></div>
     <div class="tw"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th>Entregas</th><th>Total Frete</th><th>Destino(s)</th><th>Mesmo Destino?</th><th>Econ. Potencial</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
     <div class="pager" id="cli_pager"></div>
@@ -496,13 +632,13 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <!-- TAB CTe NAO VINCULADOS -->
 <div id="tab-nao-vinculados" class="tab-panel">
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-val" id="nv_k_qtd">-</div><div class="kpi-lbl">CTe sem Vinculo</div><div class="kpi-sub">nao cruzados com faturamento</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="nv_k_frete">-</div><div class="kpi-lbl">Frete sem Vinculo</div><div class="kpi-sub">valor total nao apurado</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="nv_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">distintas envolvidas</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="nv_k_nferefs">-</div><div class="kpi-lbl">NF-e Referenciadas</div><div class="kpi-sub">nao localizadas no ERP</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Comprovantes de frete que nao encontraram a venda correspondente no sistema. Causas mais comuns: entrega de um periodo diferente, transferencia entre lojas ou compra de fornecedor. Esses valores nao entram no custo total.</div><div class="kpi-val" id="nv_k_qtd">-</div><div class="kpi-lbl">Comprovantes sem Vinculo</div><div class="kpi-sub">nao cruzados com faturamento</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Valor de frete dos comprovantes nao identificados. Este montante nao esta incluido no custo total da Visao Geral porque nao foi possivel associa-lo a uma venda especifica do periodo.</div><div class="kpi-val" id="nv_k_frete">-</div><div class="kpi-lbl">Frete sem Vinculo</div><div class="kpi-sub">valor total nao apurado</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantas transportadoras diferentes tem comprovantes nao identificados. Se a mesma empresa concentra muitos casos, pode indicar um problema de integracao com aquela parceira especifica.</div><div class="kpi-val" id="nv_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">distintas envolvidas</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de notas fiscais mencionadas nos comprovantes de frete sem vinculo que nao foram encontradas no sistema de faturamento. Cada uma representa uma venda cujo custo de entrega nao foi apurado.</div><div class="kpi-val" id="nv_k_nferefs">-</div><div class="kpi-lbl">Notas Nao Localizadas</div><div class="kpi-sub">nao encontradas no faturamento</div></div>
   </div>
   <div class="card" style="margin-top:16px">
-    <div class="card-title">Documentos de Transporte sem NF-e Correspondente</div>
+    <div class="card-title">Documentos de Transporte sem NF-e Correspondente<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as entregas com comprovante de frete registrado mas sem uma venda correspondente encontrada. A coluna Motivo indica a causa mais provavel de cada caso — ajuda a identificar o que precisa ser corrigido.</span></span></div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Conhecimentos de Frete (CTe) cujas Notas Fiscais nao foram localizadas no faturamento.</p>
     <div class="sr">
       <input type="text" id="nv_search" placeholder="Buscar transportadora, cidade, chave CTe...">
@@ -513,13 +649,13 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
     <div class="pager" id="nv_pager"></div>
   </div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
-    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-val" id="cancel_k_qtd" style="color:var(--red2)">-</div><div class="kpi-lbl">CTe Cancelados</div><div class="kpi-sub">excluidos do processamento</div></div>
-    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-val" id="cancel_k_frete" style="color:var(--red2)">-</div><div class="kpi-lbl">Frete Excluido</div><div class="kpi-sub">valor cancelado nao computado</div></div>
-    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-val" id="cancel_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">com documentos cancelados</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-tooltip">Comprovantes de frete anulados. Entrega foi emitida mas nao ocorreu ou foi substituida por outro documento. Sao excluidos automaticamente de todos os calculos do dashboard.</div><div class="kpi-val" id="cancel_k_qtd" style="color:var(--red2)">-</div><div class="kpi-lbl">CTe Cancelados</div><div class="kpi-sub">excluidos do processamento</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-tooltip">Valor de frete dos comprovantes anulados. Nao entra no custo total porque essas entregas nao foram realizadas. Serve apenas para referencia do volume de operacoes canceladas no periodo.</div><div class="kpi-val" id="cancel_k_frete" style="color:var(--red2)">-</div><div class="kpi-lbl">Frete Excluido</div><div class="kpi-sub">valor cancelado nao computado</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-tooltip">Quantas transportadoras tiveram entregas canceladas no periodo. Muitos cancelamentos concentrados em uma unica empresa podem indicar problemas operacionais com aquela parceira.</div><div class="kpi-val" id="cancel_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">com documentos cancelados</div></div>
   </div>
   <div class="card" style="margin-top:16px;border-left:3px solid var(--red2)">
     <div class="card-title" style="color:var(--red2)"><i class="fa-solid fa-ban"></i> CTe Cancelados</div>
-    <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">CTe com evento de cancelamento na SEFAZ. Excluidos de todos os calculos.</p>
+    <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Comprovantes de frete anulados. Excluidos de todos os calculos do dashboard.</p>
     <div id="cancel_empty" style="display:none;color:var(--text3);font-size:12px;padding:10px 0"><i class="fa-solid fa-circle-check" style="color:var(--green2)"></i> Nenhum CTe cancelado encontrado.</div>
     <div id="cancel_list_wrap" class="tw"><table><thead><tr><th>Chave CTe (44 digitos)</th><th>Transportadora</th><th>Valor Frete</th><th style="text-align:center">Acao</th></tr></thead><tbody id="cancel_tbody"></tbody></table></div>
   </div>
@@ -529,13 +665,13 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 <div id="tab-compras" class="tab-panel">
   <div class="sdiv">Frete de Entrada - Custo Logistico nas Compras</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-val" id="comp_qtd">-</div><div class="kpi-lbl">CTe de Compra</div><div class="kpi-sub">documentos processados</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="comp_frete">-</div><div class="kpi-lbl">Frete Total Compras</div><div class="kpi-sub">pago a transportadora</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="comp_peso">-</div><div class="kpi-lbl">Peso Total</div><div class="kpi-sub">kg transportados</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="comp_frete_medio">-</div><div class="kpi-lbl">Frete Medio</div><div class="kpi-sub">por CTe</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Entregas de mercadoria recebida de fornecedores externos. Sao os fretes de entrada — custo para trazer produtos ao estoque — separados do frete de saida para os clientes.</div><div class="kpi-val" id="comp_qtd">-</div><div class="kpi-lbl">CTe de Compra</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total pago para receber mercadoria de fornecedores no periodo. Representa o custo de logistica de entrada, que impacta diretamente o preco de custo dos produtos.</div><div class="kpi-val" id="comp_frete">-</div><div class="kpi-lbl">Frete Total Compras</div><div class="kpi-sub">pago a transportadora</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total de mercadoria recebida em quilogramas no periodo. Junto com o custo total de frete, permite calcular quanto foi pago por quilo transportado e comparar eficiencia entre fornecedores e rotas.</div><div class="kpi-val" id="comp_peso">-</div><div class="kpi-lbl">Peso Total</div><div class="kpi-sub">kg transportados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por recebimento de mercadoria. Se subir ao longo do tempo, pode indicar que os fornecedores estao localizados mais longe ou que as tarifas de transporte de entrada aumentaram.</div><div class="kpi-val" id="comp_frete_medio">-</div><div class="kpi-lbl">Frete Medio</div><div class="kpi-sub">por CTe</div></div>
   </div>
   <div class="card">
-    <div class="card-title">Detalhamento por CTe de Compra</div>
+    <div class="card-title">Detalhamento por CTe de Compra<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada recebimento de mercadoria de fornecedor com o custo de frete de entrada. Inclui o nome do fornecedor, origem, destino, transportadora e valor pago.</span></span></div>
     <div class="sr"><input type="text" id="comp_search" placeholder="Buscar fornecedor, origem, transportadora, NF-e..."><select id="comp_sel_emp"><option value="">Todas as empresas</option></select></div>
     <div style="overflow-x:auto;margin-top:10px" id="comp_wrap">
       <table id="comp_table" style="width:100%;border-collapse:collapse;font-size:11px">
@@ -552,20 +688,20 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
   <div class="sdiv">Devolucao Marketplace</div>
   <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FFE600;margin-bottom:6px;padding-left:2px">MERCADO LIVRE</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-val" id="dm_ml_qtd">-</div><div class="kpi-lbl">CTe Devolucoes ML</div><div class="kpi-sub">documentos processados</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="dm_ml_frete">-</div><div class="kpi-lbl">Frete Total ML</div><div class="kpi-sub">pago a EBAZARCOMBR</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="dm_ml_peso">-</div><div class="kpi-lbl">Peso Total ML</div><div class="kpi-sub">kg devolvidos</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="dm_ml_medio">-</div><div class="kpi-lbl">Frete Medio ML</div><div class="kpi-sub">por CTe</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de devolucoes de clientes recebidas via Mercado Livre no periodo. Cada item e uma mercadoria que retornou ao estoque e gerou um custo de frete reverso.</div><div class="kpi-val" id="dm_ml_qtd">-</div><div class="kpi-lbl">CTe Devolucoes ML</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total pago pelo transporte reverso das devolucoes do Mercado Livre. Este custo nao esta incluido no frete de vendas da aba Marketplace — e um custo adicional gerado pelo retorno de mercadorias.</div><div class="kpi-val" id="dm_ml_frete">-</div><div class="kpi-lbl">Frete Total ML</div><div class="kpi-sub">logistica do Mercado Livre</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via Mercado Livre, em quilogramas. Ajuda a dimensionar o volume fisico do fluxo reverso e negociar tarifas de devolucao com o canal.</div><div class="kpi-val" id="dm_ml_peso">-</div><div class="kpi-lbl">Peso Total ML</div><div class="kpi-sub">kg devolvidos</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via Mercado Livre. Comparar com o frete medio de venda mostra o impacto financeiro de cada produto retornado — o custo de devolucao pode superar o lucro da venda original.</div><div class="kpi-val" id="dm_ml_medio">-</div><div class="kpi-lbl">Frete Medio ML</div><div class="kpi-sub">por CTe</div></div>
   </div>
   <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FF6900;margin-bottom:6px;padding-left:2px">SHOPEE</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-val" id="dm_sh_qtd">-</div><div class="kpi-lbl">CTe Devolucoes Shopee</div><div class="kpi-sub">documentos processados</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="dm_sh_frete">-</div><div class="kpi-lbl">Frete Total Shopee</div><div class="kpi-sub">pago a SHPS</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="dm_sh_peso">-</div><div class="kpi-lbl">Peso Total Shopee</div><div class="kpi-sub">kg devolvidos</div></div>
-    <div class="kpi-card"><div class="kpi-val" id="dm_sh_medio">-</div><div class="kpi-lbl">Frete Medio Shopee</div><div class="kpi-sub">por CTe</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de devolucoes de clientes recebidas via Shopee no periodo. Cada item e uma mercadoria que retornou ao estoque e gerou um custo de frete reverso pela logistica da Shopee.</div><div class="kpi-val" id="dm_sh_qtd">-</div><div class="kpi-lbl">CTe Devolucoes Shopee</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total pago pelo transporte reverso das devolucoes da Shopee. Custo separado do frete de vendas, representa o impacto financeiro dos retornos deste canal.</div><div class="kpi-val" id="dm_sh_frete">-</div><div class="kpi-lbl">Frete Total Shopee</div><div class="kpi-sub">logistica da Shopee</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via Shopee, em quilogramas. Ajuda a entender o volume fisico do fluxo reverso deste canal e identificar se ha padrao nos produtos mais devolvidos.</div><div class="kpi-val" id="dm_sh_peso">-</div><div class="kpi-lbl">Peso Total Shopee</div><div class="kpi-sub">kg devolvidos</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via Shopee. Se for proximo ou superior ao valor medio do produto vendido, a devolucao pode estar gerando prejuizo liquido alem da perda de venda.</div><div class="kpi-val" id="dm_sh_medio">-</div><div class="kpi-lbl">Frete Medio Shopee</div><div class="kpi-sub">por CTe</div></div>
   </div>
   <div class="card">
-    <div class="card-title">Detalhamento por CTe de Devolucao</div>
+    <div class="card-title">Detalhamento por CTe de Devolucao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada devolucao de cliente recebida via Shopee ou Mercado Livre com o custo de frete reverso. Use o filtro de plataforma para analisar cada canal separadamente.</span></span></div>
     <div class="sr">
       <input type="text" id="dm_search" placeholder="Buscar remetente, origem, empresa, NF-e...">
       <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option></select>
@@ -583,44 +719,44 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
 
 <!-- TAB POR EMPRESA -->
 <div id="tab-empresa" class="tab-panel">
-  <div id="emp_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:8px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="color:var(--blue2);opacity:.8"></i><span id="emp_periodo_txt">Carregando...</span></div>
+  <div id="emp_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:#DBEAFE;border:1px solid #BFDBFE;border-radius:8px;font-size:12px;color:#1E40AF;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="opacity:.8"></i><span id="emp_periodo_txt">Carregando...</span></div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-    <div class="kpi-card"><div class="kpi-lbl">Empresas Analisadas</div><div class="kpi-val" id="emp_k_qtd">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Maior Gasto em Frete</div><div class="kpi-val" id="emp_k_top_emp" style="font-size:18px">-</div><div class="kpi-sub" id="emp_k_top_val"></div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Principal Transportadora</div><div class="kpi-val" id="emp_k_top_transp" style="font-size:13px;line-height:1.3">-</div><div class="kpi-sub" id="emp_k_top_transp_pct"></div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantas filiais da empresa realizaram pelo menos uma entrega rastreada no periodo selecionado. Filiais sem movimentacao ou sem dados de frete nao aparecem nesta contagem.</div><div class="kpi-lbl">Empresas Analisadas</div><div class="kpi-val" id="emp_k_qtd">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Filial que mais gastou com frete no periodo. Nao necessariamente indica ineficiencia — pode ser simplesmente a unidade com maior volume de vendas. Compare com o percentual frete/venda para avaliar eficiencia.</div><div class="kpi-lbl">Maior Gasto em Frete</div><div class="kpi-val" id="emp_k_top_emp" style="font-size:18px">-</div><div class="kpi-sub" id="emp_k_top_val"></div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Empresa de transporte que recebeu o maior valor em pagamentos de frete no periodo. Conhecer quem e o principal parceiro ajuda a priorizar negociacoes de tabela e garantir qualidade de servico.</div><div class="kpi-lbl">Principal Transportadora</div><div class="kpi-val" id="emp_k_top_transp" style="font-size:13px;line-height:1.3">-</div><div class="kpi-sub" id="emp_k_top_transp_pct"></div></div>
   </div>
   <div class="ch2eq">
-    <div class="card"><div class="card-title">Frete Total por Empresa</div><div class="ch-wrap"><canvas id="ch_emp_frete"></canvas></div></div>
-    <div class="card"><div class="card-title">Concentracao Transportadora x Empresa (Top 5)</div><div class="ch-wrap-lg"><canvas id="ch_emp_stacked"></canvas></div></div>
+    <div class="card"><div class="card-title">Frete Total por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo de gasto total com frete entre filiais no periodo. Inclui tanto entregas a clientes quanto movimentacoes internas de estoque entre lojas.</span></span></div><div class="ch-wrap"><canvas id="ch_emp_frete"></canvas></div></div>
+    <div class="card"><div class="card-title">Concentracao Transportadora x Empresa (Top 5)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mostra as 5 principais transportadoras de cada filial. Quanto maior a fatia de uma empresa de transporte, maior a dependencia daquela filial em relacao a ela — informacao importante para negociacoes de contrato.</span></span></div><div class="ch-wrap-lg"><canvas id="ch_emp_stacked"></canvas></div></div>
   </div>
-  <div class="card"><div class="card-title">Resumo por Empresa</div><div class="tw"><table><thead><tr><th>#</th><th>Empresa</th><th>NF-e</th><th>Total Frete</th><th>% do Total</th><th>Transp. Principal</th><th>Frete Transp.</th><th>Concentracao</th><th>N Transp.</th></tr></thead><tbody id="emp_tbody"></tbody></table></div></div>
-  <div class="card"><div class="card-title">Top 5 Transportadoras por Empresa</div><div class="tw"><table><thead><tr><th>Empresa</th><th>Transportadora</th><th>NF-e</th><th>Frete Pago</th><th>% da Empresa</th><th>% do Total</th></tr></thead><tbody id="emp_det_tbody"></tbody></table></div></div>
+  <div class="card"><div class="card-title">Resumo por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Tabela resumo por filial: quantas entregas foram rastreadas, custo total de frete, quanto cada unidade representa do gasto total, qual transportadora domina e quantas empresas de transporte foram utilizadas.</span></span></div><div class="tw"><table><thead><tr><th>#</th><th>Empresa</th><th>NF-e</th><th>Total Frete</th><th>% do Total</th><th>Transp. Principal</th><th>Frete Transp.</th><th>Concentracao</th><th>N Transp.</th></tr></thead><tbody id="emp_tbody"></tbody></table></div></div>
+  <div class="card"><div class="card-title">Top 5 Transportadoras por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">As 5 transportadoras mais usadas por cada filial e o quanto cada uma representa no custo de frete daquela unidade. Ajuda a identificar dependencias por regiao e oportunidades de unificar contratos.</span></span></div><div class="tw"><table><thead><tr><th>Empresa</th><th>Transportadora</th><th>NF-e</th><th>Frete Pago</th><th>% da Empresa</th><th>% do Total</th></tr></thead><tbody id="emp_det_tbody"></tbody></table></div></div>
   <div class="sdiv" style="margin-top:4px">Frete entre Empresas (Operacional x Comercial)</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="emp_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="emp_frete_com_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Frete Operacional (Transf.)</div><div class="kpi-val" id="emp_frete_op" style="color:var(--purple)">-</div><div class="kpi-sub" id="emp_frete_op_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">NF-e Transferidas</div><div class="kpi-val" id="emp_qtd_transf">-</div><div class="kpi-sub" id="emp_qtd_transf_sub" style="line-height:1.6">NF-e unicas com CTe</div><div class="kpi-sub" id="emp_qtd_transf_fat" style="color:var(--text3);font-size:10px">- no faturamento</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">% Frete Operacional</div><div class="kpi-val" id="emp_pct_op">-</div><div class="kpi-sub">do frete total</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete das entregas feitas a clientes externos. E o custo logistico diretamente ligado a receita de vendas — quanto a empresa paga para levar os produtos ate quem comprou.</div><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="emp_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="emp_frete_com_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete para movimentar mercadoria entre as proprias lojas e filiais da empresa. Nao esta relacionado a nenhuma venda — e o custo interno de reposicao e redistribuicao de estoque.</div><div class="kpi-lbl">Frete Operacional (Transf.)</div><div class="kpi-val" id="emp_frete_op" style="color:var(--purple)">-</div><div class="kpi-sub" id="emp_frete_op_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de movimentacoes de estoque entre filiais com frete identificado. Representa quantas vezes no periodo a empresa enviou mercadoria de uma loja para outra, com custo de transporte registrado.</div><div class="kpi-lbl">NF-e Transferidas</div><div class="kpi-val" id="emp_qtd_transf">-</div><div class="kpi-sub" id="emp_qtd_transf_sub" style="line-height:1.6">NF-e unicas com CTe</div><div class="kpi-sub" id="emp_qtd_transf_fat" style="color:var(--text3);font-size:10px">- no faturamento</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual do total gasto com frete que e custo interno entre lojas, sem gerar receita de venda. Acima de 20% pode indicar que a estrategia de distribuicao de estoque entre filiais precisa ser revisada.</div><div class="kpi-lbl">% Frete Operacional</div><div class="kpi-val" id="emp_pct_op">-</div><div class="kpi-sub">do frete total</div></div>
   </div>
   <div id="emp_transf_destinos_wrap" style="margin:2px 0 10px;font-size:11px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="color:var(--text3)" id="emp_transf_destinos_lbl">Destinos com CTe:</span><span id="emp_transf_destinos" style="display:flex;gap:4px;flex-wrap:wrap">-</span></div>
   <div class="ch2eq">
-    <div class="card"><div class="card-title">Frete Comercial vs Operacional por Empresa</div><div class="ch-wrap-lg"><canvas id="ch_emp_tipo"></canvas></div></div>
-    <div class="card"><div class="card-title">Custo Operacional por Empresa</div><div class="tw"><table><thead><tr><th>Empresa</th><th>NF Transferidas</th><th>Frete Operacional</th><th>% do Frete Total</th><th>UF Destino Principal</th><th>Ticket Medio</th></tr></thead><tbody id="emp_transf_tbody"></tbody></table></div></div>
+    <div class="card"><div class="card-title">Frete Comercial vs Operacional por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo por filial do frete de vendas a clientes (azul) vs frete de movimentacao interna de estoque (roxo). Ajuda a ver quanto do custo logistico de cada unidade e custo de venda e quanto e custo operacional interno.</span></span></div><div class="ch-wrap-lg"><canvas id="ch_emp_tipo"></canvas></div></div>
+    <div class="card"><div class="card-title">Custo Operacional por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Detalhe do custo de movimentacao interna de estoque por filial: quantas vezes enviou para outras lojas, quanto gastou, qual estado recebeu mais e o custo medio por envio interno.</span></span></div><div class="tw"><table><thead><tr><th>Empresa</th><th>NF Transferidas</th><th>Frete Operacional</th><th>% do Frete Total</th><th>UF Destino Principal</th><th>Ticket Medio</th></tr></thead><tbody id="emp_transf_tbody"></tbody></table></div></div>
   </div>
   <div class="sdiv" style="margin-top:4px">Transferencias entre Lojas do Grupo</div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-    <div class="kpi-card"><div class="kpi-lbl">NF-e Internas (entre Lojas)</div><div class="kpi-val" id="emp_hu_qtd" style="color:var(--amber)">-</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Frete entre Lojas</div><div class="kpi-val" id="emp_hu_frete" style="color:var(--amber)">-</div><div class="kpi-sub" id="emp_hu_pct">do frete total</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">Ticket Medio Interno</div><div class="kpi-val" id="emp_hu_ticket" style="font-size:18px">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Movimentacoes de mercadoria exclusivamente entre lojas do grupo — de uma filial para outra filial da mesma empresa. Representa o custo de logistica interna para equilibrar o estoque da rede.</div><div class="kpi-lbl">NF-e Internas (entre Lojas)</div><div class="kpi-val" id="emp_hu_qtd" style="color:var(--amber)">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total gasto para movimentar mercadoria entre as lojas da propria rede. Este custo nao gera receita direta — e importante monitorar para garantir que a redistribuicao de estoque seja justificada pelo resultado das vendas.</div><div class="kpi-lbl">Frete entre Lojas</div><div class="kpi-val" id="emp_hu_frete" style="color:var(--amber)">-</div><div class="kpi-sub" id="emp_hu_pct">do frete total</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por movimentacao de estoque entre lojas. Se for alto, pode valer analisar se a redistribuicao de mercadoria esta sendo feita de forma eficiente ou se pode ser consolidada em menos viagens.</div><div class="kpi-lbl">Ticket Medio Interno</div><div class="kpi-val" id="emp_hu_ticket" style="font-size:18px">-</div></div>
   </div>
-  <div class="card"><div class="card-title">Detalhe por Empresa Origem x Loja Destino</div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Loja Destino</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="emp_hu_tbody"></tbody></table></div></div>
+  <div class="card"><div class="card-title">Detalhe por Empresa Origem x Loja Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de quem enviou para quem: cada linha mostra uma rota de redistribuicao de estoque entre lojas, com o custo total e o custo medio por envio. Identifica quais trajetos internos sao mais caros.</span></span></div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Loja Destino</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="emp_hu_tbody"></tbody></table></div></div>
   <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
   <div class="card"><div class="tw"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="emp_transf_sem_cte_tbody"></tbody></table></div></div>
   <div class="sdiv" style="margin-top:4px">Evolucao Mensal por Transportadora</div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="card-title" style="margin:0">Frete por Transportadora ao Longo do Tempo</div>
-      <select id="emp_tl_emp" onchange="buildEmpTimeline()" style="background:#1E293B;border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer"><option value="">Todas as empresas</option></select>
+      <select id="emp_tl_emp" onchange="buildEmpTimeline()" style="background:#F1F5F9;border:1px solid #D8E6F0;color:#475569;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer"><option value="">Todas as empresas</option></select>
     </div>
     <div class="ch-wrap-xl"><canvas id="ch_emp_tl"></canvas></div>
   </div>
@@ -688,6 +824,7 @@ header{background:var(--header-bg);border-bottom:1px solid var(--bd);padding:0;d
   </div>
 </div>
 
+</div><!-- .main-wrap -->
 </div><!-- #app -->
 
 <div id="float-hscroll"><div id="float-hscroll-inner"></div></div>
@@ -779,8 +916,7 @@ function _mergeData(datas) {
 
 function _applyPermissions() {
   if (!_currentUser) return;
-  const adminBtn = document.getElementById('tab-btn-admin');
-  if (adminBtn) adminBtn.style.display = _currentUser.isAdmin ? '' : 'none';
+  _setupUserMenu(_currentUser);
   if (_currentUser.isAdmin) return;
   const tabs = _currentUser.tabs;
   if (tabs && Array.isArray(tabs)) {
@@ -797,6 +933,49 @@ function _applyPermissions() {
     }
   }
 }
+function _setupUserMenu(user) {
+  if (!user) return;
+  const name = user.displayName || user.email || '?';
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const btn = document.getElementById('user-avatar-btn');
+  const nameEl = document.getElementById('udrop-name');
+  const emailEl = document.getElementById('udrop-email');
+  const adminItem = document.getElementById('udrop-admin-item');
+  const adminDiv = document.getElementById('udrop-admin-div');
+  if (btn) btn.textContent = initials;
+  if (nameEl) nameEl.textContent = name;
+  if (emailEl) emailEl.textContent = user.email || '';
+  const showAdmin = !!user.isAdmin;
+  if (adminItem) adminItem.style.display = showAdmin ? '' : 'none';
+  if (adminDiv) adminDiv.style.display = showAdmin ? '' : 'none';
+}
+function toggleUserDrop(e) {
+  e.stopPropagation();
+  const drop = document.getElementById('user-drop');
+  if (drop) drop.classList.toggle('open');
+}
+function openAdminFromDrop() {
+  const drop = document.getElementById('user-drop');
+  if (drop) drop.classList.remove('open');
+  document.querySelectorAll('.tab-btn.active,.tab-panel.active').forEach(el=>el.classList.remove('active'));
+  const adminBtn = document.getElementById('tab-btn-admin');
+  if (adminBtn) { adminBtn.classList.add('active'); adminBtn.style.display=''; }
+  const panel = document.getElementById('tab-admin');
+  if (panel) panel.classList.add('active');
+  if (typeof loadAdminData === 'function') loadAdminData();
+}
+async function doLogoutFromDrop() {
+  const drop = document.getElementById('user-drop');
+  if (drop) drop.classList.remove('open');
+  if (confirm('Deseja sair do sistema?')) await _auth.signOut();
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('user-menu-wrap');
+  const drop = document.getElementById('user-drop');
+  if (drop && drop.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+    drop.classList.remove('open');
+  }
+});
 
 function showLoginScreen(err) {
   document.getElementById('login-overlay').style.display = 'flex';
@@ -862,17 +1041,17 @@ const dataAno = d => (d.data||'').slice(6,10);
 const per  = d => d ? d.substring(3,10) : '';
 const perL = p => { const [m,y]=p.split('/'); return MESES[+m]+'/'+y; };
 function getWeek(dateStr){if(!dateStr) return '';const parts=dateStr.split('/');if(parts.length<3) return '';const d=new Date(+parts[2],+parts[1]-1,+parts[0]);const jan1=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);return d.getFullYear()+'-W'+String(wk).padStart(2,'0');}
-Chart.defaults.color='#E2E8F0';Chart.defaults.borderColor='rgba(255,255,255,.05)';Chart.defaults.font.family="'Inter','Segoe UI',system-ui,sans-serif";
-const COLORS=['#3B82F6','#10B981','#F59E0B','#EF4444','#7C3AED','#34D399','#FCD34D','#F87171','#A78BFA','#60A5FA','#6EE7B7','#FBBF24','#22D3EE','#FB7185','#C4B5FD'];
+Chart.defaults.color='#8A8F98';Chart.defaults.borderColor='rgba(255,255,255,.07)';Chart.defaults.font.family="'Inter','Outfit','Segoe UI',system-ui,sans-serif";
+const COLORS=['#5E6AD2','#34D399','#F59E0B','#F87171','#A78BFA','#818CF8','#6EE7B7','#FCD34D','#FB923C','#67E8F9','#EC4899','#38BDF8','#C4B5FD','#FBBF24','#4ADE80'];
 const CR={};
 const hasChart=()=>typeof Chart!=='undefined';
-function mkBar(id,lbs,vals,color,lbl){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:[{label:lbl||'Frete',data:vals,backgroundColor:color||'#2563EB',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
-function mkMultiBar(id,lbs,vals,colors){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:[{label:'Frete',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
-function mkDonut(id,lbs,vals){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels:lbs,datasets:[{data:vals,backgroundColor:COLORS,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:9,padding:10,color:'#E2E8F0'}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return ' '+c.label+': '+BRL(c.raw)+' ('+(c.raw/t*100).toFixed(1)+'%)';}}}}}});}catch(e){}}
-function mkGrouped(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,color:'#E2E8F0'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
-function mkStacked(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#E2E8F0'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
-function mkLine(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#E2E8F0',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
-function mkLinePct(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#E2E8F0',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw.toFixed(2)+'%'},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#E2E8F0'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>v.toFixed(1)+'%',font:{size:10},color:'#E2E8F0'}}}}});}catch(e){}}
+function mkBar(id,lbs,vals,color,lbl){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:[{label:lbl||'Frete',data:vals,backgroundColor:color||'#69AFFA',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
+function mkMultiBar(id,lbs,vals,colors){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:[{label:'Frete',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
+function mkDonut(id,lbs,vals){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels:lbs,datasets:[{data:vals,backgroundColor:COLORS,borderWidth:2,borderColor:'#111214',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:9,padding:10,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return ' '+c.label+': '+BRL(c.raw)+' ('+(c.raw/t*100).toFixed(1)+'%)';}}}}}});}catch(e){}}
+function mkGrouped(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
+function mkStacked(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
+function mkLine(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#8A8F98',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
+function mkLinePct(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#8A8F98',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw.toFixed(2)+'%'},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>v.toFixed(1)+'%',font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
 
 function renderYoY(){
   const d=window._yoyData;if(!d) return;
@@ -881,8 +1060,8 @@ function renderYoY(){
   const allVals=[];
   allEmps.forEach(emp=>{allPers.forEach(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=byYME[ano+'|'+emp]&&byYME[ano+'|'+emp][mes];if(v&&v.nf) allVals.push(v.fr/v.nf*100);});});
   const vMin=allVals.length?Math.min(...allVals):0;const vMax=allVals.length?Math.max(...allVals):5;
-  function cellBg(val){if(val===null) return '#0A1628';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return`hsl(${hue},55%,18%)`;}
-  function cellFg(val){if(val===null) return '#334155';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return`hsl(${hue},80%,62%)`;}
+  function cellBg(val){if(val===null) return '#F1F5F9';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return`hsl(${hue},65%,90%)`;}
+  function cellFg(val){if(val===null) return '#94A3B8';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return`hsl(${hue},60%,30%)`;}
   const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
   const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
   let html='<table style="border-collapse:separate;border-spacing:2px;min-width:100%">';
@@ -894,12 +1073,12 @@ function renderYoY(){
     const cells=allPers.map(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=byYME[ano+'|'+emp]&&byYME[ano+'|'+emp][mes];const val=v&&v.nf?v.fr/v.nf*100:null;if(val!==null){totFr+=v.fr;totNf+=v.nf;}return{val,isJan:p.startsWith('01')};});
     const avg=totNf?totFr/totNf*100:null;
     html+=`<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;${stickyBase}">${emp}</td>`;
-    cells.forEach(({val,isJan})=>{const bg=cellBg(val),fg=cellFg(val);const txt=val!==null?val.toFixed(1)+'%':'--';html+=`<td style="text-align:center;padding:5px 8px;background:${bg};color:${fg};border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap${isJan?';border-left:2px solid #1E3A5F':''}">${txt}</td>`;});
+    cells.forEach(({val,isJan})=>{const bg=cellBg(val),fg=cellFg(val);const txt=val!==null?val.toFixed(1)+'%':'--';html+=`<td style="text-align:center;padding:5px 8px;background:${bg};color:${fg};border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap${isJan?';border-left:2px solid #D8E6F0':''}">${txt}</td>`;});
     const avgBg=cellBg(avg),avgFg=cellFg(avg);
-    html+=`<td style="text-align:center;padding:5px 10px;background:${avgBg};color:${avgFg};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-left:2px solid #1E3A5F">${avg!==null?avg.toFixed(1)+'%':'--'}</td></tr>`;
+    html+=`<td style="text-align:center;padding:5px 10px;background:${avgBg};color:${avgFg};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-left:2px solid #D8E6F0">${avg!==null?avg.toFixed(1)+'%':'--'}</td></tr>`;
   });
   html+='</tbody></table>';
-  html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:var(--text3)"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,hsl(142,55%,35%),hsl(71,55%,28%),hsl(0,55%,30%))"></div><span style="color:#10B981">${vMin.toFixed(1)}% (minimo)</span><span>-&gt;</span><span style="color:#EF4444">${vMax.toFixed(1)}% (maximo)</span></div>`;
+  html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:#8099B4"><span>Escala:</span><div style="width:160px;height:8px;border-radius:4px;background:linear-gradient(to right,hsl(142,65%,80%),hsl(71,65%,80%),hsl(0,65%,82%))"></div><span style="color:#059669">${vMin.toFixed(1)}% (minimo)</span><span>-&gt;</span><span style="color:#DC2626">${vMax.toFixed(1)}% (maximo)</span></div>`;
   container.innerHTML=html;
 }
 
@@ -1085,8 +1264,8 @@ function toggleRateioDetail(trId,cteChave,curNfe){
   const peers=(cteRateioIndex[cteChave]||[]).slice().sort((a,b)=>b.pct_rateio-a.pct_rateio);
   const totCte=peers.length?(peers[0].valor_frete_cte||peers.reduce((s,r)=>s+r.valor_frete,0)):0;
   const maxPct=peers.length?peers[0].pct_rateio:1;
-  const peersHtml=peers.map(r=>{const isCur=r.chave_nfe===curNfe;const bw=(maxPct>0?r.pct_rateio/maxPct*100:0).toFixed(0);return '<tr style="border-bottom:1px solid #1A2535'+(isCur?';background:rgba(245,158,11,.08)':'')+'">'+'<td style="padding:5px 10px"><strong style="color:'+(isCur?'var(--amber)':'var(--text)')+'">'+r.empresa+'</strong>'+(isCur?' <span style="font-size:9px;background:#3D2E00;color:var(--amber);padding:1px 6px;border-radius:4px">esta NF-e</span>':'')+'</td>'+'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+r.numero+'</td>'+'<td style="text-align:right;color:var(--text)">'+BRL(r.total_nf)+'</td>'+'<td style="text-align:right;color:var(--blue2);font-weight:700">'+BRL(r.valor_frete)+'</td>'+'<td style="text-align:right;font-weight:700;color:var(--amber)">'+r.pct_rateio+'%</td>'+'<td style="min-width:100px;padding:5px 10px"><div style="height:4px;border-radius:2px;background:#1E2D42"><div style="height:100%;border-radius:2px;background:var(--amber);width:'+bw+'%"></div></div></td></tr>';}).join('');
-  const panel='<tr id="'+detId+'" style="background:#080D18"><td colspan="19" style="padding:0"><div style="background:#0A1525;border-left:3px solid var(--amber);padding:14px 18px;margin:0 0 2px 0"><div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--amber)"><i class="fa-solid fa-truck"></i> Rateio do CTe</span><span style="font-family:monospace;font-size:10px;color:var(--text3)">...'+cteChave.slice(-14)+'</span><span style="font-size:11px;color:var(--text2)">Frete total: <strong style="color:var(--text)">'+BRL(totCte)+'</strong></span><span style="font-size:11px;color:var(--text2)">Dividido entre <strong style="color:var(--amber)">'+peers.length+'</strong> NF-e</span></div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid #2A3F58;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)"><th style="padding:4px 10px;text-align:left">Empresa</th><th style="text-align:left">NF</th><th style="text-align:right">Valor da Nota</th><th style="text-align:right">Frete Rateado</th><th style="text-align:right">% do Rateio</th><th style="min-width:100px">Proporcao</th></tr></thead><tbody>'+peersHtml+'</tbody><tfoot><tr style="border-top:1px solid #2A3F58;font-weight:700"><td colspan="3" style="padding:5px 10px;color:var(--text3);font-size:10px">Total</td><td style="text-align:right;color:var(--text)">'+BRL(totCte)+'</td><td style="text-align:right;color:var(--text)">100%</td><td></td></tr></tfoot></table></div></td></tr>';
+  const peersHtml=peers.map(r=>{const isCur=r.chave_nfe===curNfe;const bw=(maxPct>0?r.pct_rateio/maxPct*100:0).toFixed(0);return '<tr style="border-bottom:1px solid #E2E8F0'+(isCur?';background:#FFFBEB':'')+'">'+'<td style="padding:5px 10px"><strong style="color:'+(isCur?'#92400E':'#1E293B')+'">'+r.empresa+'</strong>'+(isCur?' <span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:4px">esta NF-e</span>':'')+'</td>'+'<td style="font-family:monospace;font-size:10px;color:#8099B4">'+r.numero+'</td>'+'<td style="text-align:right;color:#1E293B">'+BRL(r.total_nf)+'</td>'+'<td style="text-align:right;color:#1E40AF;font-weight:700">'+BRL(r.valor_frete)+'</td>'+'<td style="text-align:right;font-weight:700;color:#92400E">'+r.pct_rateio+'%</td>'+'<td style="min-width:100px;padding:5px 10px"><div style="height:4px;border-radius:2px;background:#E2E8F0"><div style="height:100%;border-radius:2px;background:#F59E0B;width:'+bw+'%"></div></div></td></tr>';}).join('');
+  const panel='<tr id="'+detId+'" style="background:#EEF3F8"><td colspan="19" style="padding:0"><div style="background:#FFFFFF;border-left:3px solid #F59E0B;padding:14px 18px;margin:0 0 2px 0;border-top:1px solid #E2E8F0"><div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#92400E"><i class="fa-solid fa-truck"></i> Rateio do CTe</span><span style="font-family:monospace;font-size:10px;color:#8099B4">...'+cteChave.slice(-14)+'</span><span style="font-size:11px;color:#475569">Frete total: <strong style="color:#1E293B">'+BRL(totCte)+'</strong></span><span style="font-size:11px;color:#475569">Dividido entre <strong style="color:#92400E">'+peers.length+'</strong> NF-e</span></div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid #D8E6F0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748B"><th style="padding:4px 10px;text-align:left">Empresa</th><th style="text-align:left">NF</th><th style="text-align:right">Valor da Nota</th><th style="text-align:right">Frete Rateado</th><th style="text-align:right">% do Rateio</th><th style="min-width:100px">Proporcao</th></tr></thead><tbody>'+peersHtml+'</tbody><tfoot><tr style="border-top:1px solid #D8E6F0;font-weight:700"><td colspan="3" style="padding:5px 10px;color:#8099B4;font-size:10px">Total</td><td style="text-align:right;color:#1E293B">'+BRL(totCte)+'</td><td style="text-align:right;color:#1E293B">100%</td><td></td></tr></tfoot></table></div></td></tr>';
   document.getElementById(trId).insertAdjacentHTML('afterend',panel);
 }
 function mkDetailRow(d,rowId){
@@ -1242,7 +1421,7 @@ function toggleCliDetails(key){
         valor_frete_cte:d.valor_frete_cte||0,peso_kg:d.peso_kg||0,nfes:[]};}
       cteGrps[ck].nfes.push(d);
     });
-    const detHeader='<tr style="background:rgba(59,130,246,.08);border-bottom:1px solid #2A3F58;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">'
+    const detHeader='<tr style="background:#F8FAFC;border-bottom:1px solid #D8E6F0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#64748B">'
       +'<td style="padding:6px 10px;min-width:80px">Data NF</td>'
       +'<td style="min-width:85px">Numero NF</td>'
       +'<td style="min-width:100px">Valor Nota</td>'
@@ -1255,13 +1434,13 @@ function toggleCliDetails(key){
     const detRows=Object.values(cteGrps).map(cg=>{
       const cteFull=cg.cte_chave;
       const cteDisp=cteFull?cteFull.slice(0,12)+'...'+cteFull.slice(-8):'--';
-      const cteHdr='<tr style="background:rgba(59,130,246,.18);border-top:2px solid rgba(59,130,246,.45);border-bottom:1px solid rgba(59,130,246,.25)">'
+      const cteHdr='<tr style="background:#EFF6FF;border-top:2px solid #BFDBFE;border-bottom:1px solid #DBEAFE">'
         +'<td colspan="9" style="padding:6px 10px">'
         +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-        +'<span style="background:rgba(59,130,246,.3);border-radius:4px;padding:1px 7px;font-size:9px;font-weight:800;color:var(--blue2);letter-spacing:.5px">CTe</span>'
+        +'<span style="background:#DBEAFE;border-radius:4px;padding:1px 7px;font-size:9px;font-weight:800;color:#1E40AF;letter-spacing:.5px">CTe</span>'
         +'<code style="font-size:10.5px;color:var(--text);letter-spacing:.3px;user-select:all" title="'+cteFull+'">'+cteDisp+'</code>'
         +'<button onclick="navigator.clipboard.writeText(\''+cteFull+'\');this.textContent=\'ok Copiado!\';setTimeout(()=>{this.textContent=\'Copiar\'},1500)" '
-        +'style="background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.4);color:var(--blue2);border-radius:4px;padding:2px 8px;font-size:9px;cursor:pointer;white-space:nowrap">Copiar</button>'
+        +'style="background:#DBEAFE;border:1px solid #BFDBFE;color:#1E40AF;border-radius:4px;padding:2px 8px;font-size:9px;cursor:pointer;white-space:nowrap">Copiar</button>'
         +'<span style="font-size:10px;color:var(--text2);font-weight:600">'+trName(cg.transportadora||'-')+'</span>'
         +(cg.origem_cidade?'<span style="font-size:9px;color:var(--text3)">'+cg.origem_cidade+'/'+cg.origem_uf+' -> '+cg.destino_cidade+'</span>':'')
         +'<span style="font-size:11px;color:var(--blue2);font-weight:700;margin-left:4px">'+BRL(cg.valor_frete_cte)+'</span>'
@@ -1286,7 +1465,7 @@ function toggleCliDetails(key){
       }).join('');
       return cteHdr+nfeRows;
     }).join('');
-    const detPanel='<tr id="clidet-'+gkey+'" style="display:none"><td colspan="9" style="padding:0"><div style="background:#0D1525;border-top:1px solid var(--bd);padding:0"><table style="width:100%;border-collapse:collapse">'+detHeader+detRows+'</table></div></td></tr>';
+    const detPanel='<tr id="clidet-'+gkey+'" style="display:none"><td colspan="9" style="padding:0"><div style="background:#F8FAFC;border-top:1px solid #D8E6F0;padding:0"><table style="width:100%;border-collapse:collapse">'+detHeader+detRows+'</table></div></td></tr>';
     return mainRow+detPanel;
   }).join('');
   mkPager(display.length,cliPage,PAGE,'cli_pager',pg=>{cliPage=pg;renderCliTable();});
@@ -1356,7 +1535,7 @@ function renderEmpresa(){
       document.getElementById('emp_k_top_transp_pct').textContent=(topTr.frete/top.frete*100).toFixed(1)+'% do frete da empresa';
     }
   }
-  mkBar('ch_emp_frete',empList.map(e=>e.emp),empList.map(e=>e.frete),'#3B82F6');
+  mkBar('ch_emp_frete',empList.map(e=>e.emp),empList.map(e=>e.frete),'#69AFFA');
   const top5Tr=Object.entries(trGlobal).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([tr])=>tr);
   const stackDs=top5Tr.map((tr,i)=>({label:trName(tr),data:empList.map(e=>(e.trs[tr]||{frete:0}).frete),backgroundColor:COLORS[i],borderRadius:3}));
   stackDs.push({label:'Outros',data:empList.map(e=>{const s=top5Tr.reduce((a,tr)=>a+(e.trs[tr]||{frete:0}).frete,0);return Math.max(0,e.frete-s);}),backgroundColor:'rgba(255,255,255,.12)',borderRadius:3});
@@ -1423,7 +1602,7 @@ function renderEmpresa(){
   rowsCom.forEach(d=>{const e=d.empresa||'?'; byCom[e]=(byCom[e]||0)+d.valor_frete;});
   rowsOp.forEach(d=>{const e=d.empresa||'?';  byOp2[e]=(byOp2[e]||0)+d.valor_frete;});
   mkGrouped('ch_emp_tipo',allEmps2,[
-    {label:'Comercial (Vendas)',data:allEmps2.map(e=>byCom[e]||0),backgroundColor:'#3B82F6',borderRadius:3},
+    {label:'Comercial (Vendas)',data:allEmps2.map(e=>byCom[e]||0),backgroundColor:'#69AFFA',borderRadius:3},
     {label:'Operacional (Transf.)',data:allEmps2.map(e=>byOp2[e]||0),backgroundColor:'#7C3AED',borderRadius:3},
   ]);
   const freByEmp={};rows.forEach(d=>{const e=d.empresa||'?';freByEmp[e]=(freByEmp[e]||0)+d.valor_frete;});
@@ -1780,6 +1959,9 @@ function initApp(){
   }catch(err){console.error('[FRETE] Erro na inicializacao:',err);}
 }
 
+const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','admin':'Admin'};
+function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
+(function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -1787,6 +1969,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');document.getElementById('tab-'+tab).classList.add('active');
+    const _bc=document.getElementById('tb-bc-page');if(_bc)_bc.textContent=_TAB_NAMES[tab]||tab;
     if(tab==='empresa') renderEmpresa();
     else if(tab==='marketplace') renderMarketplace();
     else if(tab==='clientes') renderClientes();
@@ -1816,15 +1999,15 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 // TEMA DARK / OCEAN
 function toggleTheme(){
   const isOcean=document.documentElement.classList.toggle('ocean');
-  document.getElementById('theme-toggle').textContent=isOcean?'🌑':'🌊';
-  document.getElementById('theme-toggle').title=isOcean?'Alternar para tema escuro':'Alternar para tema Ocean';
+  document.getElementById('theme-toggle').textContent=isOcean?'🌙':'☀️';
+  document.getElementById('theme-toggle').title=isOcean?'Tema claro ativo (clique para escuro)':'Tema escuro ativo (clique para claro)';
   localStorage.setItem('frete-theme',isOcean?'ocean':'dark');
 }
 (function(){
   if(localStorage.getItem('frete-theme')==='ocean'){
     document.documentElement.classList.add('ocean');
     const btn=document.getElementById('theme-toggle');
-    if(btn){btn.textContent='🌑';btn.title='Alternar para tema escuro';}
+    if(btn){btn.textContent='🌙';btn.title='Tema claro ativo (clique para escuro)';}
   }
 })();
 
@@ -1952,6 +2135,7 @@ document.getElementById('admin-user-form').addEventListener('submit',async(e)=>{
   finally{btn.disabled=false;btn.textContent='Salvar Usuário';}
 });
 
+if(typeof lucide!=='undefined'){try{lucide.createIcons();}catch(e){}}
 async function adminDeleteUser(uid,email){
   if(!confirm('Remover acesso de '+email+'? O usuário não poderá mais entrar no sistema.')) return;
   try{
