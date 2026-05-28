@@ -650,11 +650,11 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="card-title">Documentos de Transporte sem NF-e Correspondente<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as entregas com comprovante de frete registrado mas sem uma venda correspondente encontrada. A coluna Motivo indica a causa mais provavel de cada caso — ajuda a identificar o que precisa ser corrigido.</span></span></div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Conhecimentos de Frete (CTe) cujas Notas Fiscais nao foram localizadas no faturamento.</p>
     <div class="sr">
-      <input type="text" id="nv_search" placeholder="Buscar transportadora, cidade, chave CTe...">
+      <input type="text" id="nv_search" placeholder="Buscar transportadora, cidade, chave CTe, numero NF...">
       <select id="nv_uf"><option value="">Todos os destinos</option></select>
       <select id="nv_transp"><option value="">Todas as transportadoras</option></select>
     </div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Valor Frete</th><th>NF-e(s) Referenciadas</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
     <div class="pager" id="nv_pager"></div>
   </div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
@@ -1815,7 +1815,11 @@ function initApp(){
     nvRows=nvBase.filter(c=>{
       if(uf&&c.destino_uf!==uf) return false;
       if(tr&&c.transportadora!==tr) return false;
-      if(q){const h=(c.cte_chave+' '+c.transportadora+' '+c.origem_cidade+' '+c.destino_cidade).toLowerCase();if(!h.includes(q)) return false;}
+      if(q){
+        const h=(c.cte_chave+' '+c.transportadora+' '+c.origem_cidade+' '+c.destino_cidade).toLowerCase();
+        const nfeMatch=(c.nfe_refs||[]).some(n=>n.includes(q)||String(parseInt(n.slice(25,34))).includes(q));
+        if(!h.includes(q)&&!nfeMatch) return false;
+      }
       return true;
     });
     nvPage=0;nvRender();
@@ -1823,14 +1827,22 @@ function initApp(){
   function nvRender(){
     const tbody=document.getElementById('nv_tbody');
     const slice=nvRows.slice(nvPage*PAGE,nvPage*PAGE+PAGE);
-    tbody.innerHTML=slice.map(c=>'<tr>'
-      +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
-      +'<td>'+(c.data_emissao||'-')+'</td>'
-      +'<td title="'+(c.transportadora||'')+'">'+trName(c.transportadora||'-')+'</td>'
-      +'<td style="font-size:10px">'+(c.origem_cidade||'')+(c.origem_uf?'/'+c.origem_uf:'')+'</td>'
-      +'<td style="font-size:10px">'+(c.destino_cidade||'')+(c.destino_uf?'/'+c.destino_uf:'')+'</td>'
-      +'<td style="color:var(--blue2);font-weight:600">'+BRL(c.valor_frete)+'</td>'
-      +'<td style="font-size:11px;color:var(--yellow)"><i class="fa-solid fa-triangle-exclamation"></i>'+(c.motivo||'Motivo nao identificado')+'</td></tr>').join('');
+    tbody.innerHTML=slice.map(c=>{
+      const refs=c.nfe_refs||[];
+      const nfeCells=refs.length
+        ? refs.slice(0,4).map(ch=>{const num=parseInt(ch.slice(25,34));return`<span title="Chave completa: ${ch}" style="display:inline-block;font-family:monospace;font-size:10px;background:rgba(94,106,210,.12);color:var(--blue2);padding:1px 6px;border-radius:4px;margin:1px">${num}</span>`;}).join('')
+          +(refs.length>4?`<span style="font-size:9px;color:var(--text3)"> +${refs.length-4}</span>`:'')
+        : '<span style="color:var(--text3);font-size:10px">CTe sem NF</span>';
+      return '<tr>'
+        +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
+        +'<td>'+(c.data_emissao||'-')+'</td>'
+        +'<td title="'+(c.transportadora||'')+'">'+trName(c.transportadora||'-')+'</td>'
+        +'<td style="font-size:10px">'+(c.origem_cidade||'')+(c.origem_uf?'/'+c.origem_uf:'')+'</td>'
+        +'<td style="font-size:10px">'+(c.destino_cidade||'')+(c.destino_uf?'/'+c.destino_uf:'')+'</td>'
+        +'<td style="color:var(--blue2);font-weight:600">'+BRL(c.valor_frete)+'</td>'
+        +'<td style="padding:6px 12px">'+nfeCells+'</td>'
+        +'<td style="font-size:11px;color:var(--yellow)"><i class="fa-solid fa-triangle-exclamation"></i> '+(c.motivo||'Motivo nao identificado')+'</td></tr>';
+    }).join('');
     mkPager(nvRows.length,nvPage,PAGE,'nv_pager',pg=>{nvPage=pg;nvRender();});
   }
   nvInp.addEventListener('input',nvFilter);nvSelUf.addEventListener('change',nvFilter);nvSelTr.addEventListener('change',nvFilter);
