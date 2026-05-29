@@ -1030,6 +1030,7 @@ function _mergeData(datas) {
     por_nat_op: datas[0]?.por_nat_op || [],
     detalhes: datas.flatMap(d=>d.detalhes||[]),
     ctes_nao_vinculados: datas.flatMap(d=>d.ctes_nao_vinculados||[]),
+    ctes_nf_cancelada: datas.flatMap(d=>d.ctes_nf_cancelada||[]),
     cancelados_data: datas.flatMap(d=>d.cancelados_data||[]),
     cte_cancelados_chaves: [...new Set(datas.flatMap(d=>d.cte_cancelados_chaves||[]))],
     compras: datas.flatMap(d=>d.compras||[]),
