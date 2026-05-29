@@ -10,6 +10,7 @@ import sys
 import json
 import re
 import csv
+import sqlite3
 from html.parser import HTMLParser
 from xml.etree import ElementTree as ET
 from collections import defaultdict
@@ -126,7 +127,61 @@ def _parse_single_fat(fat_file, nfe_map, force_empresa=None):
         else: nf["humana_total"]+=total_item
     return novas
 
+def _parse_faturamento_db():
+    """Lê o faturamento de saída do banco SQLite (vw_nf_saida).
+    Retorna nfe_map compatível com _parse_single_fat, ou None se indisponível."""
+    if not os.path.exists(QUIVE_DB):
+        return None
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur  = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='view' AND name='vw_nf_saida'")
+        if not cur.fetchone():
+            conn.close(); return None
+        cur.execute("SELECT COUNT(*) FROM nf_saida_items")
+        if cur.fetchone()[0] == 0:
+            conn.close(); return None
+        cur.execute("SELECT * FROM vw_nf_saida")
+        rows = cur.fetchall()
+        conn.close()
+        nfe_map = {}
+        for r in rows:
+            chave = r["chave"]
+            if not chave or len(chave) != 44: continue
+            nfe_map[chave] = {
+                "chave":           chave,
+                "empresa":         r["empresa"] or CNPJ_MAP.get(chave[6:20], ""),
+                "numero":          r["numero"],
+                "canal":           r["canal"],
+                "data_emissao":    r["data_emissao"],
+                "participante":    r["participante"],
+                "cidade":          r["part_cidade"],
+                "estado":          r["part_estado"],
+                "part_cnpj":       r["cpf_cnpj_part"],
+                "nat_operacao":    r["nat_operacao"],
+                "cod_nat_operacao":r["cod_nat_oper"],
+                "total_nf":        r["total_nf"] or 0.0,
+                "custo_total":     r["custo_total"] or 0.0,
+                "vlr_frete_nf":    r["vlr_frete_nf"] or 0.0,
+                "margem_bruta":    r["margem_bruta"] or 0.0,
+                "linhahum_total":  r["linhahum_total"] or 0.0,
+                "humana_total":    r["humana_total"] or 0.0,
+            }
+        print(f"[FAT-DB] {len(nfe_map)} NF-e de saída carregadas do banco")
+        return nfe_map
+    except Exception as e:
+        print(f"[FAT-DB] Erro ao ler banco: {e} — usando CSV como fallback")
+        return None
+
 def parse_faturamento(base_dir):
+    # Tenta banco primeiro
+    nfe_map = _parse_faturamento_db()
+    if nfe_map is not None:
+        print(f"   NF-e unicas totais: {len(nfe_map)}")
+        return nfe_map
+    # Fallback: lê do CSV
+    print("[FAT] Banco indisponível — lendo CSV...")
     cte_folder=os.path.join(base_dir,"CTe")
     company_files={}; generic_files=[]
     for fname in sorted(os.listdir(cte_folder)):
@@ -396,6 +451,35 @@ def parse_ctes(cte_xml_dir, chaves_canceladas=None):
     print(f"   NF-e unicas referenciadas: {len(nfe_to_cte)}")
     return cte_list,nfe_to_cte,n_cancelados_skip,cancelados_lista
 
+def _carregar_nf_entrada():
+    """Carrega do banco SQLite os CTe vinculados a NF de entrada (compras).
+    Retorna dict: cte_chave -> lista de dicts com dados da NF de entrada."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur  = conn.cursor()
+        # verifica se a view existe
+        cur.execute("SELECT name FROM sqlite_master WHERE type='view' AND name='vw_cte_nf_entrada'")
+        if not cur.fetchone():
+            conn.close(); return {}
+        cur.execute("SELECT * FROM vw_cte_nf_entrada")
+        rows = cur.fetchall()
+        conn.close()
+        resultado = {}
+        for r in rows:
+            chave_cte = r["chave_cte"]
+            if chave_cte not in resultado:
+                resultado[chave_cte] = []
+            resultado[chave_cte].append(dict(r))
+        print(f"   NF de Entrada: {len(rows)} vínculos CTe×NF ({len(resultado)} CTe únicos)")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar nf_entrada: {e}")
+        return {}
+
+
 def cruzar(nfe_map, cte_list, nfe_to_cte):
     print("\n[OK] Cruzando dados...")
     # Marketplace detectado pelo nome da transportadora OU pelo canal de venda
@@ -475,22 +559,41 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     cte_sem_fat=len(cte_nfe_keys-fat_keys)
     print(f"   CTe sem NF-e no faturamento: {cte_sem_fat}")
     linked_cte_chaves=set(d["cte_chave"] for d in detalhes)
+    # Carrega CTe vinculados a NF de entrada (compras)
+    nf_entrada_map = _carregar_nf_entrada()          # cte_chave -> [nf_data, ...]
+    nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
     def _motivo_sem_vinculo(cte):
         if not cte["nfe_chaves"]:
             return "CTe não informou nota fiscal de origem"
         n=len(cte["nfe_chaves"])
         return f"Nota fiscal não encontrada no faturamento ({n} NF referenciada{'s' if n>1 else ''})"
-    ctes_nao_vinculados=[{
-        "cte_chave":cte["cte_chave"],"transportadora":cte["transportadora"],
-        "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
-        "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
-        "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
-        "dest_cnpj":cte["dest_cnpj"],"dest_nome":cte.get("dest_nome",""),
-        "rem_nome":cte["rem_nome"],"numero_cte":cte.get("numero_cte",""),
-        "valor_frete":cte["valor_frete"],"nfe_refs":cte["nfe_chaves"],
-        "motivo":_motivo_sem_vinculo(cte),
-    } for cte in cte_list if cte["cte_chave"] not in linked_cte_chaves]
+    def _todas_nf_humana_ausentes(cte):
+        """True se todas as NF refs são de CNPJ Humana mas ausentes do faturamento."""
+        if not cte["nfe_chaves"]: return False
+        return all(ch[6:20] in CNPJ_MAP and ch not in nfe_map for ch in cte["nfe_chaves"])
+    ctes_nao_vinculados=[]; ctes_nf_cancelada=[]
+    for cte in cte_list:
+        if cte["cte_chave"] in linked_cte_chaves: continue
+        if cte["cte_chave"] in nf_entrada_chaves: continue
+        if cte["dest_cnpj"] in CNPJ_MAP: continue
+        row={
+            "cte_chave":cte["cte_chave"],"transportadora":cte["transportadora"],
+            "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
+            "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
+            "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
+            "dest_cnpj":cte["dest_cnpj"],"dest_nome":cte.get("dest_nome",""),
+            "rem_nome":cte["rem_nome"],"numero_cte":cte.get("numero_cte",""),
+            "valor_frete":cte["valor_frete"],"nfe_refs":cte["nfe_chaves"],
+            "motivo":_motivo_sem_vinculo(cte),
+        }
+        if _todas_nf_humana_ausentes(cte):
+            row["empresa_nf"]= CNPJ_MAP.get(cte["nfe_chaves"][0][6:20],"") if cte["nfe_chaves"] else ""
+            ctes_nf_cancelada.append(row)
+        else:
+            ctes_nao_vinculados.append(row)
     print(f"   CTe sem vinculo no dashboard: {len(ctes_nao_vinculados)}")
+    print(f"   CTe c/ NF cancelada (Humana ausente do fat): {len(ctes_nf_cancelada)}")
+    print(f"   CTe de compra identificados via NF Entrada: {len(nf_entrada_chaves)}")
     # CTe de compra/devolução: destinatário é empresa Humana e não está vinculado ao faturamento de vendas
     def _mkt_type_tr(tr):
         t=(tr or "").upper()
@@ -498,8 +601,34 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if any(s in t for s in ["EBAZAR","MERCADO LIVRE"]): return "ml"
         return None
     compras=[]; devolucoes_mkt=[]
+    # Compras via NF de Entrada (fonte primária — mais completa)
+    ctes_adicionados_compras = set()
+    for cte in cte_list:
+        if cte["cte_chave"] in linked_cte_chaves: continue
+        if cte["cte_chave"] in nf_entrada_chaves:
+            nfs = nf_entrada_map[cte["cte_chave"]]
+            nf  = nfs[0]  # usa a primeira NF para dados do fornecedor
+            compras.append({
+                "cte_chave":    cte["cte_chave"],
+                "transportadora": cte["transportadora"],
+                "data_emissao": cte["data_emissao"][:10] if cte["data_emissao"] else "",
+                "rem_nome":     nf.get("emit_nome") or cte["rem_nome"],
+                "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
+                "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
+                "empresa_dest": nf.get("empresa") or CNPJ_MAP.get(cte["dest_cnpj"],""),
+                "valor_frete":  cte["valor_frete"],
+                "nfe_refs":     cte["nfe_chaves"],
+                "peso_kg":      cte["peso_kg"], "volume_m3": cte["volume_m3"],
+                "fornecedor_cnpj": nf.get("emit_cnpj",""),
+                "numero_nfe":   nf.get("numero_nfe",""),
+                "total_nf":     sum(n.get("total_nf",0) for n in nfs),
+                "frete_nf":     sum(n.get("frete_nf",0)  for n in nfs),
+                "nat_desc":     nf.get("nat_desc",""),
+            })
+            ctes_adicionados_compras.add(cte["cte_chave"])
     for cte in cte_list:
         if cte["cte_chave"] in linked_cte_chaves or cte["dest_cnpj"] not in CNPJ_MAP: continue
+        if cte["cte_chave"] in ctes_adicionados_compras: continue  # já incluído via NF Entrada
         mkt=_mkt_type_tr(cte["transportadora"])
         row={"cte_chave":cte["cte_chave"],"transportadora":cte["transportadora"],
              "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
@@ -571,6 +700,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "total_faturamento":total_faturamento},
         "transf_fat":transf_fat,"transf_sem_cte":transf_sem_cte_list,"cnpj_map":CNPJ_MAP,
         "por_nat_op":make_list(por_nat_op),"detalhes":detalhes,"ctes_nao_vinculados":ctes_nao_vinculados,
+        "ctes_nf_cancelada":ctes_nf_cancelada,
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
     }
 
@@ -1468,6 +1598,35 @@ header{
       </table>
     </div>
     <div class="pager" id="nv_pager"></div>
+  </div>
+
+  <!-- CTe com NF Cancelada -->
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
+    <div class="kpi-card" style="border-top:3px solid var(--amber)">
+      <div class="kpi-val" id="nc_k_qtd" style="color:var(--amber)">-</div>
+      <div class="kpi-lbl">CTe c/ NF Cancelada</div>
+      <div class="kpi-sub">NF emitida e cancelada no ERP</div>
+    </div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)">
+      <div class="kpi-val" id="nc_k_frete" style="color:var(--amber)">-</div>
+      <div class="kpi-lbl">Frete Não Apurado</div>
+      <div class="kpi-sub">valor sem vínculo por NF cancelada</div>
+    </div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)">
+      <div class="kpi-val" id="nc_k_transp">-</div>
+      <div class="kpi-lbl">Transportadoras</div>
+      <div class="kpi-sub">envolvidas</div>
+    </div>
+  </div>
+  <div class="card" id="nc_card" style="margin-top:16px;border-left:3px solid var(--amber);display:none">
+    <div class="card-title" style="color:var(--amber)"><i class="fa-solid fa-file-circle-xmark"></i> CTe com NF Cancelada — Frete sem vínculo por cancelamento de NF</div>
+    <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">O CTe foi emitido pela transportadora mas a NF-e correspondente foi cancelada no ERP. O frete é válido, porém não há nota de venda para vincular.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Chave CTe</th><th>Nº CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Empresa NF</th><th>Valor Frete</th><th>NF Refs</th></tr></thead>
+        <tbody id="nc_tbody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- CTe Cancelados -->
@@ -3115,6 +3274,30 @@ document.getElementById('nv_k_frete').textContent=BRL(nvBase.reduce((s,c)=>s+c.v
 document.getElementById('nv_k_transp').textContent=N(new Set(nvBase.map(c=>c.transportadora).filter(Boolean)).size);
 document.getElementById('nv_k_nferefs').textContent=N(nvBase.reduce((s,c)=>s+(c.nfe_refs||[]).length,0));
 
+// CTe com NF Cancelada
+(function(){
+  const ncData=DATA.ctes_nf_cancelada||[];
+  document.getElementById('nc_k_qtd').textContent=N(ncData.length);
+  document.getElementById('nc_k_frete').textContent=BRL(ncData.reduce((s,c)=>s+c.valor_frete,0));
+  document.getElementById('nc_k_transp').textContent=N(new Set(ncData.map(c=>c.transportadora).filter(Boolean)).size);
+  if(!ncData.length) return;
+  document.getElementById('nc_card').style.display='';
+  document.getElementById('nc_tbody').innerHTML=ncData.map(c=>{
+    const nfChips=(c.nfe_refs||[]).slice(0,3).map(ch=>'<span style="font-family:monospace;font-size:9px;color:var(--text3)" title="'+ch+'">'+parseInt(ch.slice(25,34))+'</span>').join(' ');
+    return '<tr>'
+      +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
+      +'<td style="color:var(--text);font-weight:600">'+(c.numero_cte||'-')+'</td>'
+      +'<td>'+(c.data_emissao||'-')+'</td>'
+      +'<td title="'+(c.transportadora||'')+'">'+trName(c.transportadora||'-')+'</td>'
+      +'<td style="font-size:10px">'+(c.origem_cidade||'')+(c.origem_uf?'/'+c.origem_uf:'')+'</td>'
+      +'<td style="font-size:10px">'+(c.destino_cidade||'')+(c.destino_uf?'/'+c.destino_uf:'')+'</td>'
+      +'<td><span class="chip chip-amber">'+(c.empresa_nf||'-')+'</span></td>'
+      +'<td style="color:var(--amber);font-weight:600">'+BRL(c.valor_frete)+'</td>'
+      +'<td>'+nfChips+'</td>'
+      +'</tr>';
+  }).join('');
+})();
+
 // CTe cancelados
 (function(){
   const cancelData=DATA.cancelados_data||[];
@@ -3365,6 +3548,7 @@ def split_by_empresa(dados):
             "cnpj_map": dados.get("cnpj_map",{}),
             "por_nat_op": dados.get("por_nat_op",[]),
             "ctes_nao_vinculados": dados.get("ctes_nao_vinculados",[]),
+            "ctes_nf_cancelada": dados.get("ctes_nf_cancelada",[]),
             "cancelados_data": dados.get("cancelados_data",[]),
             "cte_cancelados_chaves": dados.get("cte_cancelados_chaves",[]),
             "detalhes": det,
