@@ -662,23 +662,30 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <!-- CUSTO LOGÍSTICO CONSOLIDADO -->
   <div class="sdiv" style="margin-top:8px">Custo Logistico Total Consolidado</div>
   <div class="card" id="ct_card">
-    <div class="card-title">Visao Consolidada — Frete de Todas as Categorias <span style="font-size:9px;font-weight:400;color:var(--text3)">(global, sem filtros de periodo)</span></div>
-    <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start">
+    <div class="card-title">Custo Logistico Consolidado — Todas as Categorias <span style="font-size:9px;font-weight:400;color:var(--text3)">(visao global, sem filtro de periodo)</span></div>
+    <p style="font-size:11px;color:var(--text2);margin:-4px 0 16px;line-height:1.6">
+      Soma de <strong style="color:var(--text)">todos os CT-e ativos</strong> da base, independente de terem ou nao vinculo com o faturamento.
+      Representa o custo logistico real pago a transportadoras — incluindo fretes de venda, de compra, devolucoes e casos em investigacao.
+      Os valores das abas individuais (Visao Geral, Compras, etc.) sao subconjuntos deste total.
+    </p>
+    <!-- Total + barra global -->
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:14px 16px;background:var(--s2);border-radius:10px;margin-bottom:16px">
       <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:6px">Total Geral</div>
-        <div style="font-size:28px;font-weight:900;color:var(--text);letter-spacing:-1px" id="ct_total">-</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:4px" id="ct_ctes">-</div>
-        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Rastreado vs Pendente</div>
-          <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px" id="ct_bar_total"></div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:4px">
-            <span style="color:var(--green2)" id="ct_pct_rastread">-</span>
-            <span style="color:var(--yellow)" id="ct_pct_pend">-</span>
-          </div>
-        </div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:4px">Total Geral de Frete</div>
+        <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:-1px;white-space:nowrap" id="ct_total">-</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="ct_ctes">-</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px" id="ct_rows"></div>
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
+          <span style="color:var(--green2);font-weight:600" id="ct_pct_rastread">-</span>
+          <span style="color:var(--yellow);font-weight:600" id="ct_pct_pend">-</span>
+        </div>
+        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px" id="ct_bar_total"></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px">Verde = custo ja apurado e vinculado &nbsp;|&nbsp; Amarelo = aguarda identificacao ou investigacao</div>
+      </div>
     </div>
+    <!-- Breakdown por categoria -->
+    <div style="display:flex;flex-direction:column;gap:0" id="ct_rows"></div>
   </div>
 </div>
 
@@ -1629,25 +1636,34 @@ function renderAll(){
     document.getElementById('ct_pct_pend').textContent=pPend.toFixed(1)+'% pendente';
     // Linhas de detalhamento
     const cats=[
-      {label:'Frete de Venda',   val:vendas, qtd:qtdVendas, cor:'var(--blue)',   icon:'fa-truck',          tip:'CT-e cruzados com NF-e de venda no faturamento'},
-      {label:'Frete de Compra',  val:compras,qtd:qtdComp,   cor:'var(--green)',  icon:'fa-boxes-stacked',   tip:'CT-e vinculados a NF de entrada (compras/fornecedores)'},
-      {label:'Dev. Marketplace', val:devMkt, qtd:qtdDev,    cor:'var(--purple2)',icon:'fa-rotate-left',     tip:'Devolucoes via Shopee e Mercado Livre'},
-      {label:'NF Cancelada',     val:nfCanc, qtd:qtdNC,     cor:'var(--amber)',  icon:'fa-file-circle-xmark',tip:'CT-e valido cuja NF de venda foi cancelada no ERP'},
-      {label:'Sem Vinculo',      val:semVinc,qtd:qtdSV,     cor:'var(--red2)',   icon:'fa-triangle-exclamation',tip:'CT-e sem NF correspondente identificada'},
+      {label:'Frete de Venda',    val:vendas, qtd:qtdVendas, cor:'var(--blue)',    icon:'fa-truck',             desc:'CT-e cruzados com NF-e de venda registrada no faturamento. Custo ja apurado e vinculado a uma receita.'},
+      {label:'Frete de Compra',   val:compras,qtd:qtdComp,   cor:'var(--green)',   icon:'fa-boxes-stacked',     desc:'CT-e vinculados a NF de entrada de fornecedores. Custo logistico das compras identificado.'},
+      {label:'Dev. Marketplace',  val:devMkt, qtd:qtdDev,    cor:'var(--purple2)', icon:'fa-rotate-left',       desc:'Fretes de devolucao via Shopee ou Mercado Livre. Custo de retorno de mercadorias ao estoque.'},
+      {label:'CT-e c/ NF Cancelada',val:nfCanc,qtd:qtdNC,   cor:'var(--amber)',   icon:'fa-file-circle-xmark', desc:'CT-e valido emitido pela transportadora, porem a NF-e correspondente foi cancelada no ERP. Frete pago sem nota fiscal de venda associada — requer analise.'},
+      {label:'Sem Vinculo',       val:semVinc,qtd:qtdSV,     cor:'var(--red2)',    icon:'fa-triangle-exclamation',desc:'CT-e sem NF-e correspondente identificada. Pode ser CTe de terceiros, periodo fora do faturamento importado ou nota ainda nao exportada do ERP.'},
     ];
-    document.getElementById('ct_rows').innerHTML=cats.map(c=>{
+    document.getElementById('ct_rows').innerHTML=cats.map((c,i)=>{
       const pct=total?c.val/total*100:0;
       const barW=Math.max(pct,0.3).toFixed(1);
-      return '<div style="display:grid;grid-template-columns:160px 1fr 110px 70px;align-items:center;gap:10px">'
-        +'<div style="display:flex;align-items:center;gap:7px">'
-        +' <i class="fa-solid '+c.icon+'" style="color:'+c.cor+';width:14px;text-align:center;font-size:12px"></i>'
-        +' <span style="font-size:11px;color:var(--text2);font-weight:500" title="'+c.tip+'">'+c.label+'</span>'
+      const border=i>0?'border-top:1px solid var(--bd);':'';
+      return '<div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 0;'+border+'">'
+        +'<div>'
+        +' <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+        +'  <i class="fa-solid '+c.icon+'" style="color:'+c.cor+';width:14px;text-align:center;font-size:12px;flex-shrink:0"></i>'
+        +'  <span style="font-size:12px;color:var(--text);font-weight:700">'+c.label+'</span>'
+        +'  <span style="font-size:10px;color:var(--text3)">'+N(c.qtd)+' CT-e</span>'
+        +' </div>'
+        +' <div style="font-size:10px;color:var(--text3);margin-bottom:6px;padding-left:22px">'+c.desc+'</div>'
+        +' <div style="padding-left:22px;display:flex;align-items:center;gap:8px">'
+        +'  <div style="flex:1;background:var(--s2);border-radius:3px;height:6px;overflow:hidden">'
+        +'   <div style="height:100%;width:'+barW+'%;background:'+c.cor+';opacity:.85;border-radius:3px;transition:width .4s"></div>'
+        +'  </div>'
+        +'  <span style="font-size:9px;color:'+c.cor+';font-weight:700;min-width:36px;text-align:right">'+pct.toFixed(1)+'%</span>'
+        +' </div>'
         +'</div>'
-        +'<div style="background:var(--s2);border-radius:3px;height:8px;overflow:hidden">'
-        +' <div style="height:100%;width:'+barW+'%;background:'+c.cor+';opacity:.8;border-radius:3px;transition:width .4s"></div>'
+        +'<div style="text-align:right;padding-top:2px">'
+        +' <div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap">'+BRL(c.val)+'</div>'
         +'</div>'
-        +'<div style="text-align:right;font-size:12px;font-weight:700;color:var(--text)">'+BRL(c.val)+'</div>'
-        +'<div style="text-align:right;font-size:10px;color:var(--text3)">'+N(c.qtd)+' CT-e &nbsp;<span style="color:'+c.cor+';font-weight:700">'+pct.toFixed(1)+'%</span></div>'
         +'</div>';
     }).join('');
   })();
