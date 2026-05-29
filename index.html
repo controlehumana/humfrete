@@ -2301,7 +2301,12 @@ function initApp(){
         ?`<span class="chip chip-blue" style="font-size:10px;font-weight:700">${emp}</span>`
         :`<span style="color:var(--text3);font-size:10px">—</span>`;
       const nfeCells=refs.length
-        ? refs.slice(0,4).map(ch=>{const num=parseInt(ch.slice(25,34));return`<span title="Chave completa: ${ch}" style="display:inline-block;font-family:monospace;font-size:10px;background:rgba(94,106,210,.12);color:var(--blue2);padding:1px 6px;border-radius:4px;margin:1px">${num}</span>`;}).join('')
+        ? refs.slice(0,4).map(ch=>{
+            const num=parseInt(ch.slice(25,34));
+            const mm=ch.slice(4,6),aa=ch.slice(2,4);
+            const dataNF=mm&&aa?`<span style="font-size:9px;color:var(--text3);margin-left:3px">${mm}/${aa}</span>`:'';
+            return`<span title="Chave: ${ch}" style="display:inline-flex;align-items:center;font-family:monospace;font-size:10px;background:rgba(94,106,210,.12);color:var(--blue2);padding:1px 6px;border-radius:4px;margin:1px">${num}${dataNF}</span>`;
+          }).join('')
           +(refs.length>4?`<span style="font-size:9px;color:var(--text3)"> +${refs.length-4}</span>`:'')
         : '<span style="color:var(--text3);font-size:10px">CTe sem NF</span>';
       const remNome=esc(c.rem_nome||'');
