@@ -289,6 +289,7 @@ def parse_ctes_from_db(db_path):
                COALESCE(cc.uf_destino,       '') AS destino_uf,
                COALESCE(cc.cnpj_destinatario, '') AS dest_cnpj,
                COALESCE(cc.nome_destinatario,'') AS dest_nome,
+               COALESCE(cc.cnpj_remetente,   '') AS rem_cnpj,
                COALESCE(cc.nome_remetente,   '') AS rem_nome,
                COALESCE(cc.numero_cte,       '') AS numero_cte,
                COALESCE(cc.valor_total_prestacao, 0) AS valor_frete,
@@ -325,6 +326,7 @@ def parse_ctes_from_db(db_path):
             "destino_uf":    row["destino_uf"],
             "dest_cnpj":     row["dest_cnpj"],
             "dest_nome":     row["dest_nome"],
+            "rem_cnpj":      row["rem_cnpj"],
             "rem_nome":      row["rem_nome"],
             "numero_cte":    row["numero_cte"],
             "valor_frete":   round(float(row["valor_frete"] or 0), 2),
@@ -594,6 +596,22 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     print(f"   CTe sem vinculo no dashboard: {len(ctes_nao_vinculados)}")
     print(f"   CTe c/ NF cancelada (Humana ausente do fat): {len(ctes_nf_cancelada)}")
     print(f"   CTe de compra identificados via NF Entrada: {len(nf_entrada_chaves)}")
+    # CT-e onde Humana é o REMETENTE (tomador) mas a NF é de fornecedor externo
+    # Indica frete de compra contratado pela Humana onde a NF é do fornecedor
+    def _is_compra_tomador_humana(cte):
+        if not cte["nfe_chaves"]: return False
+        if cte.get("rem_cnpj","") not in CNPJ_MAP: return False
+        return all(ch[6:20] not in CNPJ_MAP and ch not in nfe_map for ch in cte["nfe_chaves"])
+    compra_tomador_chaves = {
+        cte["cte_chave"] for cte in cte_list
+        if cte["cte_chave"] not in linked_cte_chaves
+        and cte["cte_chave"] not in nf_entrada_chaves
+        and _is_compra_tomador_humana(cte)
+    }
+    print(f"   CTe frete de compra (tomador Humana, NF fornecedor): {len(compra_tomador_chaves)}")
+    # Remove do sem-vínculo os CT-e que serão classificados como compra tomador Humana
+    ctes_nao_vinculados = [r for r in ctes_nao_vinculados if r["cte_chave"] not in compra_tomador_chaves]
+    ctes_nf_cancelada   = [r for r in ctes_nf_cancelada   if r["cte_chave"] not in compra_tomador_chaves]
     # CTe de compra/devolução: destinatário é empresa Humana e não está vinculado ao faturamento de vendas
     def _mkt_type_tr(tr):
         t=(tr or "").upper()
@@ -641,6 +659,29 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             devolucoes_mkt.append({**row,"mkt_type":mkt})
         else:
             compras.append(row)
+    # Compras via tomador Humana (remetente=Humana, NF de fornecedor externo)
+    for cte in cte_list:
+        if cte["cte_chave"] not in compra_tomador_chaves: continue
+        if cte["cte_chave"] in ctes_adicionados_compras: continue
+        nf_ch = cte["nfe_chaves"][0] if cte["nfe_chaves"] else ""
+        fornecedor_cnpj = nf_ch[6:20] if len(nf_ch) >= 20 else ""
+        compras.append({
+            "cte_chave":    cte["cte_chave"],
+            "transportadora": cte["transportadora"],
+            "data_emissao": cte["data_emissao"][:10] if cte["data_emissao"] else "",
+            "rem_nome":     cte["dest_nome"] or cte["rem_nome"],  # fornecedor = destinatário no CT-e
+            "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
+            "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
+            "empresa_dest": CNPJ_MAP.get(cte.get("rem_cnpj",""),""),
+            "valor_frete":  cte["valor_frete"],
+            "nfe_refs":     cte["nfe_chaves"],
+            "peso_kg":      cte["peso_kg"], "volume_m3": cte["volume_m3"],
+            "fornecedor_cnpj": fornecedor_cnpj,
+            "numero_nfe":   str(int(nf_ch[25:34])) if len(nf_ch) >= 34 else "",
+            "total_nf": 0.0, "frete_nf": 0.0,
+            "nat_desc": "Frete de compra (tomador Humana)",
+        })
+        ctes_adicionados_compras.add(cte["cte_chave"])
     print(f"   CTe de compra (frete entrada): {len(compras)}")
     print(f"   CTe devolução marketplace: {len(devolucoes_mkt)}")
     # Diagnóstico: nat_operacao + cod_nat por empresa — de detalhes (NF-e com CTe)
