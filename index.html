@@ -751,6 +751,18 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>Data</th><th>Transportadora</th><th>Nº CTe</th><th>Valor Frete</th><th>Empresa</th><th>Remetente</th><th>Destinatário / CNPJ</th><th>Origem</th><th>Destino</th><th>NF-e(s) Referenciadas</th><th>Motivo sem vinculo</th></tr></thead><tbody id="nv_tbody"></tbody></table></div>
     <div class="pager" id="nv_pager"></div>
   </div>
+  <!-- CTe com NF Cancelada -->
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-tooltip">CTe emitido pela transportadora cuja NF-e correspondente foi cancelada no ERP. O frete e valido mas nao ha nota de venda para vincular. Requer analise manual para apuracao do custo.</div><div class="kpi-val" id="nc_k_qtd" style="color:var(--amber)">-</div><div class="kpi-lbl">CTe c/ NF Cancelada</div><div class="kpi-sub">NF emitida e cancelada no ERP</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-tooltip">Valor de frete sem apuracao por cancelamento de NF. O transporte ocorreu mas a nota fiscal foi anulada, impossibilitando o vinculo automatico com o faturamento.</div><div class="kpi-val" id="nc_k_frete" style="color:var(--amber)">-</div><div class="kpi-lbl">Frete Nao Apurado</div><div class="kpi-sub">valor sem vinculo por NF cancelada</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-tooltip">Transportadoras que emitiram CTe referenciando NFs que foram posteriormente canceladas no ERP.</div><div class="kpi-val" id="nc_k_transp">-</div><div class="kpi-lbl">Transportadoras</div><div class="kpi-sub">envolvidas</div></div>
+  </div>
+  <div class="card" id="nc_card" style="margin-top:16px;border-left:3px solid var(--amber);display:none">
+    <div class="card-title" style="color:var(--amber)"><i class="fa-solid fa-file-circle-xmark"></i> CTe com NF Cancelada — Frete sem vinculo por cancelamento de NF</div>
+    <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">O CTe foi emitido pela transportadora mas a NF-e correspondente foi cancelada no ERP. O frete e valido, porem nao ha nota de venda para vincular.</p>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>No CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Empresa NF</th><th>Valor Frete</th><th>NF Refs</th></tr></thead><tbody id="nc_tbody"></tbody></table></div>
+  </div>
+
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
     <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-tooltip">Comprovantes de frete anulados. Entrega foi emitida mas nao ocorreu ou foi substituida por outro documento. Sao excluidos automaticamente de todos os calculos do dashboard.</div><div class="kpi-val" id="cancel_k_qtd" style="color:var(--red2)">-</div><div class="kpi-lbl">CTe Cancelados</div><div class="kpi-sub">excluidos do processamento</div></div>
     <div class="kpi-card" style="border-top:3px solid var(--red2)"><div class="kpi-tooltip">Valor de frete dos comprovantes anulados. Nao entra no custo total porque essas entregas nao foram realizadas. Serve apenas para referencia do volume de operacoes canceladas no periodo.</div><div class="kpi-val" id="cancel_k_frete" style="color:var(--red2)">-</div><div class="kpi-lbl">Frete Excluido</div><div class="kpi-sub">valor cancelado nao computado</div></div>
@@ -2322,6 +2334,30 @@ function initApp(){
   document.getElementById('nv_k_frete').textContent=BRL(nvBase.reduce((s,c)=>s+c.valor_frete,0));
   document.getElementById('nv_k_transp').textContent=N(new Set(nvBase.map(c=>c.transportadora).filter(Boolean)).size);
   document.getElementById('nv_k_nferefs').textContent=N(nvBase.reduce((s,c)=>s+(c.nfe_refs||[]).length,0));
+
+  // CTe com NF Cancelada
+  (function(){
+    const ncData=DATA.ctes_nf_cancelada||[];
+    document.getElementById('nc_k_qtd').textContent=N(ncData.length);
+    document.getElementById('nc_k_frete').textContent=BRL(ncData.reduce((s,c)=>s+c.valor_frete,0));
+    document.getElementById('nc_k_transp').textContent=N(new Set(ncData.map(c=>c.transportadora).filter(Boolean)).size);
+    if(!ncData.length) return;
+    document.getElementById('nc_card').style.display='';
+    document.getElementById('nc_tbody').innerHTML=ncData.map(c=>{
+      const nfChips=(c.nfe_refs||[]).slice(0,3).map(ch=>'<span style="font-family:monospace;font-size:9px;color:var(--text3)" title="'+ch+'">'+parseInt(ch.slice(25,34))+'</span>').join(' ');
+      return '<tr>'
+        +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
+        +'<td style="color:var(--text);font-weight:600">'+(c.numero_cte||'-')+'</td>'
+        +'<td>'+(c.data_emissao||'-')+'</td>'
+        +'<td title="'+esc(c.transportadora||'')+'">'+esc(trName(c.transportadora||'-'))+'</td>'
+        +'<td style="font-size:10px">'+esc((c.origem_cidade||'')+(c.origem_uf?'/'+c.origem_uf:''))+'</td>'
+        +'<td style="font-size:10px">'+esc((c.destino_cidade||'')+(c.destino_uf?'/'+c.destino_uf:''))+'</td>'
+        +'<td><span class="chip chip-amber">'+esc(c.empresa_nf||'-')+'</span></td>'
+        +'<td style="color:var(--amber);font-weight:600">'+BRL(c.valor_frete)+'</td>'
+        +'<td>'+nfChips+'</td>'
+        +'</tr>';
+    }).join('');
+  })();
 
   // CTe cancelados
   (function(){
