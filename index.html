@@ -2857,155 +2857,152 @@ async function adminDeleteUser(uid,email){
 }
 
 // ── MÓDULO GEOGRÁFICO ────────────────────────────────────────────────────────
-const GEO_ESTADOS={
-  RR:{n:'Roraima',         p:'M 96,18 L 188,18 L 200,65 L 190,102 L 126,106 L 96,72 Z'},
-  AP:{n:'Amapá',           p:'M 312,12 L 382,12 L 388,55 L 360,80 L 318,78 L 308,44 Z'},
-  AM:{n:'Amazonas',        p:'M 36,135 L 96,105 L 190,105 L 215,130 L 272,112 L 286,158 L 268,206 L 215,242 L 150,248 L 96,232 L 36,200 Z'},
-  PA:{n:'Pará',            p:'M 190,105 L 312,76 L 382,76 L 406,108 L 424,168 L 408,210 L 364,222 L 286,225 L 272,198 L 286,158 L 272,112 L 215,130 Z'},
-  AC:{n:'Acre',            p:'M 36,200 L 96,232 L 112,262 L 94,282 L 60,282 L 36,260 Z'},
-  RO:{n:'Rondônia',        p:'M 150,248 L 215,242 L 232,270 L 216,302 L 182,312 L 150,295 Z'},
-  TO:{n:'Tocantins',       p:'M 364,222 L 408,210 L 418,270 L 386,326 L 348,312 L 330,268 Z'},
-  MA:{n:'Maranhão',        p:'M 408,210 L 424,168 L 450,158 L 464,170 L 470,202 L 446,222 L 412,222 Z'},
-  PI:{n:'Piauí',           p:'M 446,222 L 470,202 L 484,172 L 498,182 L 494,224 L 475,246 L 450,240 Z'},
-  CE:{n:'Ceará',           p:'M 484,138 L 512,122 L 526,148 L 520,172 L 500,182 L 484,172 Z'},
-  RN:{n:'Rio G. Norte',    p:'M 512,122 L 538,115 L 542,140 L 526,148 Z'},
-  PB:{n:'Paraíba',         p:'M 526,148 L 542,145 L 544,164 L 524,172 L 514,162 Z'},
-  PE:{n:'Pernambuco',      p:'M 450,162 L 514,162 L 524,172 L 544,172 L 544,186 L 524,186 L 450,180 Z'},
-  AL:{n:'Alagoas',         p:'M 524,186 L 540,176 L 544,194 L 526,200 Z'},
-  SE:{n:'Sergipe',         p:'M 524,200 L 540,194 L 544,210 L 526,218 Z'},
-  BA:{n:'Bahia',           p:'M 412,222 L 544,194 L 544,220 L 524,292 L 482,334 L 430,330 L 406,282 L 418,270 L 408,210 Z'},
-  MG:{n:'Minas Gerais',    p:'M 406,282 L 482,282 L 510,312 L 506,394 L 466,410 L 390,396 L 366,356 L 380,308 Z'},
-  ES:{n:'Espírito Santo',  p:'M 506,312 L 526,312 L 530,388 L 510,392 Z'},
-  RJ:{n:'Rio de Janeiro',  p:'M 466,394 L 506,392 L 504,422 L 468,428 Z'},
-  SP:{n:'São Paulo',       p:'M 366,358 L 466,356 L 468,428 L 418,446 L 368,432 Z'},
-  MT:{n:'Mato Grosso',     p:'M 182,270 L 330,268 L 348,312 L 386,326 L 362,376 L 298,386 L 250,368 L 188,322 Z'},
-  GO:{n:'Goiás',           p:'M 348,312 L 418,270 L 434,286 L 430,334 L 408,358 L 366,358 L 362,328 Z'},
-  DF:{n:'Distrito Federal',p:'M 382,330 L 396,330 L 396,346 L 382,346 Z'},
-  MS:{n:'Mato G. do Sul',  p:'M 298,386 L 366,358 L 368,432 L 348,476 L 285,466 L 280,408 Z'},
-  PR:{n:'Paraná',          p:'M 348,432 L 418,446 L 422,480 L 360,484 L 340,462 Z'},
-  SC:{n:'Santa Catarina',  p:'M 342,482 L 420,482 L 420,514 L 348,514 Z'},
-  RS:{n:'Rio G. do Sul',   p:'M 320,514 L 420,514 L 420,560 L 368,594 L 294,574 L 292,530 Z'}
-};
+// ── MÓDULO GEOGRÁFICO — GeoJSON real do Brasil ────────────────────────────────
+const _GEO_NOMES={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
 
-const UF_NOME={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
+let _geoCache=null; // {paths:{UF:d}, centroids:{UF:[x,y]}}
 
-let _geoBuilt=false;
-function renderGeo(){
+async function _loadGeoCache(){
+  if(_geoCache) return true;
+  try{
+    const r=await fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const gj=await r.json();
+    _geoCache=_buildGeoCache(gj);
+    return true;
+  }catch(e){
+    console.error('Geo load:',e);
+    return false;
+  }
+}
+
+function _buildGeoCache(gj){
+  // Bounding box de todas as coordenadas
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  function scan(a){if(typeof a[0]==='number'){x0=Math.min(x0,a[0]);x1=Math.max(x1,a[0]);y0=Math.min(y0,a[1]);y1=Math.max(y1,a[1]);}else a.forEach(scan);}
+  gj.features.forEach(f=>scan(f.geometry.coordinates));
+  // Projeção de Mercator ajustada ao viewBox 620x660
+  const pad=18,W=620-2*pad,H=660-2*pad;
+  const ym0=Math.log(Math.tan(Math.PI/4+y0*Math.PI/360));
+  const ym1=Math.log(Math.tan(Math.PI/4+y1*Math.PI/360));
+  function proj(lon,lat){
+    const px=pad+(lon-x0)/(x1-x0)*W;
+    const ym=Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
+    const py=H+pad-(ym-ym0)/(ym1-ym0)*H;
+    return [+px.toFixed(1),+py.toFixed(1)];
+  }
+  function ring2d(ring){const pts=ring.map(([a,b])=>proj(a,b));return'M'+pts[0]+' L'+pts.slice(1).map(p=>p.join(',')).join(' L')+' Z';}
+  function geom2d(g){
+    if(g.type==='Polygon') return g.coordinates.map(ring2d).join(' ');
+    if(g.type==='MultiPolygon') return g.coordinates.map(poly=>poly.map(ring2d).join(' ')).join(' ');
+    return '';
+  }
+  function centroid(g){
+    const ring=(g.type==='Polygon'?g.coordinates:g.coordinates[0])[0];
+    return proj(ring.reduce((s,p)=>s+p[0],0)/ring.length, ring.reduce((s,p)=>s+p[1],0)/ring.length);
+  }
+  const paths={},centroids={};
+  gj.features.forEach(f=>{
+    const uf=(f.properties.sigla||f.properties.UF||f.properties.SIGLA||'').toUpperCase();
+    if(!uf) return;
+    paths[uf]=geom2d(f.geometry);
+    centroids[uf]=centroid(f.geometry);
+  });
+  return{paths,centroids};
+}
+
+let _geoByUF={};
+async function renderGeo(){
+  const svg=document.getElementById('geo_map');
   const rows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:false});
-  // Agrega por estado
-  const byUF={};
+  _geoByUF={};
   rows.forEach(d=>{
     const uf=(d.estado||'').trim().toUpperCase();
     if(!uf||uf.length!==2) return;
-    if(!byUF[uf]) byUF[uf]={total:0,linhahum:0,humana:0,qtd:0,qtdLH:0,qtdHU:0};
-    byUF[uf].total   +=d.valor_frete||0;
-    byUF[uf].linhahum+=d.frete_linhahum||d.linhahum_total||0;
-    byUF[uf].humana  +=d.frete_humana||d.humana_total||0;
-    byUF[uf].qtd++;
+    if(!_geoByUF[uf]) _geoByUF[uf]={total:0,linhahum:0,humana:0,qtd:0};
+    _geoByUF[uf].total   +=d.valor_frete||0;
+    _geoByUF[uf].linhahum+=d.frete_linhahum||d.linhahum_total||0;
+    _geoByUF[uf].humana  +=d.frete_humana||d.humana_total||0;
+    _geoByUF[uf].qtd++;
   });
+  if(!_geoCache){
+    svg.innerHTML='<text x="310" y="330" text-anchor="middle" fill="var(--text3)" font-size="13" font-family="Inter,sans-serif">Carregando mapa do Brasil...</text>';
+    const ok=await _loadGeoCache();
+    if(!ok){svg.innerHTML='<text x="310" y="330" text-anchor="middle" fill="var(--red2)" font-size="12">Erro ao carregar. Verifique a conexão.</text>';return;}
+  }
+  _geoRender();
+}
+function _geoRender(){
+  const svg=document.getElementById('geo_map');
   const metrica=document.getElementById('geo_metrica').value||'total';
+  const byUF=_geoByUF;
   const vals=Object.values(byUF).map(v=>metrica==='qtd'?v.qtd:v[metrica]);
   const maxVal=vals.length?Math.max(...vals):1;
-  // Cores: interpolação de azul claro → azul escuro
   function toColor(v){
-    if(!v) return '#0D1A2B';
-    const t=Math.pow(v/maxVal,0.5); // raiz para não achatar tudo
-    const r=Math.round(11+(20-11)*(1-t));
-    const g=Math.round(26+(80-26)*(1-t));
-    const b=Math.round(43+(200-43)*(1-t));
-    return `rgb(${Math.round(15+t*45)},${Math.round(50+t*100)},${Math.round(80+t*160)})`;
+    if(!v||!maxVal) return '#0D1A2B';
+    const t=Math.pow(v/maxVal,.55);
+    return`rgb(${Math.round(15+t*45)},${Math.round(50+t*105)},${Math.round(80+t*158)})`;
   }
-  // Constrói SVG na primeira vez
-  const svg=document.getElementById('geo_map');
-  if(!_geoBuilt){
-    _geoBuilt=true;
-    let html='';
-    Object.entries(GEO_ESTADOS).forEach(([uf,st])=>{
-      html+=`<path id="geo_${uf}" data-uf="${uf}" d="${st.p}" stroke="var(--bd2)" stroke-width="0.8" fill="#0D1A2B" style="cursor:pointer;transition:fill .2s"/>`;
-    });
-    // Rótulos dos estados (centroides aproximados)
-    const _lbl={
-      RR:[138,62],AP:[348,48],AM:[145,175],PA:[295,155],AC:[72,248],RO:[188,278],
-      TO:[374,278],MA:[438,192],PI:[468,218],CE:[505,155],RN:[526,132],PB:[526,156],
-      PE:[490,170],AL:[528,190],SE:[528,206],BA:[468,272],MG:[445,355],ES:[514,355],
-      RJ:[480,410],SP:[415,400],MT:[272,330],GO:[390,330],DF:[388,338],
-      MS:[322,432],PR:[382,460],SC:[382,498],RS:[358,555]
-    };
-    const _lfs={RR:7,AP:7,AM:11,PA:10,AC:6,RO:7,TO:7,MA:7,PI:7,CE:6,RN:5,PB:5,PE:6,AL:5,SE:5,BA:9,MG:9,ES:5,RJ:5,SP:8,MT:9,GO:7,DF:5,MS:7,PR:7,SC:6,RS:8};
-    Object.entries(_lbl).forEach(([uf,[x,y]])=>{
-      html+=`<text x="${x}" y="${y}" font-size="${_lfs[uf]||7}" fill="rgba(255,255,255,0.55)" text-anchor="middle" dominant-baseline="middle" pointer-events="none" font-weight="600">${uf}</text>`;
-    });
-    svg.innerHTML=html;
-    // Eventos hover
-    svg.querySelectorAll('path[data-uf]').forEach(el=>{
-      el.addEventListener('mouseenter',e=>_geoHover(e,byUF,maxVal));
-      el.addEventListener('mousemove',e=>_geoMove(e));
-      el.addEventListener('mouseleave',()=>{document.getElementById('geo_tip').style.display='none';el.style.strokeWidth='0.8';el.style.stroke='var(--bd2)';});
-    });
-  }
-  // Atualiza cores
-  svg.querySelectorAll('path[data-uf]').forEach(el=>{
-    const uf=el.dataset.uf;
-    const d=byUF[uf];
-    const v=d?(metrica==='qtd'?d.qtd:d[metrica]):0;
-    el.setAttribute('fill',toColor(v));
+  const {paths,centroids}=_geoCache;
+  let html='';
+  Object.keys(paths).forEach(uf=>{
+    const d=byUF[uf];const v=d?(metrica==='qtd'?d.qtd:d[metrica]):0;
+    html+=`<path data-uf="${uf}" d="${paths[uf]}" fill="${toColor(v)}" stroke="#1E3A5A" stroke-width="0.6" style="cursor:pointer;transition:fill .25s"/>`;
   });
-  // Legenda gradiente
-  const leg=document.getElementById('geo_legenda');
-  leg.style.background='linear-gradient(to right,rgb(15,50,80),rgb(60,150,240))';
-  // Label filtro
-  const fl=document.getElementById('geo_filtro_lbl');
-  fl.textContent=state.empresa?'— '+state.empresa:state.ano?'— '+state.ano:'';
-  // Resumo
+  // Rótulos usando centroides reais
+  Object.entries(centroids).forEach(([uf,[cx,cy]])=>{
+    const area=paths[uf]?paths[uf].length:0;
+    const fs=area>2000?9:area>800?7:5;
+    html+=`<text x="${cx}" y="${cy}" font-size="${fs}" fill="rgba(255,255,255,.65)" text-anchor="middle" dominant-baseline="middle" pointer-events="none" font-weight="700" font-family="Inter,sans-serif">${uf}</text>`;
+  });
+  svg.innerHTML=html;
+  svg.querySelectorAll('path[data-uf]').forEach(el=>{
+    el.addEventListener('mouseenter',_geoHover);
+    el.addEventListener('mousemove',_geoMove);
+    el.addEventListener('mouseleave',()=>{document.getElementById('geo_tip').style.display='none';el.setAttribute('stroke','#1E3A5A');el.setAttribute('stroke-width','0.6');});
+  });
+  // Legenda
+  document.getElementById('geo_legenda').style.background='linear-gradient(to right,#0D1A2B,rgb(60,155,238))';
+  document.getElementById('geo_filtro_lbl').textContent=state.empresa?'— '+state.empresa:state.ano?'— '+state.ano:'';
+  // Resumo e ranking
   const totFrete=Object.values(byUF).reduce((s,v)=>s+v.total,0);
-  const totQtd=Object.values(byUF).reduce((s,v)=>s+v.qtd,0);
-  const totLH=Object.values(byUF).reduce((s,v)=>s+v.linhahum,0);
-  const totHU=Object.values(byUF).reduce((s,v)=>s+v.humana,0);
-  const ufsAtivas=Object.keys(byUF).length;
+  const totQtd  =Object.values(byUF).reduce((s,v)=>s+v.qtd,0);
+  const totLH   =Object.values(byUF).reduce((s,v)=>s+v.linhahum,0);
+  const totHU   =Object.values(byUF).reduce((s,v)=>s+v.humana,0);
   document.getElementById('geo_resumo').innerHTML=[
-    {l:'Estados com frete', v:N(ufsAtivas)+' de 27'},
-    {l:'Total frete venda',  v:BRL(totFrete)},
-    {l:'Frete Linhahum',     v:BRL(totLH)+' <span style="color:var(--text3);font-size:9px">'+(totFrete?((totLH/totFrete)*100).toFixed(1)+'%':'0%')+'</span>'},
-    {l:'Frete Humana Alim.', v:BRL(totHU)+' <span style="color:var(--text3);font-size:9px">'+(totFrete?((totHU/totFrete)*100).toFixed(1)+'%':'0%')+'</span>'},
-    {l:'CT-e totais',        v:N(totQtd)},
-  ].map(i=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)">'
-    +'<span style="font-size:10px;color:var(--text3)">'+i.l+'</span>'
-    +'<span style="font-size:12px;font-weight:700;color:var(--text)">'+i.v+'</span></div>').join('');
-  // Ranking
+    {l:'Estados com frete',v:N(Object.keys(byUF).length)+' de 27'},
+    {l:'Total frete venda', v:BRL(totFrete)},
+    {l:'Frete Linhahum',    v:BRL(totLH)+' <span style="color:var(--text3);font-size:9px">'+(totFrete?((totLH/totFrete)*100).toFixed(1)+'%':'0%')+'</span>'},
+    {l:'Frete Humana Alim.',v:BRL(totHU)+' <span style="color:var(--text3);font-size:9px">'+(totFrete?((totHU/totFrete)*100).toFixed(1)+'%':'0%')+'</span>'},
+    {l:'CT-e totais',       v:N(totQtd)},
+  ].map(i=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">'+i.l+'</span><span style="font-size:12px;font-weight:700;color:var(--text)">'+i.v+'</span></div>').join('');
   const sorted=Object.entries(byUF).sort((a,b)=>b[1].total-a[1].total).slice(0,12);
   document.getElementById('geo_ranking').innerHTML=sorted.map(([uf,d],i)=>{
     const pct=totFrete?d.total/totFrete*100:0;
     const barW=sorted[0][1].total?d.total/sorted[0][1].total*100:0;
-    return '<div style="padding:6px 0;border-bottom:1px solid var(--bd)">'
+    return'<div style="padding:6px 0;border-bottom:1px solid var(--bd)">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
-      +' <span style="font-size:11px;color:var(--text);font-weight:600"><span style="color:var(--text3);font-size:9px;margin-right:4px">'+(i+1)+'.</span>'+(UF_NOME[uf]||uf)+'</span>'
-      +' <span style="font-size:11px;font-weight:700;color:var(--blue2)">'+BRL(d.total)+'</span>'
-      +'</div>'
-      +'<div style="background:var(--s2);border-radius:2px;height:4px;overflow:hidden">'
-      +' <div style="height:100%;width:'+barW.toFixed(1)+'%;background:var(--blue);opacity:.8;border-radius:2px"></div>'
-      +'</div>'
-      +'<div style="font-size:9px;color:var(--text3);margin-top:2px">'+pct.toFixed(1)+'% do total &nbsp;·&nbsp; '+N(d.qtd)+' CT-e</div>'
-      +'</div>';
+      +'<span style="font-size:11px;color:var(--text);font-weight:600"><span style="color:var(--text3);font-size:9px;margin-right:4px">'+(i+1)+'.</span>'+(_GEO_NOMES[uf]||uf)+'</span>'
+      +'<span style="font-size:11px;font-weight:700;color:var(--blue2)">'+BRL(d.total)+'</span></div>'
+      +'<div style="background:var(--s2);border-radius:2px;height:4px;overflow:hidden"><div style="height:100%;width:'+barW.toFixed(1)+'%;background:var(--blue);opacity:.8;border-radius:2px"></div></div>'
+      +'<div style="font-size:9px;color:var(--text3);margin-top:2px">'+pct.toFixed(1)+'% do total · '+N(d.qtd)+' CT-e</div></div>';
   }).join('');
 }
-let _geoHoverData={};
-function _geoHover(e,byUF,maxVal){
+function _geoHover(e){
   const uf=e.target.dataset.uf;
-  e.target.style.stroke='var(--blue2)';e.target.style.strokeWidth='2';
-  _geoHoverData={uf,byUF,maxVal};
-  const d=byUF[uf]||{total:0,linhahum:0,humana:0,qtd:0};
-  const nome=GEO_ESTADOS[uf]?.n||uf;
-  const totTodos=Object.values(byUF).reduce((s,v)=>s+v.total,0);
+  e.target.setAttribute('stroke','var(--blue2)');e.target.setAttribute('stroke-width','2');
+  const d=_geoByUF[uf]||{total:0,linhahum:0,humana:0,qtd:0};
+  const nome=_GEO_NOMES[uf]||uf;
+  const totTodos=Object.values(_geoByUF).reduce((s,v)=>s+v.total,0);
   const pct=totTodos?d.total/totTodos*100:0;
-  const pLH=d.total?d.linhahum/d.total*100:0;
-  const pHU=d.total?d.humana/d.total*100:0;
-  const row=(lbl,val,sub,cor)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">${lbl}</span><span style="font-size:12px;font-weight:700;color:${cor||'var(--text)'}"><span>${val}</span>${sub?` <span style="font-size:9px;color:var(--text3)">${sub}</span>`:''}</span></div>`;
+  const row=(l,v,s,c)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">${l}</span><span style="font-size:12px;font-weight:700;color:${c||'var(--text)'}">
+${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span></div>`;
   document.getElementById('geo_tip').innerHTML=
-    `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)">${nome} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
+    `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)">${esc(nome)} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
     +row('Frete Total (Vendas)',BRL(d.total),pct.toFixed(1)+'% do total','var(--blue2)')
-    +row('Frete Linhahum',BRL(d.linhahum),pLH.toFixed(1)+'%','var(--green2)')
-    +row('Frete Humana Alim.',BRL(d.humana),pHU.toFixed(1)+'%','var(--blue)')
-    +row('Quantidade CT-e',N(d.qtd)+'','')
+    +row('Frete Linhahum',BRL(d.linhahum),d.total?(d.linhahum/d.total*100).toFixed(1)+'%':'','var(--green2)')
+    +row('Frete Humana Alim.',BRL(d.humana),d.total?(d.humana/d.total*100).toFixed(1)+'%':'','var(--blue)')
+    +row('Qtd CT-e',N(d.qtd),'','')
     +(d.qtd?row('Frete Médio',BRL(d.total/d.qtd),'por entrega','var(--amber)'):'');
   _geoMove(e);
   document.getElementById('geo_tip').style.display='block';
@@ -3013,12 +3010,11 @@ function _geoHover(e,byUF,maxVal){
 function _geoMove(e){
   const tip=document.getElementById('geo_tip');
   if(tip.style.display==='none') return;
-  const x=e.clientX+14, y=e.clientY-10;
   const tw=tip.offsetWidth||260,th=tip.offsetHeight||160;
-  tip.style.left=(x+tw>window.innerWidth?e.clientX-tw-10:x)+'px';
-  tip.style.top =(y+th>window.innerHeight?e.clientY-th-10:y)+'px';
+  tip.style.left=(e.clientX+14+tw>window.innerWidth?e.clientX-tw-10:e.clientX+14)+'px';
+  tip.style.top =(e.clientY-10+th>window.innerHeight?e.clientY-th-10:e.clientY-10)+'px';
 }
-document.getElementById('geo_metrica')?.addEventListener('change',()=>renderGeo());
+document.getElementById('geo_metrica')?.addEventListener('change',()=>_geoRender());
 </script>
 </body>
 </html>
