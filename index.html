@@ -2919,10 +2919,11 @@ async function renderGeo(){
   rows.forEach(d=>{
     const uf=(d.estado||'').trim().toUpperCase();
     if(!uf||uf.length!==2) return;
-    if(!_geoByUF[uf]) _geoByUF[uf]={total:0,linhahum:0,humana:0,qtd:0};
+    if(!_geoByUF[uf]) _geoByUF[uf]={total:0,linhahum:0,humana:0,qtd:0,total_nf:0};
     _geoByUF[uf].total   +=d.valor_frete||0;
     _geoByUF[uf].linhahum+=d.frete_linhahum||d.linhahum_total||0;
     _geoByUF[uf].humana  +=d.frete_humana||d.humana_total||0;
+    _geoByUF[uf].total_nf+=d.total_nf||0;
     _geoByUF[uf].qtd++;
   });
   if(!_geoCache){
@@ -2939,9 +2940,10 @@ function _geoRender(){
   const vals=Object.values(byUF).map(v=>metrica==='qtd'?v.qtd:v[metrica]);
   const maxVal=vals.length?Math.max(...vals):1;
   function toColor(v){
-    if(!v||!maxVal) return '#0D1A2B';
-    const t=Math.pow(v/maxVal,.55);
-    return`rgb(${Math.round(15+t*45)},${Math.round(50+t*105)},${Math.round(80+t*158)})`;
+    if(!v||!maxVal) return '#1A2E42'; // sem dados — azul-escuro distinto
+    const t=Math.pow(v/maxVal,.5);
+    // baixo → azul médio (20,80,160) | alto → ciano brilhante (30,190,230)
+    return`rgb(${Math.round(20+t*10)},${Math.round(80+t*110)},${Math.round(160+t*70)})`;
   }
   const {paths,centroids}=_geoCache;
   let html='';
@@ -2962,7 +2964,7 @@ function _geoRender(){
     el.addEventListener('mouseleave',()=>{document.getElementById('geo_tip').style.display='none';el.setAttribute('stroke','#1E3A5A');el.setAttribute('stroke-width','0.6');});
   });
   // Legenda
-  document.getElementById('geo_legenda').style.background='linear-gradient(to right,#0D1A2B,rgb(60,155,238))';
+  document.getElementById('geo_legenda').style.background='linear-gradient(to right,rgb(20,80,160),rgb(30,190,230))';
   document.getElementById('geo_filtro_lbl').textContent=state.empresa?'— '+state.empresa:state.ano?'— '+state.ano:'';
   // Resumo e ranking
   const totFrete=Object.values(byUF).reduce((s,v)=>s+v.total,0);
@@ -2997,11 +2999,16 @@ function _geoHover(e){
   const pct=totTodos?d.total/totTodos*100:0;
   const row=(l,v,s,c)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">${l}</span><span style="font-size:12px;font-weight:700;color:${c||'var(--text)'}">
 ${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span></div>`;
+  const pctFreteSobreVenda = d.total_nf>0 ? (d.total/d.total_nf*100) : 0;
+  const pctLH = d.total>0 ? (d.linhahum/d.total*100) : 0;
+  const pctHU = d.total>0 ? (d.humana/d.total*100)   : 0;
   document.getElementById('geo_tip').innerHTML=
     `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)">${esc(nome)} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
+    +row('Valor das Notas (Venda)',BRL(d.total_nf),'','var(--text)')
     +row('Frete Total (Vendas)',BRL(d.total),pct.toFixed(1)+'% do total','var(--blue2)')
-    +row('Frete Linhahum',BRL(d.linhahum),d.total?(d.linhahum/d.total*100).toFixed(1)+'%':'','var(--green2)')
-    +row('Frete Humana Alim.',BRL(d.humana),d.total?(d.humana/d.total*100).toFixed(1)+'%':'','var(--blue)')
+    +row('% Frete / Venda',pctFreteSobreVenda.toFixed(2)+'%',pctFreteSobreVenda>5?'⚠ acima de 5%':pctFreteSobreVenda>2?'ok':'ótimo',pctFreteSobreVenda>5?'var(--red2)':pctFreteSobreVenda>2?'var(--amber)':'var(--green2)')
+    +row('Frete Linhahum',BRL(d.linhahum),pLH.toFixed(1)+'%','var(--green2)')
+    +row('Frete Humana Alim.',BRL(d.humana),pHU.toFixed(1)+'%','var(--blue)')
     +row('Qtd CT-e',N(d.qtd),'','')
     +(d.qtd?row('Frete Médio',BRL(d.total/d.qtd),'por entrega','var(--amber)'):'');
   // Mostra antes de medir para offsetHeight ser correto
