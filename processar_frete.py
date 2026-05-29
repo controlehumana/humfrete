@@ -692,9 +692,15 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         })
     def make_list(d,key="frete"):
         return sorted([{"label":k,**v} for k,v in d.items()],key=lambda x:-x[key])
+    # Ano mínimo dos CTe — denominador correto para cobCte (exclui faturamento histórico sem CTe)
+    cte_anos = [c["data_emissao"][:4] for c in cte_list if (c.get("data_emissao") or "")[:4].isdigit()]
+    ano_min_cte = min(cte_anos) if cte_anos else "2025"
+    nfe_fat_periodo = sum(1 for nf in nfe_map.values() if (nf.get("data_emissao") or "")[-4:] >= ano_min_cte)
+    print(f"   NF-e no periodo CTe ({ano_min_cte}+): {nfe_fat_periodo} de {len(nfe_map)} totais")
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
+            "nfe_fat_periodo":nfe_fat_periodo,
             "nfe_sem_cte":len(nfe_sem_cte),"cte_sem_fat":cte_sem_fat,
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
             "total_faturamento":total_faturamento},

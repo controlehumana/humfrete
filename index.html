@@ -706,7 +706,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="kpi-card"><div class="kpi-tooltip">Quanto poderia ser economizado se todas as entregas da mesma semana para o mesmo cliente fossem feitas de uma so vez. Calculo conservador: considera o custo das entregas extras que seriam eliminadas.</div><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">se todos os grupos forem consolidados</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de viagens de entrega que poderiam ser eliminadas. Se um cliente recebeu 3 entregas na semana, 2 delas sao consolidaveis em uma unica visita, reduzindo custos e emissoes.</div><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
     <div class="kpi-card" style="border-top:3px solid var(--green2)">
-      <div class="kpi-tooltip">Indica o quanto confiar nos numeros de consolidacao. Combina duas metricas: Cobertura CTe (% de NF-e do faturamento com comprovante de frete rastreado) e Dados Completos (% de NF-e com cliente, data e destino preenchidos — campos obrigatorios para detectar oportunidades). Quanto mais alto, mais confiavel e a analise.</div>
+      <div class="kpi-tooltip">Indica o quanto confiar nos numeros de consolidacao. Combina duas metricas: Cobertura CTe (% de NF-e do periodo com CTe rastreado — exclui faturamento historico anterior ao inicio da coleta de CTe) e Dados Completos (% de NF-e com cliente, data e destino preenchidos). Quanto mais alto, mais confiavel e a analise.</div>
       <div class="kpi-lbl">Integridade da Analise</div>
       <div class="kpi-val" id="cli_k_integ" style="color:var(--green2)">-</div>
       <div class="kpi-sub" id="cli_k_integ_lbl">confiabilidade geral</div>
@@ -1739,7 +1739,8 @@ function renderClientes(){
   document.getElementById('cli_k_ctes').textContent=N(totalCtesConsolid);
   // KPI de integridade
   const r=DATA.resumo||{};
-  const cobCte=r.total_nfe_fat>0?Math.min(100,r.nfe_com_cte/r.total_nfe_fat*100):0;
+  const _denCte=r.nfe_fat_periodo||r.total_nfe_fat;
+  const cobCte=_denCte>0?Math.min(100,r.nfe_com_cte/_denCte*100):0;
   const rowsComp=rows.filter(d=>d.cliente&&d.cliente!=='?'&&d.data&&getWeek(d.data)&&(d.destino_cidade||d.destino_uf)).length;
   const cobDados=rows.length>0?Math.min(100,rowsComp/rows.length*100):0;
   const score=cobCte*0.6+cobDados*0.4;
