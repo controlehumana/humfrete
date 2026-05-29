@@ -658,6 +658,28 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="sdiv">Performance por Natureza de Operacao</div>
   <div class="card"><div class="card-title">Ranking - Natureza de Operacao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Agrupa as vendas por tipo de operacao comercial. Frete Pago = o que a empresa pagou a transportadora; Frete Cobrado = o que foi cobrado do cliente na nota; Saldo positivo = cliente pagou mais do que o custo real de entrega.</span></span></div><div class="tw"><table><thead><tr><th>#</th><th>Natureza de Operacao</th><th>Qtd NF-e</th><th>Frete Pago</th><th>Frete Cobrado</th><th>Saldo</th><th>% do Total</th><th>Part.</th></tr></thead><tbody id="natop_tbody"></tbody></table></div></div>
   <div class="footer" id="footer_info"></div>
+
+  <!-- CUSTO LOGÍSTICO CONSOLIDADO -->
+  <div class="sdiv" style="margin-top:8px">Custo Logistico Total Consolidado</div>
+  <div class="card" id="ct_card">
+    <div class="card-title">Visao Consolidada — Frete de Todas as Categorias <span style="font-size:9px;font-weight:400;color:var(--text3)">(global, sem filtros de periodo)</span></div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:6px">Total Geral</div>
+        <div style="font-size:28px;font-weight:900;color:var(--text);letter-spacing:-1px" id="ct_total">-</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px" id="ct_ctes">-</div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Rastreado vs Pendente</div>
+          <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px" id="ct_bar_total"></div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:4px">
+            <span style="color:var(--green2)" id="ct_pct_rastread">-</span>
+            <span style="color:var(--yellow)" id="ct_pct_pend">-</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="ct_rows"></div>
+    </div>
+  </div>
 </div>
 
 
@@ -1581,6 +1603,54 @@ function renderAll(){
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
   if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados')nvRender();else if(tab==='compras')renderCompras();else if(tab==='dev-mkt')renderDevMkt();}
+  // Custo Logístico Consolidado — global, sem filtro de período
+  (function(){
+    const vendas   =(DATA.detalhes||[]).reduce((s,d)=>s+d.valor_frete,0);
+    const compras  =(DATA.compras||[]).reduce((s,d)=>s+d.valor_frete,0);
+    const devMkt   =(DATA.devolucoes_mkt||[]).reduce((s,d)=>s+d.valor_frete,0);
+    const semVinc  =(DATA.ctes_nao_vinculados||[]).reduce((s,d)=>s+d.valor_frete,0);
+    const nfCanc   =(DATA.ctes_nf_cancelada||[]).reduce((s,d)=>s+d.valor_frete,0);
+    const total    =vendas+compras+devMkt+semVinc+nfCanc;
+    const qtdVendas=(DATA.detalhes||[]).length;
+    const qtdComp  =(DATA.compras||[]).length;
+    const qtdDev   =(DATA.devolucoes_mkt||[]).length;
+    const qtdSV    =(DATA.ctes_nao_vinculados||[]).length;
+    const qtdNC    =(DATA.ctes_nf_cancelada||[]).length;
+    const qtdTotal =qtdVendas+qtdComp+qtdDev+qtdSV+qtdNC;
+    document.getElementById('ct_total').textContent=BRL(total);
+    document.getElementById('ct_ctes').textContent=N(qtdTotal)+' CT-e no total';
+    // Barra rastreado vs pendente
+    const rastread=vendas+compras+devMkt;const pend=semVinc+nfCanc;
+    const pRast=total?rastread/total*100:0;const pPend=total?pend/total*100:0;
+    document.getElementById('ct_bar_total').innerHTML=
+      '<div style="flex:'+pRast+';background:var(--green);opacity:.8"></div>'
+      +'<div style="flex:'+pPend+';background:var(--yellow);opacity:.8"></div>';
+    document.getElementById('ct_pct_rastread').textContent=pRast.toFixed(1)+'% rastreado';
+    document.getElementById('ct_pct_pend').textContent=pPend.toFixed(1)+'% pendente';
+    // Linhas de detalhamento
+    const cats=[
+      {label:'Frete de Venda',   val:vendas, qtd:qtdVendas, cor:'var(--blue)',   icon:'fa-truck',          tip:'CT-e cruzados com NF-e de venda no faturamento'},
+      {label:'Frete de Compra',  val:compras,qtd:qtdComp,   cor:'var(--green)',  icon:'fa-boxes-stacked',   tip:'CT-e vinculados a NF de entrada (compras/fornecedores)'},
+      {label:'Dev. Marketplace', val:devMkt, qtd:qtdDev,    cor:'var(--purple2)',icon:'fa-rotate-left',     tip:'Devolucoes via Shopee e Mercado Livre'},
+      {label:'NF Cancelada',     val:nfCanc, qtd:qtdNC,     cor:'var(--amber)',  icon:'fa-file-circle-xmark',tip:'CT-e valido cuja NF de venda foi cancelada no ERP'},
+      {label:'Sem Vinculo',      val:semVinc,qtd:qtdSV,     cor:'var(--red2)',   icon:'fa-triangle-exclamation',tip:'CT-e sem NF correspondente identificada'},
+    ];
+    document.getElementById('ct_rows').innerHTML=cats.map(c=>{
+      const pct=total?c.val/total*100:0;
+      const barW=Math.max(pct,0.3).toFixed(1);
+      return '<div style="display:grid;grid-template-columns:160px 1fr 110px 70px;align-items:center;gap:10px">'
+        +'<div style="display:flex;align-items:center;gap:7px">'
+        +' <i class="fa-solid '+c.icon+'" style="color:'+c.cor+';width:14px;text-align:center;font-size:12px"></i>'
+        +' <span style="font-size:11px;color:var(--text2);font-weight:500" title="'+c.tip+'">'+c.label+'</span>'
+        +'</div>'
+        +'<div style="background:var(--s2);border-radius:3px;height:8px;overflow:hidden">'
+        +' <div style="height:100%;width:'+barW+'%;background:'+c.cor+';opacity:.8;border-radius:3px;transition:width .4s"></div>'
+        +'</div>'
+        +'<div style="text-align:right;font-size:12px;font-weight:700;color:var(--text)">'+BRL(c.val)+'</div>'
+        +'<div style="text-align:right;font-size:10px;color:var(--text3)">'+N(c.qtd)+' CT-e &nbsp;<span style="color:'+c.cor+';font-weight:700">'+pct.toFixed(1)+'%</span></div>'
+        +'</div>';
+    }).join('');
+  })();
 }
 function pctBarInline(fr,nf){if(!nf) return '<span style="color:var(--text3)">-</span>';const p=fr/nf*100;const cls=p<5?'tg':p<10?'ty':'tr';const barClr=p<5?'var(--green)':p<10?'var(--amber)':'var(--red)';return '<div class="pct-bar-wrap"><span class="tag '+cls+'">'+p.toFixed(1)+'%</span><div class="pct-bar-bg"><div class="pct-bar-fill" style="width:'+Math.min(p*5,100)+'%;background:'+barClr+'"></div></div></div>';}
 function applySortToRows(rows){if(!tableSort.col) return rows;return [...rows].sort((a,b)=>{let va,vb;if(tableSort.col==='pct'){va=a.total_nf?a.valor_frete/a.total_nf:0;vb=b.total_nf?b.valor_frete/b.total_nf:0;}else if(tableSort.col==='total_nf'){va=a.total_nf||0;vb=b.total_nf||0;}else if(tableSort.col==='valor_frete'){va=a.valor_frete||0;vb=b.valor_frete||0;}else if(tableSort.col==='diferenca'){va=a.diferenca_frete||0;vb=b.diferenca_frete||0;}return tableSort.dir==='desc'?vb-va:va-vb;});}
