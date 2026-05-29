@@ -3023,8 +3023,22 @@ function _geoHover(e){
     +`<div style="font-size:9px;color:var(--blue2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
     +bloco('Valor das Notas de Venda', BRL(d.total_nf), 'var(--text)',
       'Total faturado (NF-e de venda) com destino a este estado no período')
-    +bloco('Ticket Médio por NF-e', d.qtd>0?BRL(d.total_nf/d.qtd):'-', 'var(--text)',
-      'Valor médio de cada nota fiscal entregue neste estado — pedidos maiores tendem a diluir o % de frete')
+    +(()=>{
+      const ticketEstado = d.qtd>0 ? d.total_nf/d.qtd : 0;
+      const totalNfGlobal = Object.values(_geoByUF).reduce((s,v)=>s+v.total_nf,0);
+      const totalQtdGlobal = Object.values(_geoByUF).reduce((s,v)=>s+v.qtd,0);
+      const ticketMedio = totalQtdGlobal>0 ? totalNfGlobal/totalQtdGlobal : 0;
+      const diffPct = ticketMedio>0 ? (ticketEstado-ticketMedio)/ticketMedio*100 : 0;
+      const diffCor = diffPct>=0?'var(--green2)':'var(--red2)';
+      const diffTxt = diffPct>=0
+        ?`<span style="color:var(--green2);font-size:9px;font-weight:700">▲ ${diffPct.toFixed(1)}% acima da média</span>`
+        :`<span style="color:var(--red2);font-size:9px;font-weight:700">▼ ${Math.abs(diffPct).toFixed(1)}% abaixo da média</span>`;
+      const valor = ticketEstado>0
+        ? `${BRL(ticketEstado)} ${diffTxt}`
+        : '-';
+      return bloco('Ticket Médio por NF-e', valor, 'var(--text)',
+        `Valor médio de cada nota entregue neste estado. Média nacional: ${BRL(ticketMedio)} — pedidos maiores diluem o % de frete`);
+    })()
     +bloco('Custo de Frete', BRL(d.total), 'var(--blue2)',
       `Representa ${pct.toFixed(1)}% do frete total pago em todos os estados no período`)
     +bloco('% Frete sobre Faturamento', pctFrete.toFixed(2)+'% <span style="font-size:9px;font-weight:600;color:'+freteStatus+'">'+freteLabel+'</span>', freteStatus,
