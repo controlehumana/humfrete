@@ -3000,18 +3000,43 @@ function _geoHover(e){
   const pctFrete = d.total_nf > 0 ? d.total    / d.total_nf  * 100 : 0;
   const pctLH    = d.total    > 0 ? d.linhahum / d.total     * 100 : 0;
   const pctHU    = d.total    > 0 ? d.humana   / d.total     * 100 : 0;
-  const row=(l,v,s,c)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">${l}</span><span style="font-size:12px;font-weight:700;color:${c||'var(--text)'}"> ${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span></div>`;
+  // Contexto do filtro ativo
+  const _filtParts=[];
+  if(state.ano) _filtParts.push(state.ano);
+  if(state.meses&&state.meses.length) _filtParts.push(state.meses.map(m=>({1:'Jan',2:'Fev',3:'Mar',4:'Abr',5:'Mai',6:'Jun',7:'Jul',8:'Ago',9:'Set',10:'Out',11:'Nov',12:'Dez'}[+m]||m)).join('/'));
+  if(state.empresa) _filtParts.push(state.empresa);
+  const _filtTxt=_filtParts.length?_filtParts.join(' · '):'Todo o período';
+
   const freteStatus = pctFrete>5?'var(--red2)':pctFrete>2?'var(--amber)':'var(--green2)';
-  const freteLabel  = pctFrete>5?'⚠ acima de 5%':pctFrete>2?'ok':'ótimo';
+  const freteLabel  = pctFrete>5?'⚠ acima de 5%':pctFrete>2?'adequado':'ótimo (<2%)';
+
+  function bloco(label,valor,cor,desc){
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:10px;color:var(--text3);font-weight:600">${label}</span>
+        <span style="font-size:13px;font-weight:800;color:${cor||'var(--text)'}">${valor}</span>
+      </div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;line-height:1.4">${desc}</div>
+    </div>`;
+  }
+
   document.getElementById('geo_tip').innerHTML=
-    `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)">${esc(nome)} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
-    +row('Valor das Notas (Venda)', BRL(d.total_nf),               '',                          'var(--text)')
-    +row('Frete Total (Vendas)',    BRL(d.total),                   pct.toFixed(1)+'% do total', 'var(--blue2)')
-    +row('% Frete / Venda',        pctFrete.toFixed(2)+'%',        freteLabel,                  freteStatus)
-    +row('Frete Linhahum',         BRL(d.linhahum),                pctLH.toFixed(1)+'%',        'var(--green2)')
-    +row('Frete Humana Alim.',     BRL(d.humana),                  pctHU.toFixed(1)+'%',        'var(--blue)')
-    +row('Qtd CT-e',               N(d.qtd),                       '',                          '')
-    +(d.qtd ? row('Frete Médio',   BRL(d.total/d.qtd),            'por entrega',               'var(--amber)') : '');
+    `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px">${esc(nome)} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
+    +`<div style="font-size:9px;color:var(--blue2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
+    +bloco('Valor das Notas de Venda', BRL(d.total_nf), 'var(--text)',
+      'Total faturado (NF-e de venda) com destino a este estado no período')
+    +bloco('Custo de Frete', BRL(d.total), 'var(--blue2)',
+      `Representa ${pct.toFixed(1)}% do frete total pago em todos os estados no período`)
+    +bloco('% Frete sobre Faturamento', pctFrete.toFixed(2)+'% <span style="font-size:9px;font-weight:600;color:'+freteStatus+'">'+freteLabel+'</span>', freteStatus,
+      'De cada R$ 100 vendidos neste estado, este valor foi gasto com transporte')
+    +`<div style="padding:6px 0;border-bottom:1px solid var(--bd)">`
+    +`<div style="font-size:9px;color:var(--text3);font-weight:600;margin-bottom:4px">Composição do frete por linha de produto</div>`
+    +`<div style="display:flex;justify-content:space-between"><span style="font-size:10px;color:var(--green2)">Linhahum</span><span style="font-size:11px;font-weight:700;color:var(--green2)">${BRL(d.linhahum)} <span style="font-size:9px;font-weight:400">${pctLH.toFixed(1)}%</span></span></div>`
+    +`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="font-size:10px;color:var(--blue2)">Humana Alimentar</span><span style="font-size:11px;font-weight:700;color:var(--blue2)">${BRL(d.humana)} <span style="font-size:9px;font-weight:400">${pctHU.toFixed(1)}%</span></span></div>`
+    +`</div>`
+    +`<div style="display:flex;justify-content:space-between;padding:5px 0">`
+    +`<span style="font-size:10px;color:var(--text3)"><i class="fa-solid fa-file-invoice"></i> ${N(d.qtd)} CT-e &nbsp;·&nbsp; Frete médio: <strong style="color:var(--amber)">${d.qtd?BRL(d.total/d.qtd):'-'}</strong></span>`
+    +`</div>`;
   // Mostra antes de medir para offsetHeight ser correto
   document.getElementById('geo_tip').style.display='block';
   _geoMove(e);
