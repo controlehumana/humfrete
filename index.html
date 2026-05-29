@@ -924,9 +924,9 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
         <span style="font-size:9px;color:var(--text3);margin-left:4px">Passe o mouse sobre o estado para ver o detalhamento</span>
       </div>
       <div style="position:relative">
-        <svg id="geo_map" viewBox="0 0 620 660" style="width:100%;height:auto;display:block"></svg>
+        <svg id="geo_map" viewBox="0 0 620 660" style="width:100%;max-height:520px;height:auto;display:block"></svg>
         <!-- Tooltip -->
-        <div id="geo_tip" style="display:none;position:fixed;background:var(--s3);border:1px solid var(--bd2);border-radius:10px;padding:12px 14px;min-width:240px;max-width:280px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.6)"></div>
+        <div id="geo_tip" style="display:none;position:fixed;background:var(--s3);border:1px solid var(--bd2);border-radius:10px;padding:12px 14px;min-width:230px;max-width:270px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.7)"></div>
       </div>
       <!-- Legenda -->
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center">
@@ -3010,9 +3010,19 @@ ${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span>
 function _geoMove(e){
   const tip=document.getElementById('geo_tip');
   if(tip.style.display==='none') return;
-  const tw=tip.offsetWidth||260,th=tip.offsetHeight||160;
-  tip.style.left=(e.clientX+14+tw>window.innerWidth?e.clientX-tw-10:e.clientX+14)+'px';
-  tip.style.top =(e.clientY-10+th>window.innerHeight?e.clientY-th-10:e.clientY-10)+'px';
+  const tw=tip.offsetWidth||250, th=tip.offsetHeight||200;
+  const margin=12;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  // Preferência: à direita do cursor; cabe à esquerda se não couber
+  let left = e.clientX + margin;
+  if(left + tw > vw - margin) left = e.clientX - tw - margin;
+  left = Math.max(margin, Math.min(left, vw - tw - margin));
+  // Preferência: abaixo do cursor; sobe se não couber
+  let top = e.clientY + margin;
+  if(top + th > vh - margin) top = e.clientY - th - margin;
+  top = Math.max(margin, Math.min(top, vh - th - margin));
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
 }
 document.getElementById('geo_metrica')?.addEventListener('change',()=>_geoRender());
 </script>
