@@ -40,6 +40,13 @@ def br_float(s):
     try: return float(s)
     except ValueError: return 0.0
 
+def fmt_date(s):
+    """Normaliza qualquer data para DD/MM/YYYY. Aceita YYYY-MM-DD ou DD/MM/YYYY."""
+    s = (s or "").strip()[:10]
+    if len(s) == 10 and s[4] == '-':  # YYYY-MM-DD
+        return f"{s[8:10]}/{s[5:7]}/{s[0:4]}"
+    return s  # já DD/MM/YYYY ou vazio
+
 def ns(tag): return f"{{{NS}}}{tag}"
 
 class TableParser(HTMLParser):
@@ -319,7 +326,7 @@ def parse_ctes_from_db(db_path):
         cte_data = {
             "cte_chave":     chave,
             "transportadora": row["transportadora"],
-            "data_emissao":  row["data_emissao"],
+            "data_emissao":  fmt_date(row["data_emissao"]),
             "origem_cidade": row["origem_cidade"],
             "origem_uf":     row["origem_uf"],
             "destino_cidade": row["destino_cidade"],
@@ -441,7 +448,7 @@ def parse_ctes(cte_xml_dir, chaves_canceladas=None):
                 if ch is None:
                     ch = el.find("chave")
                 if ch is not None and ch.text: nfe_chaves.append(ch.text.strip())
-        cte_data={"cte_chave":cte_chave,"transportadora":transportadora,"data_emissao":data_emissao,
+        cte_data={"cte_chave":cte_chave,"transportadora":transportadora,"data_emissao":fmt_date(data_emissao),
             "origem_cidade":origem_cidade,"origem_uf":origem_uf,"destino_cidade":destino_cidade,
             "destino_uf":destino_uf,"dest_cnpj":dest_cnpj,"dest_nome":dest_nome,
             "rem_nome":rem_nome,"numero_cte":numero_cte,"valor_frete":vTPrest,
@@ -580,7 +587,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if cte["dest_cnpj"] in CNPJ_MAP: continue
         row={
             "cte_chave":cte["cte_chave"],"transportadora":cte["transportadora"],
-            "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
+            "data_emissao":fmt_date(cte["data_emissao"]),
             "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
             "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
             "dest_cnpj":cte["dest_cnpj"],"dest_nome":cte.get("dest_nome",""),
@@ -629,7 +636,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             compras.append({
                 "cte_chave":    cte["cte_chave"],
                 "transportadora": cte["transportadora"],
-                "data_emissao": cte["data_emissao"][:10] if cte["data_emissao"] else "",
+                "data_emissao": fmt_date(cte["data_emissao"]),
                 "rem_nome":     nf.get("emit_nome") or cte["rem_nome"],
                 "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
                 "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
@@ -649,7 +656,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if cte["cte_chave"] in ctes_adicionados_compras: continue  # já incluído via NF Entrada
         mkt=_mkt_type_tr(cte["transportadora"])
         row={"cte_chave":cte["cte_chave"],"transportadora":cte["transportadora"],
-             "data_emissao":cte["data_emissao"][:10] if cte["data_emissao"] else "",
+             "data_emissao":fmt_date(cte["data_emissao"]),
              "rem_nome":cte["rem_nome"],"origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
              "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
              "empresa_dest":CNPJ_MAP.get(cte["dest_cnpj"],""),
@@ -734,7 +741,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     def make_list(d,key="frete"):
         return sorted([{"label":k,**v} for k,v in d.items()],key=lambda x:-x[key])
     # Ano mínimo dos CTe — denominador correto para cobCte (exclui faturamento histórico sem CTe)
-    cte_anos = [c["data_emissao"][:4] for c in cte_list if (c.get("data_emissao") or "")[:4].isdigit()]
+    cte_anos = [c["data_emissao"][-4:] for c in cte_list if len(c.get("data_emissao") or "") >= 4 and c["data_emissao"][-4:].isdigit()]
     ano_min_cte = min(cte_anos) if cte_anos else "2025"
     nfe_fat_periodo = sum(1 for nf in nfe_map.values() if (nf.get("data_emissao") or "")[-4:] >= ano_min_cte)
     print(f"   NF-e no periodo CTe ({ano_min_cte}+): {nfe_fat_periodo} de {len(nfe_map)} totais")
