@@ -558,6 +558,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       <span class="tb-bc-root">HumFrete</span>
       <span class="tb-bc-sep">/</span>
       <span class="tb-bc-page" id="tb-bc-page">Visao Geral</span>
+      <span id="hd_emp_badge" style="display:none;margin-left:8px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);color:var(--blue2);border-radius:6px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.3px"></span>
     </div>
     <span class="hd-stamp" id="hd_gen"></span>
     <button id="theme-toggle" title="Tema escuro ativo (clique para claro)" onclick="toggleTheme()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text2);cursor:pointer;font-size:15px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;padding:0">&#x2600;&#xFE0F;</button>
@@ -1132,6 +1133,18 @@ function _mergeData(datas) {
 function _applyPermissions() {
   if (!_currentUser) return;
   _setupUserMenu(_currentUser);
+  // Badge de empresa — exibe apenas para usuários com acesso a uma única empresa
+  const _badge = document.getElementById('hd_emp_badge');
+  if (_badge) {
+    const _emps = _currentUser.empresas || [];
+    if (!_currentUser.isAdmin && _emps.length === 1) {
+      _badge.textContent = _emps[0];
+      _badge.style.display = 'inline-block';
+      _badge.title = 'Você está visualizando dados da empresa ' + _emps[0];
+    } else {
+      _badge.style.display = 'none';
+    }
+  }
   if (_currentUser.isAdmin) return;
   const tabs = _currentUser.tabs;
   if (tabs && Array.isArray(tabs)) {
