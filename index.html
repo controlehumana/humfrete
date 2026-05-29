@@ -938,13 +938,13 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     </div>
     <div style="position:relative">
       <svg id="geo_map" viewBox="0 0 620 660" style="width:100%;max-height:75vh;height:auto;display:block"></svg>
-      <div id="geo_tip" style="display:none;position:fixed;background:var(--s3);border:1px solid var(--bd2);border-radius:10px;padding:14px 16px;min-width:300px;max-width:340px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.7)"></div>
+      <div id="geo_tip" style="display:none;position:fixed;background:#1A2535;border:1px solid #2A3F58;border-radius:10px;padding:14px 16px;min-width:300px;max-width:340px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.75);color:#F1F5F9"></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center">
       <span style="font-size:9px;color:var(--text3)">Menor</span>
       <div id="geo_legenda" style="height:10px;width:180px;border-radius:5px"></div>
       <span style="font-size:9px;color:var(--text3)">Maior</span>
-      <span style="font-size:9px;background:var(--s2);border-radius:3px;padding:1px 6px;color:var(--text3);margin-left:8px">&#9632; Sem dados</span>
+      <span style="font-size:9px;background:#4A5568;border-radius:3px;padding:1px 6px;color:#fff;margin-left:8px">&#9632; Sem dados</span>
     </div>
   </div>
   <!-- Resumo + Ranking abaixo do mapa -->
@@ -2984,7 +2984,7 @@ function _geoRender(){
   const vals=Object.values(byUF).map(v=>metrica==='qtd'?v.qtd:v[metrica]);
   const maxVal=vals.length?Math.max(...vals):1;
   function toColor(v){
-    if(!v||!maxVal) return '#1A2E42'; // sem dados — azul-escuro distinto
+    if(!v||!maxVal) return '#4A5568'; // sem dados — cinza médio visível em ambos os temas
     const t=Math.pow(v/maxVal,.5);
     // baixo → azul médio (20,80,160) | alto → ciano brilhante (30,190,230)
     return`rgb(${Math.round(20+t*10)},${Math.round(80+t*110)},${Math.round(160+t*70)})`;
@@ -3055,18 +3055,18 @@ function _geoHover(e){
   const freteLabel  = pctFrete>5?'⚠ acima de 5%':pctFrete>2?'adequado':'ótimo (<2%)';
 
   function bloco(label,valor,cor,desc){
-    return `<div style="padding:6px 0;border-bottom:1px solid var(--bd)">
-      <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <span style="font-size:10px;color:var(--text3);font-weight:600">${label}</span>
-        <span style="font-size:13px;font-weight:800;color:${cor||'var(--text)'}">${valor}</span>
+    return `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:10px;color:#94A3B8;font-weight:600;flex-shrink:0">${label}</span>
+        <span style="font-size:13px;font-weight:800;color:${cor||'#F1F5F9'};text-align:right">${valor}</span>
       </div>
-      <div style="font-size:9px;color:var(--text3);margin-top:1px;line-height:1.4">${desc}</div>
+      <div style="font-size:9px;color:#64748B;margin-top:2px;line-height:1.4">${desc}</div>
     </div>`;
   }
 
   document.getElementById('geo_tip').innerHTML=
-    `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px">${esc(nome)} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
-    +`<div style="font-size:9px;color:var(--blue2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
+    `<div style="font-size:13px;font-weight:800;color:#F1F5F9;margin-bottom:4px">${esc(nome)} <span style="font-size:10px;font-weight:600;color:#64748B">(${uf})</span></div>`
+    +`<div style="font-size:9px;color:#60A5FA;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.1)"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
     +bloco('Valor das Notas de Venda', BRL(d.total_nf), 'var(--text)',
       'Total faturado (NF-e de venda) com destino a este estado no período')
     +(()=>{
@@ -3089,13 +3089,13 @@ function _geoHover(e){
       `Representa ${pct.toFixed(1)}% do frete total pago em todos os estados no período`)
     +bloco('% Frete sobre Faturamento', pctFrete.toFixed(2)+'% <span style="font-size:9px;font-weight:600;color:'+freteStatus+'">'+freteLabel+'</span>', freteStatus,
       'De cada R$ 100 vendidos neste estado, este valor foi gasto com transporte')
-    +`<div style="padding:6px 0;border-bottom:1px solid var(--bd)">`
-    +`<div style="font-size:9px;color:var(--text3);font-weight:600;margin-bottom:4px">Composição do frete por linha de produto</div>`
-    +`<div style="display:flex;justify-content:space-between"><span style="font-size:10px;color:var(--green2)">Linhahum</span><span style="font-size:11px;font-weight:700;color:var(--green2)">${BRL(d.linhahum)} <span style="font-size:9px;font-weight:400">${pctLH.toFixed(1)}%</span></span></div>`
-    +`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="font-size:10px;color:var(--blue2)">Humana Alimentar</span><span style="font-size:11px;font-weight:700;color:var(--blue2)">${BRL(d.humana)} <span style="font-size:9px;font-weight:400">${pctHU.toFixed(1)}%</span></span></div>`
+    +`<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)">`
+    +`<div style="font-size:9px;color:#94A3B8;font-weight:600;margin-bottom:4px">Composição do frete por linha de produto</div>`
+    +`<div style="display:flex;justify-content:space-between"><span style="font-size:10px;color:#34D399">Linhahum</span><span style="font-size:11px;font-weight:700;color:#34D399">${BRL(d.linhahum)} <span style="font-size:9px;font-weight:400">${pctLH.toFixed(1)}%</span></span></div>`
+    +`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="font-size:10px;color:#60A5FA">Humana Alimentar</span><span style="font-size:11px;font-weight:700;color:#60A5FA">${BRL(d.humana)} <span style="font-size:9px;font-weight:400">${pctHU.toFixed(1)}%</span></span></div>`
     +`</div>`
     +`<div style="display:flex;justify-content:space-between;padding:5px 0">`
-    +`<span style="font-size:10px;color:var(--text3)"><i class="fa-solid fa-file-invoice"></i> ${N(d.qtd)} CT-e &nbsp;·&nbsp; Frete médio: <strong style="color:var(--amber)">${d.qtd?BRL(d.total/d.qtd):'-'}</strong></span>`
+    +`<span style="font-size:10px;color:#94A3B8"><i class="fa-solid fa-file-invoice"></i> ${N(d.qtd)} CT-e &nbsp;·&nbsp; Frete médio: <strong style="color:#FCD34D">${d.qtd?BRL(d.total/d.qtd):'-'}</strong></span>`
     +`</div>`;
   // Mostra antes de medir para offsetHeight ser correto
   document.getElementById('geo_tip').style.display='block';
