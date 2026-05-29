@@ -3023,6 +3023,8 @@ function _geoHover(e){
     +`<div style="font-size:9px;color:var(--blue2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
     +bloco('Valor das Notas de Venda', BRL(d.total_nf), 'var(--text)',
       'Total faturado (NF-e de venda) com destino a este estado no período')
+    +bloco('Ticket Médio por NF-e', d.qtd>0?BRL(d.total_nf/d.qtd):'-', 'var(--text)',
+      'Valor médio de cada nota fiscal entregue neste estado — pedidos maiores tendem a diluir o % de frete')
     +bloco('Custo de Frete', BRL(d.total), 'var(--blue2)',
       `Representa ${pct.toFixed(1)}% do frete total pago em todos os estados no período`)
     +bloco('% Frete sobre Faturamento', pctFrete.toFixed(2)+'% <span style="font-size:9px;font-weight:600;color:'+freteStatus+'">'+freteLabel+'</span>', freteStatus,
