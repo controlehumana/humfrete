@@ -2993,24 +2993,25 @@ function _geoRender(){
 function _geoHover(e){
   const uf=e.target.dataset.uf;
   e.target.setAttribute('stroke','var(--blue2)');e.target.setAttribute('stroke-width','2');
-  const d=_geoByUF[uf]||{total:0,linhahum:0,humana:0,qtd:0};
+  const d=_geoByUF[uf]||{total:0,linhahum:0,humana:0,qtd:0,total_nf:0};
   const nome=_GEO_NOMES[uf]||uf;
   const totTodos=Object.values(_geoByUF).reduce((s,v)=>s+v.total,0);
-  const pct=totTodos?d.total/totTodos*100:0;
-  const row=(l,v,s,c)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">${l}</span><span style="font-size:12px;font-weight:700;color:${c||'var(--text)'}">
-${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span></div>`;
-  const pctFreteSobreVenda = d.total_nf>0 ? (d.total/d.total_nf*100) : 0;
-  const pctLH = d.total>0 ? (d.linhahum/d.total*100) : 0;
-  const pctHU = d.total>0 ? (d.humana/d.total*100)   : 0;
+  const pct      = totTodos   > 0 ? d.total    / totTodos    * 100 : 0;
+  const pctFrete = d.total_nf > 0 ? d.total    / d.total_nf  * 100 : 0;
+  const pctLH    = d.total    > 0 ? d.linhahum / d.total     * 100 : 0;
+  const pctHU    = d.total    > 0 ? d.humana   / d.total     * 100 : 0;
+  const row=(l,v,s,c)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><span style="font-size:10px;color:var(--text3)">${l}</span><span style="font-size:12px;font-weight:700;color:${c||'var(--text)'}"> ${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span></div>`;
+  const freteStatus = pctFrete>5?'var(--red2)':pctFrete>2?'var(--amber)':'var(--green2)';
+  const freteLabel  = pctFrete>5?'⚠ acima de 5%':pctFrete>2?'ok':'ótimo';
   document.getElementById('geo_tip').innerHTML=
     `<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd2)">${esc(nome)} <span style="font-size:10px;font-weight:600;color:var(--text3)">(${uf})</span></div>`
-    +row('Valor das Notas (Venda)',BRL(d.total_nf),'','var(--text)')
-    +row('Frete Total (Vendas)',BRL(d.total),pct.toFixed(1)+'% do total','var(--blue2)')
-    +row('% Frete / Venda',pctFreteSobreVenda.toFixed(2)+'%',pctFreteSobreVenda>5?'⚠ acima de 5%':pctFreteSobreVenda>2?'ok':'ótimo',pctFreteSobreVenda>5?'var(--red2)':pctFreteSobreVenda>2?'var(--amber)':'var(--green2)')
-    +row('Frete Linhahum',BRL(d.linhahum),pLH.toFixed(1)+'%','var(--green2)')
-    +row('Frete Humana Alim.',BRL(d.humana),pHU.toFixed(1)+'%','var(--blue)')
-    +row('Qtd CT-e',N(d.qtd),'','')
-    +(d.qtd?row('Frete Médio',BRL(d.total/d.qtd),'por entrega','var(--amber)'):'');
+    +row('Valor das Notas (Venda)', BRL(d.total_nf),               '',                          'var(--text)')
+    +row('Frete Total (Vendas)',    BRL(d.total),                   pct.toFixed(1)+'% do total', 'var(--blue2)')
+    +row('% Frete / Venda',        pctFrete.toFixed(2)+'%',        freteLabel,                  freteStatus)
+    +row('Frete Linhahum',         BRL(d.linhahum),                pctLH.toFixed(1)+'%',        'var(--green2)')
+    +row('Frete Humana Alim.',     BRL(d.humana),                  pctHU.toFixed(1)+'%',        'var(--blue)')
+    +row('Qtd CT-e',               N(d.qtd),                       '',                          '')
+    +(d.qtd ? row('Frete Médio',   BRL(d.total/d.qtd),            'por entrega',               'var(--amber)') : '');
   // Mostra antes de medir para offsetHeight ser correto
   document.getElementById('geo_tip').style.display='block';
   _geoMove(e);
