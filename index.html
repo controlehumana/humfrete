@@ -924,7 +924,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
         <span style="font-size:9px;color:var(--text3);margin-left:4px">Passe o mouse sobre o estado para ver o detalhamento</span>
       </div>
       <div style="position:relative">
-        <svg id="geo_map" viewBox="0 0 620 660" style="width:100%;max-height:600px;height:auto;display:block"></svg>
+        <svg id="geo_map" viewBox="0 0 620 660" style="width:100%;max-height:72vh;height:auto;display:block"></svg>
         <!-- Tooltip -->
         <div id="geo_tip" style="display:none;position:fixed;background:var(--s3);border:1px solid var(--bd2);border-radius:10px;padding:12px 14px;min-width:230px;max-width:270px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.7)"></div>
       </div>
@@ -3004,8 +3004,9 @@ ${v}${s?` <span style="font-size:9px;color:var(--text3)">${s}</span>`:''}</span>
     +row('Frete Humana Alim.',BRL(d.humana),d.total?(d.humana/d.total*100).toFixed(1)+'%':'','var(--blue)')
     +row('Qtd CT-e',N(d.qtd),'','')
     +(d.qtd?row('Frete Médio',BRL(d.total/d.qtd),'por entrega','var(--amber)'):'');
-  _geoMove(e);
+  // Mostra antes de medir para offsetHeight ser correto
   document.getElementById('geo_tip').style.display='block';
+  _geoMove(e);
 }
 function _geoMove(e){
   const tip=document.getElementById('geo_tip');
