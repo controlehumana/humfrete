@@ -663,11 +663,10 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <!-- CUSTO LOGÍSTICO CONSOLIDADO -->
   <div class="sdiv" style="margin-top:8px">Custo Logistico Total Consolidado</div>
   <div class="card" id="ct_card">
-    <div class="card-title">Custo Logistico Consolidado — Todas as Categorias <span style="font-size:9px;font-weight:400;color:var(--text3)">(visao global, sem filtro de periodo)</span></div>
+    <div class="card-title">Custo Logistico Consolidado — Todas as Categorias <span style="font-size:9px;font-weight:400;color:var(--text3)" id="ct_filtro_lbl"></span></div>
     <p style="font-size:11px;color:var(--text2);margin:-4px 0 16px;line-height:1.6">
-      Soma de <strong style="color:var(--text)">todos os CT-e ativos</strong> da base, independente de terem ou nao vinculo com o faturamento.
-      Representa o custo logistico real pago a transportadoras — incluindo fretes de venda, de compra, devolucoes e casos em investigacao.
-      Os valores das abas individuais (Visao Geral, Compras, etc.) sao subconjuntos deste total.
+      Soma de <strong style="color:var(--text)">todas as categorias de frete</strong> no periodo selecionado — vendas, compras, devolucoes e casos em investigacao.
+      Mostra o custo logistico real total pago a transportadoras, nao apenas o frete de venda que aparece nos KPIs principais.
     </p>
     <!-- Total + barra global -->
     <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:14px 16px;background:var(--s2);border-radius:10px;margin-bottom:16px">
@@ -1652,22 +1651,44 @@ function renderAll(){
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
   if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados')nvRender();else if(tab==='compras')renderCompras();else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();}
-  // Custo Logístico Consolidado — global, sem filtro de período
+  // Custo Logístico Consolidado — segue filtros ativos
   (function(){
-    const vendas   =(DATA.detalhes||[]).reduce((s,d)=>s+d.valor_frete,0);
-    const compras  =(DATA.compras||[]).reduce((s,d)=>s+d.valor_frete,0);
-    const devMkt   =(DATA.devolucoes_mkt||[]).reduce((s,d)=>s+d.valor_frete,0);
-    const semVinc  =(DATA.ctes_nao_vinculados||[]).reduce((s,d)=>s+d.valor_frete,0);
-    const nfCanc   =(DATA.ctes_nf_cancelada||[]).reduce((s,d)=>s+d.valor_frete,0);
+    // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
+    function _ctFilt(arr, empField){
+      return (arr||[]).filter(d=>{
+        const dt=d.data_emissao||'';
+        const anoOk =!state.ano  || dt.slice(6,10)===state.ano;
+        const mesOk =!state.meses.length || state.meses.includes(dt.slice(3,5));
+        const empOk =!state.empresas.length || (empField&&state.empresas.includes(d[empField]));
+        return anoOk&&mesOk&&empOk;
+      });
+    }
+    const vendasRows= filteredRows; // já filtrado pelo renderAll
+    const comprasF  = _ctFilt(DATA.compras,        'empresa_dest');
+    const devMktF   = _ctFilt(DATA.devolucoes_mkt, 'empresa_dest');
+    const semVincF  = _ctFilt(DATA.ctes_nao_vinculados, null);
+    const nfCancF   = _ctFilt(DATA.ctes_nf_cancelada,   'empresa_nf');
+    const vendas   = vendasRows.reduce((s,d)=>s+d.valor_frete,0);
+    const compras  = comprasF.reduce((s,d)=>s+d.valor_frete,0);
+    const devMkt   = devMktF.reduce((s,d)=>s+d.valor_frete,0);
+    const semVinc  = semVincF.reduce((s,d)=>s+d.valor_frete,0);
+    const nfCanc   = nfCancF.reduce((s,d)=>s+d.valor_frete,0);
     const total    =vendas+compras+devMkt+semVinc+nfCanc;
-    const qtdVendas=(DATA.detalhes||[]).length;
-    const qtdComp  =(DATA.compras||[]).length;
-    const qtdDev   =(DATA.devolucoes_mkt||[]).length;
-    const qtdSV    =(DATA.ctes_nao_vinculados||[]).length;
-    const qtdNC    =(DATA.ctes_nf_cancelada||[]).length;
+    const qtdVendas= vendasRows.length;
+    const qtdComp  = comprasF.length;
+    const qtdDev   = devMktF.length;
+    const qtdSV    = semVincF.length;
+    const qtdNC    = nfCancF.length;
     const qtdTotal =qtdVendas+qtdComp+qtdDev+qtdSV+qtdNC;
+    // Label do filtro ativo
+    const _ctParts=[];
+    if(state.empresas.length) _ctParts.push(state.empresas.join('+'));
+    if(state.ano) _ctParts.push(state.ano);
+    if(state.meses&&state.meses.length) _ctParts.push(state.meses.map(m=>({1:'Jan',2:'Fev',3:'Mar',4:'Abr',5:'Mai',6:'Jun',7:'Jul',8:'Ago',9:'Set',10:'Out',11:'Nov',12:'Dez'}[+m]||m)).join('/'));
+    const ctLbl=document.getElementById('ct_filtro_lbl');
+    if(ctLbl) ctLbl.textContent=_ctParts.length?'— '+_ctParts.join(' · '):'— Todo o período';
     document.getElementById('ct_total').textContent=BRL(total);
-    document.getElementById('ct_ctes').textContent=N(qtdTotal)+' CT-e no total';
+    document.getElementById('ct_ctes').textContent=N(qtdTotal)+' CT-e no periodo';
     // Barra rastreado vs pendente
     const rastread=vendas+compras+devMkt;const pend=semVinc+nfCanc;
     const pRast=total?rastread/total*100:0;const pPend=total?pend/total*100:0;
