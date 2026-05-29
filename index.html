@@ -681,7 +681,19 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
           <span style="color:var(--yellow);font-weight:600" id="ct_pct_pend">-</span>
         </div>
         <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px" id="ct_bar_total"></div>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px">Verde = custo ja apurado e vinculado &nbsp;|&nbsp; Amarelo = aguarda identificacao ou investigacao</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px">Verde = custo apurado e vinculado &nbsp;|&nbsp; Amarelo = aguarda identificacao</div>
+      </div>
+    </div>
+    <!-- Nota interpretativa -->
+    <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
+      <i class="fa-solid fa-circle-info" style="color:var(--blue2);font-size:13px;margin-top:1px;flex-shrink:0"></i>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        <strong style="color:var(--text)">Como interpretar o % rastreado:</strong>
+        este percentual indica quantos dos CT-e <em>capturados no sistema</em> foram vinculados a uma operacao identificavel.
+        <strong style="color:var(--text)">Nao e uma garantia de integralidade</strong> — se alguma transportadora nao estiver integrada
+        a API de coleta (Qive/Arquivei), seus CT-e nao aparecem nem como rastreados nem como pendentes.
+        Para confirmar que 100% dos fretes do periodo foram capturados, e necessario cruzar com os
+        boletos e faturas reais das transportadoras.
       </div>
     </div>
     <!-- Breakdown por categoria -->
