@@ -1390,7 +1390,14 @@ function _populateTranspSelect(){
   if(groupByEconGroup){
     const seen={};
     DATA.detalhes.forEach(d=>{const k=trKey(d);if(!seen[k]) seen[k]=trDisp(k);});
-    Object.entries(seen).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,name])=>{const o=document.createElement('option');o.value=k;o.textContent=name;sel.appendChild(o);});
+    const fmtBase=b=>/^\d{8}$/.test(b)?b.replace(/^(\d{2})(\d{3})(\d{3})$/,'$1.$2.$3'):null;
+    Object.entries(seen).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,name])=>{
+      const o=document.createElement('option');
+      o.value=k;
+      const base=fmtBase(k);
+      o.textContent=base?base+' — '+name:name;
+      sel.appendChild(o);
+    });
   } else {
     [...new Set(DATA.detalhes.map(d=>d.transportadora).filter(Boolean))].sort().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=trName(t);sel.appendChild(o);});
   }
