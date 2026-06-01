@@ -632,7 +632,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   </div>
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-tooltip">Notas fiscais de venda para as quais encontramos o comprovante de frete correspondente. Cada nota vinculada tem seu custo de entrega identificado e incluido nos calculos do dashboard.</div><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Percentual das vendas do periodo com frete rastreado. As vendas sem cobertura sao entregas retiradas pelo proprio cliente no deposito, ou vendas onde o comprador contrata o frete por conta propria.</div><div class="kpi-lbl">Cobertura de Faturamento</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">As demais sao retiradas ou ex-works</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">NF-e de entrega com CTe rastreado, sobre o total de NF-e que deveriam ter frete (exclui devoluções, entradas, perdas, imobilizado e operações fiscais). As vendas sem cobertura são retiradas no depósito pelo cliente ou entregas ex-works onde o comprador contrata o frete por conta própria.</div><div class="kpi-lbl">Cobertura de Faturamento</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">Exclui devol., entradas e perdas</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Percentual dos CTe recebidos que foi possivel vincular a uma nota fiscal (venda, compra ou devolucao). Proximo de 100% indica que a conciliacao esta completa e confiavel. Os nao conciliados sao CTe em que a transportadora nao informou a nota fiscal de origem.</div><div class="kpi-lbl">CTe Conciliados</div><div class="kpi-val" id="k_cte_conc">-</div><div class="kpi-sub" id="k_cte_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantas empresas de transporte diferentes realizaram ao menos uma entrega rastreada no periodo selecionado.</div><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quanto do total gasto com frete vai para a transportadora principal. Acima de 40% indica dependencia elevada: um problema com esse parceiro pode impactar grande parte das entregas da empresa.</div><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
@@ -1666,7 +1666,7 @@ function renderInsights(agg){
   }
 
   // 6. Cobertura de Documentos
-  const r=DATA?.resumo||{};const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
+  const r=DATA?.resumo||{};const _dCob=r.nfe_fat_periodo||r.total_nfe_fat||0;const taxa=_dCob?(r.nfe_com_cte/_dCob*100):0;
   const clsCob=taxa>=90?'ok':taxa>=70?'hi':'bad';
   const txtCob=taxa>=90
     ?'<span class="ok">'+taxa.toFixed(1)+'%</span> das NF-e possuem CTe ('+N(agg.qtd)+' de '+N(r.total_nfe_fat||0)+'). Alta cobertura — a análise representa bem o universo de vendas do período.'
@@ -1694,9 +1694,10 @@ function renderAll(){
   document.getElementById('h_ticket').textContent=BRL(agg.media);
   document.getElementById('h_ticket_sub').textContent=N(agg.qtd)+' entregas vinculadas';
   document.getElementById('k_vinc').textContent=N(agg.qtd);
-  document.getElementById('k_vinc_sub').textContent='de '+N(r.total_nfe_fat||0)+' NF-e';
-  const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
-  const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=90?'var(--green)':taxa>=70?'var(--yellow)':'var(--red)';
+  document.getElementById('k_vinc_sub').textContent='de '+N(r.nfe_fat_periodo||r.total_nfe_fat||0)+' NF-e com entrega';
+  const _denCob=r.nfe_fat_periodo||r.total_nfe_fat||0;
+  const taxa=_denCob?(r.nfe_com_cte/_denCob*100):0;
+  const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
   document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trName(agg.topTransp.label):'';
   const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';

@@ -743,8 +743,31 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     # Ano mínimo dos CTe — denominador correto para cobCte (exclui faturamento histórico sem CTe)
     cte_anos = [c["data_emissao"][-4:] for c in cte_list if len(c.get("data_emissao") or "") >= 4 and c["data_emissao"][-4:].isdigit()]
     ano_min_cte = min(cte_anos) if cte_anos else "2025"
-    nfe_fat_periodo = sum(1 for nf in nfe_map.values() if (nf.get("data_emissao") or "")[-4:] >= ano_min_cte)
-    print(f"   NF-e no periodo CTe ({ano_min_cte}+): {nfe_fat_periodo} de {len(nfe_map)} totais")
+    # Nat. ops que estruturalmente não geram CTe de frete — excluídas do denominador
+    # (devoluções, perdas, entradas, operações fiscais sem movimento real de mercadoria)
+    # TRANSFERÊNCIA SAÍDA é mantida pois pode sim ter CTe associado
+    def _nat_sem_frete(nat_op):
+        if not nat_op: return False
+        n = nat_op.upper().strip()
+        if n.startswith("ENTRADA"): return True          # operações de entrada
+        if n.startswith("COMPRA"):  return True          # compras
+        if "DEVOLUCAO" in n:        return True          # devoluções de qualquer tipo
+        if "PERDA" in n and "ROUBO" in n: return True   # perdas/sinistros
+        if "SALDO ICMS" in n:       return True          # transferência fiscal sem mercadoria
+        if "IMOBILIZADO" in n:      return True          # venda de ativo, não mercadoria
+        if "MOD65" in n:            return True          # NF consumidor (documento, não entrega)
+        if "SIMPLES REMESSA" in n:  return True          # remessa sem venda
+        if "CONTRATO LOCACAO" in n: return True          # retorno de locação
+        if n in {"OUTRAS ENTRADAS","RETORNO EXPOSICAO FEIRA"}: return True
+        return False
+    nfe_fat_periodo_bruto = sum(1 for nf in nfe_map.values() if (nf.get("data_emissao") or "")[-4:] >= ano_min_cte)
+    nfe_fat_periodo = sum(
+        1 for nf in nfe_map.values()
+        if (nf.get("data_emissao") or "")[-4:] >= ano_min_cte
+        and not _nat_sem_frete(nf.get("nat_operacao"))
+    )
+    nfe_excluidas = nfe_fat_periodo_bruto - nfe_fat_periodo
+    print(f"   NF-e no periodo CTe ({ano_min_cte}+): {nfe_fat_periodo} de {nfe_fat_periodo_bruto} ({nfe_excluidas} excluidas — nat. op. sem frete)")
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
