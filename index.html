@@ -139,8 +139,8 @@ html.ocean .tb-cat-pill.active{background:rgba(94,106,210,.12);color:#3730A3;bor
 .card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--rL);padding:18px;box-shadow:var(--shadow);position:relative;backdrop-filter:blur(8px);}
 .card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
 .card-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.07);color:var(--text3);font-size:9px;cursor:help;flex-shrink:0;vertical-align:middle;}
-.card-tip:hover{background:rgba(94,106,210,.18);color:var(--blue2);}
-.card-tip:hover .kpi-tooltip{display:block;top:calc(100% + 8px);left:50%;transform:translateX(-50%)}
+.card-tip:hover{background:rgba(94,106,210,.18);color:var(--blue2);z-index:1000;position:relative;}
+.card-tip:hover .kpi-tooltip{display:block;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:300px;}
 .hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:1200px){.hero-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:580px){.hero-grid{grid-template-columns:1fr}}
