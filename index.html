@@ -1701,6 +1701,12 @@ function renderAll(){
   const _denCob=r.nfe_fat_periodo||r.total_nfe_fat||0;
   const taxa=_denCob?(r.nfe_com_cte/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
+  const _totCteG=r.total_cte||0,_svG=r.ctes_nao_vinculados_count||0;
+  const _pctConcG=_totCteG>0?((_totCteG-_svG)/_totCteG*100):0;
+  const _concEl=document.getElementById('k_cte_conc');
+  if(_concEl){_concEl.textContent=_pctConcG.toFixed(1)+'%';_concEl.style.color=_pctConcG>=98?'var(--green)':_pctConcG>=90?'var(--yellow)':'var(--red)';}
+  const _concSub=document.getElementById('k_cte_conc_sub');
+  if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe';
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
   document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trName(agg.topTransp.label):'';
   const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';
@@ -1786,15 +1792,6 @@ function renderAll(){
     const qtdSV    = semVincF.length;
     const qtdNC    = nfCancF.length;
     const qtdTotal =qtdVendas+qtdComp+qtdDev+qtdSV+qtdNC;
-    // KPI CTe Conciliados — respeita todos os filtros ativos
-    const concCteEl=document.getElementById('k_cte_conc');
-    if(concCteEl){
-      const pctConc=qtdTotal>0?((qtdTotal-qtdSV)/qtdTotal*100):0;
-      concCteEl.textContent=pctConc.toFixed(1)+'%';
-      concCteEl.style.color=pctConc>=98?'var(--green)':pctConc>=90?'var(--yellow)':'var(--red)';
-      const subEl=document.getElementById('k_cte_conc_sub');
-      if(subEl) subEl.textContent=N(qtdTotal-qtdSV)+' de '+N(qtdTotal)+' CTe';
-    }
     // Label do filtro ativo
     const _ctParts=[];
     if(state.empresas.length) _ctParts.push(state.empresas.join('+'));
