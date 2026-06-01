@@ -1061,6 +1061,7 @@ const _db   = firebase.firestore();
 let DATA = null;
 let _currentUser = null;
 let nvBase = [], nvPage = 0, nvRows = [];
+let CNPJ_EMPRESA={};
 
 // Auth state
 _auth.onAuthStateChanged(async (user) => {
@@ -1078,7 +1079,15 @@ _auth.onAuthStateChanged(async (user) => {
       initApp();
     } catch(e) {
       hideLoading();
-      showLoginScreen('Erro: ' + e.message);
+      console.error('[FRETE] Falha ao carregar:', e);
+      const _m=(e?.message||'').toLowerCase();
+      const _friendly=
+        _m.includes('nenhuma empresa')       ? 'Seu acesso não está configurado. Entre em contato com o administrador.' :
+        _m.includes('nao encontrados')       ? 'Os dados ainda não foram processados. Execute o atualizar.py e tente novamente.' :
+        e?.code==='permission-denied'        ? 'Sem permissão para acessar os dados. Entre em contato com o administrador.' :
+        _m.includes('network')||_m.includes('failed to fetch')||_m.includes('offline') ? 'Sem conexão com a internet. Verifique sua rede e tente novamente.' :
+        'Não foi possível carregar o dashboard. Tente recarregar a página.';
+      showLoginScreen(_friendly);
     }
   } else {
     showLoginScreen();
@@ -2044,7 +2053,6 @@ function toggleCliDetails(key){
 // ABA EMPRESA
 const NAT_TRANSF=/TRANSFER|1-00005-0000002/i;
 const HU_CLI=/HUMANA\s*ALIMENTAR/i;
-let CNPJ_EMPRESA={};
 function resolveEmpDest(d){ return CNPJ_EMPRESA[d.dest_cnpj]||CNPJ_EMPRESA[d.part_cnpj]||d.cliente||'?'; }
 function isTransferencia(d){
   return NAT_TRANSF.test(d.nat_operacao||'')
