@@ -8,7 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 py "C:\Users\caio.zinsly\Documents\ClaudeCode\atualizar.py"
 ```
-Executa: download CTe D-1 → importa NF Entrada → importa Faturamento → cria views → sobe Firestore.
+Executa: download CTe **D-3 a D-1** → importa NF Entrada → importa Faturamento → cria views → sobe Firestore.
+A janela D-3 a D-1 garante que o sábado seja capturado quando o script roda na segunda-feira.
 
 ### Manual (após exportar do ERP)
 ```
@@ -25,7 +26,7 @@ ClaudeCode\NF_Entrada\       ← relatório NF de Entrada, acumula sem duplicar
 
 | Script | O que faz |
 |---|---|
-| `atualizar.py` | Orquestrador completo D-1 automático (4 etapas) |
+| `atualizar.py` | Orquestrador completo D-3→D-1 automático (4 etapas) |
 | `atualizar_sem_download.py` | Igual mas pula download da API |
 | `importar_faturamento.py` | Importa CSV de faturamento → `nf_saida_items` |
 | `importar_nf_entrada.py` | Importa XLS de NF Entrada → `nf_entrada` |
@@ -35,7 +36,7 @@ ClaudeCode\NF_Entrada\       ← relatório NF de Entrada, acumula sem duplicar
 
 ```
 ClaudeCode/
-  atualizar.py                  # Orquestrador principal (D-1 automático)
+  atualizar.py                  # Orquestrador principal (D-3→D-1 automático)
   atualizar_sem_download.py     # Versão sem download (reprocessamento)
   importar_faturamento.py       # Importa faturamento de saída para o banco
   importar_nf_entrada.py        # Importa NF de entrada para o banco
@@ -61,8 +62,8 @@ ClaudeCode/
 | Tabela | Conteúdo |
 |---|---|
 | `cte_campos` | Dados dos CTe (58k+ registros) |
-| `cte_nf` | Mapeamento CTe → NF-e referenciadas |
-| `cte_cancelamento` | CTe cancelados |
+| `cte_nf` | Mapeamento CTe → NF-e referenciadas (chave_cte, chave_nfe) |
+| `cte_cancelamento` | CTe cancelados (chave_cte, chave_canc, data_cancelamento) |
 | `nf_saida_items` | Faturamento de saída — 1 linha por item, acumulativo |
 | `nf_entrada` | NF de entrada (compras) — 1 linha por NF |
 
@@ -102,30 +103,51 @@ const num = parseInt(ch.slice(25, 34));  // posições 25–33 = nNF/nCT
 
 ```
 CTe total (~58k)
-  ├── Frete de Venda (98.7%)      → NF referenciada está em nf_saida_items
-  │                                  → vai para 'detalhes' (todas as abas)
-  ├── Frete de Compra via NF Entrada → NF está em vw_cte_nf_entrada
-  │                                   → vai para 'compras' com dados do fornecedor
-  ├── Frete de Compra via CNPJ    → dest_cnpj em CNPJ_MAP (Humana recebe)
-  │                                 → vai para 'compras'
-  └── Sem vínculo (0.7%)          → vai para 'ctes_nao_vinculados'
-        ├── 318 sem NF referenciada  (não cruzáveis automaticamente)
-        └── 69 com NF fora do faturamento (exportar período no ERP)
+  ├── Frete de Venda           → NF em nf_saida_items → 'detalhes'
+  ├── Frete de Compra (NF Entrada) → vw_cte_nf_entrada → 'compras'
+  ├── Frete de Compra (dest CNPJ_MAP) → dest_cnpj Humana → 'compras'
+  ├── Frete de Compra (tomador Humana) → rem_cnpj Humana + NF externa → 'compras'
+  ├── Dev. Marketplace         → transportadora Shopee/ML → 'devolucoes_mkt'
+  ├── CTe c/ NF Cancelada      → NF de CNPJ Humana ausente do fat → 'ctes_nf_cancelada'
+  └── Sem Vínculo (~338)       → resto → 'ctes_nao_vinculados'
 ```
+
+## KPIs principais (index.html)
+
+### Cobertura de Faturamento
+- **Fórmula:** `nfe_com_cte / nfe_fat_periodo`
+- **Denominador (`nfe_fat_periodo`):** NF-e do período CTe (2025+) **excluindo** nat. ops sem frete
+- **Nat. ops excluídas:** devoluções (qualquer tipo), entradas (qualquer tipo), perdas/roubo, saldo ICMS, imobilizado, NF consumidor, simples remessa, retorno de locação
+- **TRANSFERÊNCIA SAÍDA é mantida** — pode ter CTe associado
+- Threshold: verde ≥80%, amarelo ≥65%, vermelho <65%
+
+### CTe Conciliados
+- **Fórmula:** `(qtdTotal - qtdSV) / qtdTotal` — calculado dentro do IIFE do Custo Logístico
+- Respeita todos os filtros ativos (ano, mês, empresa, transportadora, etc.)
+- `qtdSV` = CTes sem vínculo nenhum (`ctes_nao_vinculados`)
+- Threshold: verde ≥98%, amarelo ≥90%, vermelho <90%
+
+### % Frete / Venda — Mapa de Transportadoras
+- **Denominador:** faturamento das NF-e **transportadas por aquela carrier** (não o total da empresa)
+- Mede eficiência: quanto custa transportar R$100 de mercadoria com cada parceiro
+- Carriers com clientes de alto ticket médio têm % menor naturalmente
 
 ## Arquitetura web (index.html)
 
-- **GitHub Pages** serve `index.html` estático: https://controlehumana.github.io/humfrete/
+- **GitHub Pages:** https://controlehumana.github.io/humfrete/
 - **Firebase Auth v8.10.1 compat** (v10 causa falha no WebChannel)
-- **Firestore `/dados/{empresa}`**: payload sem detalhes + N chunks de 800 itens
-- `_mergeData()` no browser combina dados de todas as empresas autorizadas
+- **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks de 800 itens
+- `_mergeData()` combina dados de todas as empresas autorizadas, somando corretamente `total_cte` e `ctes_nao_vinculados_count`
+- **CDN Chart.js:** primário cdnjs, fallback jsdelivr via `onerror`
+- **CDN Font Awesome:** primário cdnjs, fallback fontawesome.com via `onerror`
+- **Firebase SDK:** guard `typeof firebase !== 'undefined'` antes de inicializar
 
 ## Etapas do atualizar.py
 
 ```
 Etapa 0a — importar_faturamento.py   (se houver arquivo em Faturamento/)
 Etapa 0b — importar_nf_entrada.py    (se houver arquivo em NF_Entrada/)
-Etapa 1/4 — buscar_cte.py            (download D-1 da API Qive)  ← pulado em --pular-download
+Etapa 1/4 — buscar_cte.py            (download D-3→D-1 da API Qive)  ← pulado em --pular-download
 Etapa 2/4 — criar_view.py            (parseia XMLs, atualiza views)
 Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 ```
@@ -138,12 +160,35 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 4. **Cores do heatmap** — sempre tema-aware via `_isOcean()`, nunca hardcode
 5. **IDs únicos** — cada elemento com ID aparece exatamente uma vez
 6. **XSS** — dados externos sempre via `esc()` antes de inserir em innerHTML
+7. **Guards de null** — `document.getElementById` seguido de `.textContent`/`.style` deve ter `if(el)` ou `el?.`
+8. **Tooltip geo** — cores via variáveis `tipText`, `tipLabel`, `tipBorder`, `tipAccent`, `tipGold` (tema-aware)
+9. **Insight body** — `.ok`/`.hi`/`.bad` têm override para ocean em CSS (`html.ocean .insight-body .ok` etc.)
+
+## Globals críticos (ordem importa)
+
+Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
+- `let DATA = null`
+- `let _currentUser = null`
+- `let nvBase = [], nvPage = 0, nvRows = []`
+- `let CNPJ_EMPRESA = {}`  ← Firebase v8 pode invocar onAuthStateChanged sincronamente
+
+## Erros de carregamento (catch no onAuthStateChanged)
+
+O catch exibe mensagem amigável ao usuário e loga erro técnico no console:
+- "Nenhuma empresa" → "Seu acesso não está configurado..."
+- "nao encontrados" → "Os dados ainda não foram processados..."
+- `permission-denied` → "Sem permissão..."
+- `network/failed to fetch` → "Sem conexão..."
+- Outros → "Não foi possível carregar o dashboard..."
 
 ## Pitfalls conhecidos
 
 - **SDK Firebase v8** — usar v8.10.1 compat. v10 causa falha no WebChannel
 - **Encoding Python** — sempre `$env:PYTHONIOENCODING = "utf-8"` antes de rodar scripts
 - **Faturamento período** — NF de Nov/Dez 2024 e Jan 2025 ainda ausentes; exportar do ERP
-- **318 CTe sem NF** — não têm NF referenciada, investigação manual necessária
+- **~338 CTe sem vínculo** — não têm NF referenciada, investigação manual necessária
+- **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito pelo cliente (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
 - **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular
+- **`input()` no processar_frete.py** — envolvido em `try/except EOFError` para não travar execução automática
+- **Chart.js linha 1347** — `if(typeof Chart!=='undefined')` obrigatório; sem isso, falha de CDN derruba o script inteiro por TDZ em cascata
