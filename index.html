@@ -3118,12 +3118,15 @@ function renderFreteGratis(rows){
   const totGratisFrete=gratisRows.reduce((s,d)=>s+(d.valor_frete||0),0);
   const cliMap={};
   gratisRows.forEach(d=>{
-    const cli=d.cliente||'?';
-    if(!cliMap[cli]) cliMap[cli]={frete:0,qtd:0,empresa:d.empresa||''};
-    cliMap[cli].frete+=d.valor_frete||0;
-    cliMap[cli].qtd++;
+    const cnpj=d.part_cnpj||'';
+    const key=cnpj||d.cliente||'?';
+    if(!cliMap[key]) cliMap[key]={nome:d.cliente||'',cnpj,frete:0,qtd:0,empresa:d.empresa||''};
+    // mantém o nome mais longo encontrado (evita pegar versão vazia)
+    if((d.cliente||'').length>(cliMap[key].nome||'').length) cliMap[key].nome=d.cliente||'';
+    cliMap[key].frete+=d.valor_frete||0;
+    cliMap[key].qtd++;
   });
-  const cliList=Object.entries(cliMap).map(([cli,v])=>({cli,...v})).sort((a,b)=>b.frete-a.frete).slice(0,25);
+  const cliList=Object.values(cliMap).sort((a,b)=>b.frete-a.frete).slice(0,25);
   const fg_qtd=document.getElementById('fg_k_qtd');if(fg_qtd) fg_qtd.textContent=N(gratisRows.length);
   const fg_pct=document.getElementById('fg_k_pct');if(fg_pct) fg_pct.textContent=(gratisRows.length/totRows*100).toFixed(1)+'% das entregas';
   const fg_fr=document.getElementById('fg_k_frete');if(fg_fr) fg_fr.textContent=BRL(totGratisFrete);
@@ -3131,12 +3134,17 @@ function renderFreteGratis(rows){
   const tb=document.getElementById('fg_tbody');
   if(!tb) return;
   tb.innerHTML=cliList.length?cliList.map((v,i)=>{
-    const cliTotal=rows.filter(d=>(d.cliente||'?')===v.cli).length||1;
+    const key=v.cnpj||v.nome||'?';
+    const cliTotal=rows.filter(d=>(d.part_cnpj||d.cliente||'?')===key).length||1;
     const pctCli=(v.qtd/cliTotal*100).toFixed(1);
     const ticket=v.qtd?v.frete/v.qtd:0;
+    const cnpjFmt=v.cnpj?v.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5'):'';
     return '<tr>'
       +'<td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td>'
-      +'<td style="white-space:normal;max-width:200px;font-weight:600">'+esc(v.cli)+'</td>'
+      +'<td style="white-space:normal;max-width:220px">'
+        +(v.nome?'<div style="font-weight:600;font-size:11px">'+esc(v.nome)+'</div>':'')
+        +(cnpjFmt?'<div style="font-size:9px;color:var(--text3);font-family:monospace">'+esc(cnpjFmt)+'</div>':'')
+      +'</td>'
       +'<td style="font-size:10px;color:var(--text2)">'+esc(v.empresa)+'</td>'
       +'<td style="text-align:center"><span class="chip chip-amber">'+N(v.qtd)+'</span></td>'
       +'<td><span style="color:var(--amber);font-weight:700">'+pctCli+'%</span> <span style="color:var(--text3);font-size:9px">das entregas</span></td>'
