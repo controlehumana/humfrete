@@ -3049,12 +3049,16 @@ async function renderGeo(){
   rows.forEach(d=>{
     const uf=(d.estado||'').trim().toUpperCase();
     if(!uf||uf.length!==2) return;
-    if(!_geoByUF[uf]) _geoByUF[uf]={total:0,linhahum:0,humana:0,qtd:0,total_nf:0};
+    if(!_geoByUF[uf]) _geoByUF[uf]={total:0,linhahum:0,humana:0,qtd:0,total_nf:0,byTr:{}};
     _geoByUF[uf].total   +=d.valor_frete||0;
     _geoByUF[uf].linhahum+=d.frete_linhahum||d.linhahum_total||0;
     _geoByUF[uf].humana  +=d.frete_humana||d.humana_total||0;
     _geoByUF[uf].total_nf+=d.total_nf||0;
     _geoByUF[uf].qtd++;
+    const _tr=d.transportadora||'?';
+    if(!_geoByUF[uf].byTr[_tr]) _geoByUF[uf].byTr[_tr]={frete:0,qtd:0};
+    _geoByUF[uf].byTr[_tr].frete+=d.valor_frete||0;
+    _geoByUF[uf].byTr[_tr].qtd++;
   });
   if(!_geoCache){
     svg.innerHTML='<text x="310" y="330" text-anchor="middle" fill="var(--text3)" font-size="13" font-family="Inter,sans-serif">Carregando mapa do Brasil...</text>';
@@ -3184,6 +3188,27 @@ function _geoHover(e){
     +`<div style="display:flex;justify-content:space-between"><span style="font-size:10px;color:#34D399">Linhahum</span><span style="font-size:11px;font-weight:700;color:#34D399">${BRL(d.linhahum)} <span style="font-size:9px;font-weight:400">${pctLH.toFixed(1)}%</span></span></div>`
     +`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="font-size:10px;color:${tipAccent}">Humana Alimentar</span><span style="font-size:11px;font-weight:700;color:${tipAccent}">${BRL(d.humana)} <span style="font-size:9px;font-weight:400">${pctHU.toFixed(1)}%</span></span></div>`
     +`</div>`
+    +(()=>{
+      if(!d.byTr) return '';
+      const sorted=Object.entries(d.byTr).sort((a,b)=>b[1].frete-a[1].frete).slice(0,5);
+      const rows=sorted.map(([tr,v],i)=>{
+        const pctTr=d.total>0?(v.frete/d.total*100):0;
+        const barW=Math.min(100,Math.round(pctTr));
+        const cores=['#60A5FA','#34D399','#FBBF24','#F87171','#A78BFA'];
+        const cor=cores[i%cores.length];
+        return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+          <div style="width:8px;height:8px;border-radius:2px;background:${cor};flex-shrink:0"></div>
+          <div style="flex:1;min-width:0;font-size:10px;color:${tipText};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(trName(tr))}">${esc(trName(tr))}</div>
+          <div style="width:44px;height:3px;background:${tipBorder};border-radius:2px;flex-shrink:0"><div style="width:${barW}%;height:100%;background:${cor};border-radius:2px;opacity:.8"></div></div>
+          <div style="font-size:10px;font-weight:700;color:${tipText};white-space:nowrap;min-width:56px;text-align:right">${BRL(v.frete)}</div>
+          <div style="font-size:9px;color:${tipLabel};white-space:nowrap;min-width:28px;text-align:right">${pctTr.toFixed(0)}%</div>
+        </div>`;
+      }).join('');
+      return `<div style="padding:6px 0;border-bottom:1px solid ${tipBorder}">
+        <div style="font-size:9px;color:${tipLabel};font-weight:600;margin-bottom:4px"><i class="fa-solid fa-truck"></i> Transportadoras neste estado (Top ${sorted.length})</div>
+        ${rows}
+      </div>`;
+    })()
     +`<div style="display:flex;justify-content:space-between;padding:5px 0">`
     +`<span style="font-size:10px;color:${tipLabel}"><i class="fa-solid fa-file-invoice"></i> ${N(d.qtd)} CT-e &nbsp;·&nbsp; Frete médio: <strong style="color:${tipGold}">${d.qtd?BRL(d.total/d.qtd):'-'}</strong></span>`
     +`</div>`;
