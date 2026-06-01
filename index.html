@@ -3056,9 +3056,11 @@ async function renderGeo(){
     _geoByUF[uf].total_nf+=d.total_nf||0;
     _geoByUF[uf].qtd++;
     const _tr=d.transportadora||'?';
-    if(!_geoByUF[uf].byTr[_tr]) _geoByUF[uf].byTr[_tr]={frete:0,qtd:0};
-    _geoByUF[uf].byTr[_tr].frete+=d.valor_frete||0;
-    _geoByUF[uf].byTr[_tr].qtd++;
+    if(!isMarketplace(_tr)){
+      if(!_geoByUF[uf].byTr[_tr]) _geoByUF[uf].byTr[_tr]={frete:0,qtd:0};
+      _geoByUF[uf].byTr[_tr].frete+=d.valor_frete||0;
+      _geoByUF[uf].byTr[_tr].qtd++;
+    }
   });
   if(!_geoCache){
     svg.innerHTML='<text x="310" y="330" text-anchor="middle" fill="var(--text3)" font-size="13" font-family="Inter,sans-serif">Carregando mapa do Brasil...</text>';
