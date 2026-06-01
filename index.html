@@ -628,7 +628,8 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   </div>
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-tooltip">Notas fiscais de venda para as quais encontramos o comprovante de frete correspondente. Cada nota vinculada tem seu custo de entrega identificado e incluido nos calculos do dashboard.</div><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Percentual das vendas do periodo com frete rastreado. As vendas sem cobertura sao entregas retiradas pelo proprio cliente no deposito, ou vendas onde o comprador contrata o frete por conta propria.</div><div class="kpi-lbl">Cobertura de Documentos</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">As demais sao retiradas ou ex-works</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual das vendas do periodo com frete rastreado. As vendas sem cobertura sao entregas retiradas pelo proprio cliente no deposito, ou vendas onde o comprador contrata o frete por conta propria.</div><div class="kpi-lbl">Cobertura de Faturamento</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub">As demais sao retiradas ou ex-works</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual dos CTe recebidos que foi possivel vincular a uma nota fiscal (venda, compra ou devolucao). Proximo de 100% indica que a conciliacao esta completa e confiavel. Os nao conciliados sao CTe em que a transportadora nao informou a nota fiscal de origem.</div><div class="kpi-lbl">CTe Conciliados</div><div class="kpi-val" id="k_cte_conc">-</div><div class="kpi-sub" id="k_cte_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantas empresas de transporte diferentes realizaram ao menos uma entrega rastreada no periodo selecionado.</div><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quanto do total gasto com frete vai para a transportadora principal. Acima de 40% indica dependencia elevada: um problema com esse parceiro pode impactar grande parte das entregas da empresa.</div><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Entregas em que a empresa nao cobrou nada de frete do cliente. O custo de transporte foi absorvido internamente. Monitorar esse numero ajuda a identificar politicas de frete gratis e seu impacto no resultado.</div><div class="kpi-lbl">Frete Gratis (Entregas)</div><div class="kpi-val" id="k_gratis">-</div><div class="kpi-sub" id="k_gratis_sub">-</div></div>
@@ -938,7 +939,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     </div>
     <div style="position:relative">
       <svg id="geo_map" viewBox="0 0 620 660" style="width:100%;max-height:75vh;height:auto;display:block"></svg>
-      <div id="geo_tip" style="display:none;position:fixed;background:var(--tooltip-bg);border:1px solid var(--bd2);border-radius:10px;padding:14px 16px;min-width:300px;max-width:340px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.6);color:#F1F5F9"></div>
+      <div id="geo_tip" style="display:none;position:fixed;background:var(--tooltip-bg);border:1px solid var(--bd2);border-radius:10px;padding:14px 16px;min-width:300px;max-width:340px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.6);color:var(--text)"></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center">
       <span style="font-size:9px;color:var(--text3)">Menor</span>
@@ -1126,6 +1127,8 @@ function _mergeData(datas) {
       total_faturamento: Math.round(datas.reduce((s,d)=>s+(d.resumo?.total_faturamento||0),0)*100)/100,
       nfe_com_cte: totNfe,
       media_frete: totNfe ? Math.round(totFrete/totNfe*100)/100 : 0,
+      total_cte: datas.reduce((s,d)=>s+(d.resumo?.total_cte||0),0),
+      ctes_nao_vinculados_count: datas.reduce((s,d)=>s+(d.resumo?.ctes_nao_vinculados_count||0),0),
     }
   };
 }
@@ -1620,6 +1623,10 @@ function renderAll(){
   document.getElementById('k_vinc_sub').textContent='de '+N(r.total_nfe_fat||0)+' NF-e';
   const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=90?'var(--green)':taxa>=70?'var(--yellow)':'var(--red)';
+  const totCte=r.total_cte||0;const semVincCt=r.ctes_nao_vinculados_count||0;
+  const pctConc=totCte>0?((totCte-semVincCt)/totCte*100):0;
+  const concCteEl=document.getElementById('k_cte_conc');concCteEl.textContent=pctConc.toFixed(1)+'%';concCteEl.style.color=pctConc>=98?'var(--green)':pctConc>=90?'var(--yellow)':'var(--red)';
+  document.getElementById('k_cte_conc_sub').textContent=N(totCte-semVincCt)+' de '+N(totCte)+' CTe';
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
   document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trName(agg.topTransp.label):'';
   const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';
@@ -3035,6 +3042,13 @@ function _geoRender(){
   }).join('');
 }
 function _geoHover(e){
+  const _oc=document.documentElement.classList.contains('ocean');
+  const tipText   =_oc?'#0F172A':'#F1F5F9';
+  const tipLabel  =_oc?'#475569':'#94A3B8';
+  const tipBorder =_oc?'rgba(0,0,0,.08)':'rgba(255,255,255,.08)';
+  const tipSep    =_oc?'rgba(0,0,0,.1)':'rgba(255,255,255,.1)';
+  const tipAccent =_oc?'#3B82F6':'#60A5FA';
+  const tipGold   =_oc?'#B45309':'#FCD34D';
   const uf=e.target.dataset.uf;
   e.target.setAttribute('stroke','var(--blue2)');e.target.setAttribute('stroke-width','2');
   const d=_geoByUF[uf]||{total:0,linhahum:0,humana:0,qtd:0,total_nf:0};
@@ -3055,19 +3069,19 @@ function _geoHover(e){
   const freteLabel  = pctFrete>5?'⚠ acima de 5%':pctFrete>2?'adequado':'ótimo (<2%)';
 
   function bloco(label,valor,cor,desc){
-    return `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+    return `<div style="padding:6px 0;border-bottom:1px solid ${tipBorder}">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
-        <span style="font-size:10px;color:#94A3B8;font-weight:600;flex-shrink:0">${label}</span>
-        <span style="font-size:13px;font-weight:800;color:${cor||'#F1F5F9'};text-align:right">${valor}</span>
+        <span style="font-size:10px;color:${tipLabel};font-weight:600;flex-shrink:0">${label}</span>
+        <span style="font-size:13px;font-weight:800;color:${cor||tipText};text-align:right">${valor}</span>
       </div>
       <div style="font-size:9px;color:#64748B;margin-top:2px;line-height:1.4">${desc}</div>
     </div>`;
   }
 
   document.getElementById('geo_tip').innerHTML=
-    `<div style="font-size:13px;font-weight:800;color:#F1F5F9;margin-bottom:4px">${esc(nome)} <span style="font-size:10px;font-weight:600;color:#64748B">(${uf})</span></div>`
-    +`<div style="font-size:9px;color:#60A5FA;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.1)"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
-    +bloco('Valor das Notas de Venda', BRL(d.total_nf), '#F1F5F9',
+    `<div style="font-size:13px;font-weight:800;color:${tipText};margin-bottom:4px">${esc(nome)} <span style="font-size:10px;font-weight:600;color:#64748B">(${uf})</span></div>`
+    +`<div style="font-size:9px;color:${tipAccent};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid ${tipSep}"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
+    +bloco('Valor das Notas de Venda', BRL(d.total_nf), tipText,
       'Total faturado (NF-e de venda) com destino a este estado no período')
     +(()=>{
       const ticketEstado = d.qtd>0 ? d.total_nf/d.qtd : 0;
@@ -3079,20 +3093,20 @@ function _geoHover(e){
         ?`<span style="color:#34D399;font-size:9px;font-weight:700">▲ ${diffPct.toFixed(1)}% acima da média</span>`
         :`<span style="color:#F87171;font-size:9px;font-weight:700">▼ ${Math.abs(diffPct).toFixed(1)}% abaixo da média</span>`;
       const valor = ticketEstado>0 ? `${BRL(ticketEstado)} ${diffTxt}` : '-';
-      return bloco('Ticket Médio por NF-e', valor, '#F1F5F9',
+      return bloco('Ticket Médio por NF-e', valor, tipText,
         `Valor médio de cada nota entregue neste estado. Média nacional: ${BRL(ticketMedio)} — pedidos maiores diluem o % de frete`);
     })()
-    +bloco('Custo de Frete', BRL(d.total), '#60A5FA',
+    +bloco('Custo de Frete', BRL(d.total), tipAccent,
       `Representa ${pct.toFixed(1)}% do frete total pago em todos os estados no período`)
     +bloco('% Frete sobre Faturamento', pctFrete.toFixed(2)+'% <span style="font-size:9px;font-weight:600;color:'+freteStatus+'">'+freteLabel+'</span>', freteStatus,
       'De cada R$ 100 vendidos neste estado, este valor foi gasto com transporte')
-    +`<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)">`
-    +`<div style="font-size:9px;color:#94A3B8;font-weight:600;margin-bottom:4px">Composição do frete por linha de produto</div>`
+    +`<div style="padding:6px 0;border-bottom:1px solid ${tipBorder}">`
+    +`<div style="font-size:9px;color:${tipLabel};font-weight:600;margin-bottom:4px">Composição do frete por linha de produto</div>`
     +`<div style="display:flex;justify-content:space-between"><span style="font-size:10px;color:#34D399">Linhahum</span><span style="font-size:11px;font-weight:700;color:#34D399">${BRL(d.linhahum)} <span style="font-size:9px;font-weight:400">${pctLH.toFixed(1)}%</span></span></div>`
-    +`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="font-size:10px;color:#60A5FA">Humana Alimentar</span><span style="font-size:11px;font-weight:700;color:#60A5FA">${BRL(d.humana)} <span style="font-size:9px;font-weight:400">${pctHU.toFixed(1)}%</span></span></div>`
+    +`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="font-size:10px;color:${tipAccent}">Humana Alimentar</span><span style="font-size:11px;font-weight:700;color:${tipAccent}">${BRL(d.humana)} <span style="font-size:9px;font-weight:400">${pctHU.toFixed(1)}%</span></span></div>`
     +`</div>`
     +`<div style="display:flex;justify-content:space-between;padding:5px 0">`
-    +`<span style="font-size:10px;color:#94A3B8"><i class="fa-solid fa-file-invoice"></i> ${N(d.qtd)} CT-e &nbsp;·&nbsp; Frete médio: <strong style="color:#FCD34D">${d.qtd?BRL(d.total/d.qtd):'-'}</strong></span>`
+    +`<span style="font-size:10px;color:${tipLabel}"><i class="fa-solid fa-file-invoice"></i> ${N(d.qtd)} CT-e &nbsp;·&nbsp; Frete médio: <strong style="color:${tipGold}">${d.qtd?BRL(d.total/d.qtd):'-'}</strong></span>`
     +`</div>`;
   // Mostra antes de medir para offsetHeight ser correto
   document.getElementById('geo_tip').style.display='block';

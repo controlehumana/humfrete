@@ -750,6 +750,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
             "nfe_fat_periodo":nfe_fat_periodo,
             "nfe_sem_cte":len(nfe_sem_cte),"cte_sem_fat":cte_sem_fat,
+            "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
             "total_faturamento":total_faturamento},
         "transf_fat":transf_fat,"transf_sem_cte":transf_sem_cte_list,"cnpj_map":CNPJ_MAP,
@@ -3770,4 +3771,7 @@ if __name__ == "__main__":
         print("\n[ERRO FATAL]")
         traceback.print_exc()
     finally:
-        input("\nPressione Enter para fechar...")
+        try:
+            input("\nPressione Enter para fechar...")
+        except EOFError:
+            pass
