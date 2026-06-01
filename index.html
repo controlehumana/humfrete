@@ -3208,7 +3208,12 @@ function _geoHover(e){
       }).join('');
       return `<div style="padding:6px 0;border-bottom:1px solid ${tipBorder}">
         <div style="font-size:9px;color:${tipLabel};font-weight:600;margin-bottom:4px"><i class="fa-solid fa-truck"></i> Transportadoras neste estado (Top ${sorted.length})</div>
+        <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:3px">
+          <span style="font-size:8px;color:${tipLabel};min-width:56px;text-align:right">Frete pago</span>
+          <span style="font-size:8px;color:${tipLabel};min-width:28px;text-align:right">% estado</span>
+        </div>
         ${rows}
+        <div style="font-size:8px;color:${tipLabel};margin-top:5px;line-height:1.4">Barra = participação no frete total deste estado. Excluídas Shopee e Mercado Livre.</div>
       </div>`;
     })()
     +`<div style="display:flex;justify-content:space-between;padding:5px 0">`
