@@ -2428,12 +2428,19 @@ function _empRenderTransfSemCte(){
   });
   document.getElementById('emp_transf_sem_cte_tbody').innerHTML=rows.length
     ?rows.sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
-      const dest=esc(CNPJ_EMPRESA[d.part_cnpj]||d.cliente||'?');
+      const cnpjRaw=(d.part_cnpj||'').replace(/\D/g,'');
+      const cnpjFmt=cnpjRaw.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+      const empNome=CNPJ_EMPRESA[cnpjRaw]||CNPJ_EMPRESA[d.part_cnpj]||'';
+      const destHtml=empNome
+        ?'<span style="font-weight:700;color:var(--amber)">'+esc(empNome)+'</span>'
+          +(cnpjFmt?'<div style="font-size:9px;color:var(--text3);font-family:monospace;margin-top:1px">'+esc(cnpjFmt)+'</div>':'')
+        :'<span>'+esc(d.cliente||cnpjFmt||'?')+'</span>'
+          +(cnpjFmt&&d.cliente&&d.cliente!==d.part_cnpj?'<div style="font-size:9px;color:var(--text3);font-family:monospace;margin-top:1px">'+esc(cnpjFmt)+'</div>':'');
       return'<tr>'
         +'<td style="font-size:11px">'+esc(d.numero)+'</td>'
         +'<td style="font-size:11px">'+esc(d.data)+'</td>'
         +'<td><strong>'+esc(d.empresa)+'</strong></td>'
-        +'<td style="font-size:11px">'+dest+'</td>'
+        +'<td style="font-size:11px;line-height:1.4">'+destHtml+'</td>'
         +'<td style="font-size:11px"><span class="chip chip-gray">'+esc(d.cidade)+'/'+esc(d.estado)+'</span></td>'
         +'<td style="font-size:10px;color:var(--text3)">'+esc(d.nat_operacao)+'</td>'
         +'<td style="text-align:right;color:var(--text2)">'+BRL(d.total_nf)+'</td></tr>';
