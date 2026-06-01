@@ -142,6 +142,32 @@ CTe total (~58k)
 - **Denominador:** faturamento das NF-e **transportadas por aquela carrier** (não o total da empresa)
 - Mede eficiência: quanto custa transportar R$100 de faturamento de saída com cada parceiro
 
+## Agrupamento por Grupo Econômico (index.html)
+
+Botão **"Grupo Econômico"** na barra de filtros — ativo por padrão, persiste em `localStorage('groupCarriers')`.
+
+### Funções principais
+| Função | O que faz |
+|---|---|
+| `trKey(d)` | Chave de agrupamento: base 8 dígitos do `transp_cnpj` (modo grupo) ou `d.transportadora` (modo individual) |
+| `trDisp(key)` | Nome canônico para exibição: busca em `trGroupMap[key]` e aplica `trName()` |
+| `toggleGrupoEc()` | Alterna modo, limpa `state.transp`, repopula select, chama `renderAll()` |
+| `_populateTranspSelect()` | Popula o select com `XX.XXX.XXX — Nome` (modo grupo) ou nome simples (modo individual) |
+
+### Globals
+- `groupByEconGroup` — `true` quando modo grupo ativo (`localStorage !== '0'`)
+- `trGroupMap` — `{ base8cnpj: nomeCanônico }` — nome mais frequente por CNPJ base, construído em `renderAll()`
+- `trCnpjMap` — `{ nomeRaw: Set<cnpj> }` — todos os CNPJs por nome de transportadora
+
+### Impacto do modo grupo
+Afeta todos os pontos de agrupamento por transportadora: `aggregate()` (`byTr`), `byYMT` (heatmap), gráfico donut Top 10, KPIs de concentração, `_geoByUF.byTr`, `renderRotas()`, `filterRows()` (cheque `state.transp`).
+
+### Reverter para modo individual
+Clicar no botão "Grupo Econômico" (fica cinza) — imediato, sem reprocessamento.
+
+### `transp_cnpj` no payload
+Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário para o agrupamento. Se ausente, `trKey(d)` degrada graciosamente para `d.transportadora`.
+
 ## Abas do dashboard (index.html)
 
 | id | Label | Descrição |
@@ -170,8 +196,8 @@ _geoByUF[uf] = {
   humana,     // frete Humana Alimentar
   qtd,        // nº de CT-e
   total_nf,   // valor das NF-e com frete (vendas + bonificações + transferências)
-  byTr: {     // breakdown por transportadora (exclui Shopee/ML)
-    [transportadora]: { frete, qtd }
+  byTr: {     // breakdown por transportadora — chave = trKey(d) (respeita modo grupo)
+    [key]: { frete, qtd }
   }
 }
 ```
@@ -283,6 +309,7 @@ Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
 - **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
 - **CTe Conciliados ≠ Integridade quando filtrado** — CTe Conciliados usa dados globais; se parecerem diferentes, verificar se filtro de canal/categoria está ativo
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
-- **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular
+- **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular; select de transportadora populado via `_populateTranspSelect()` (não `addOpt` direto)
+- **Destinatário em transferências** — `CNPJ_EMPRESA[cnpjRaw]` onde `cnpjRaw = d.part_cnpj.replace(/\D/g,'')` normaliza formatação antes do lookup; empresas do grupo exibidas em laranja com CNPJ formatado abaixo
 - **`input()` no processar_frete.py** — envolvido em `try/except EOFError` para não travar execução automática
 - **Chart.js guard** — `if(typeof Chart!=='undefined')` obrigatório antes de qualquer config de Chart.js; falha de CDN derruba o script inteiro por TDZ em cascata
