@@ -103,7 +103,7 @@ const num = parseInt(ch.slice(25, 34));  // posições 25–33 = nNF/nCT
 
 ```
 CTe total (~58k)
-  ├── Frete de Venda           → NF em nf_saida_items → 'detalhes'
+  ├── Frete de Saída           → NF em nf_saida_items → 'detalhes'
   ├── Frete de Compra (NF Entrada) → vw_cte_nf_entrada → 'compras'
   ├── Frete de Compra (dest CNPJ_MAP) → dest_cnpj Humana → 'compras'
   ├── Frete de Compra (tomador Humana) → rem_cnpj Humana + NF externa → 'compras'
@@ -112,7 +112,14 @@ CTe total (~58k)
   └── Sem Vínculo (~338)       → resto → 'ctes_nao_vinculados'
 ```
 
+**'detalhes' inclui todas as nat_operacao de saída** — vendas, bonificações, transferências e demais. Não é exclusivo de vendas.
+
 ## KPIs principais (index.html)
+
+### Terminologia correta
+- **"% Frete / Faturamento"** — denominador é `total_nf` de todas as NF-e de saída (vendas + bonificações + transferências). Nunca chamar de "% Frete / Venda".
+- **"Frete de Saída"** — categoria no Custo Logístico Consolidado. Cobre todo CTe vinculado ao faturamento de saída, não apenas vendas.
+- **"Notas com Frete"** — campo `total_nf` no módulo geográfico e tooltips. Não usar "Notas de Venda".
 
 ### Cobertura de Faturamento
 - **Fórmula:** `nfe_com_cte / nfe_fat_periodo`
@@ -124,21 +131,34 @@ CTe total (~58k)
 ### CTe Conciliados
 - **Fórmula:** usa dados **globais** de `r.total_cte` e `r.ctes_nao_vinculados_count` (DATA.resumo)
 - NÃO respeita filtros ativos — é métrica de qualidade global, não analítica
-- Consistente com a componente `pctConc` usada em Integridade da Análise
 - Threshold: verde ≥98%, amarelo ≥90%, vermelho <90%
 
-### Integridade da Análise (aba Clientes)
+### Integridade da Análise (aba Consolidação Frete)
 - **Fórmula:** `pctConc × 0,6 + cobDados × 0,4`
-- `pctConc` = CTe Conciliados global (~99,4%) — substituiu cobCte (cobertura de faturamento)
-  - Razão: cobertura de faturamento (~46%) reflete retiradas no depósito pelo cliente, não falha de dados
-- `cobDados` = % de CTes com cliente, data e destino preenchidos
+- `pctConc` = CTe Conciliados global; `cobDados` = % CTes com cliente, data e destino preenchidos
 - Threshold: verde ≥95%, amarelo ≥85%, vermelho <85%
-- Label "CTe Conciliados" (era "Cobertura CTe") na linha de detalhe do card
 
-### % Frete / Venda — Mapa de Transportadoras
+### % Frete / Faturamento — Mapa de Transportadoras
 - **Denominador:** faturamento das NF-e **transportadas por aquela carrier** (não o total da empresa)
-- Mede eficiência: quanto custa transportar R$100 de mercadoria com cada parceiro
-- Carriers com clientes de alto ticket médio têm % menor naturalmente
+- Mede eficiência: quanto custa transportar R$100 de faturamento de saída com cada parceiro
+
+## Abas do dashboard (index.html)
+
+| id | Label | Descrição |
+|---|---|---|
+| `visao-geral` | Visão Geral | KPIs, gráficos temporais, geo, eficiência por peso |
+| `marketplace` | Marketplace | Shopee + Mercado Livre separados |
+| `compras` | Frete Compras | Frete de entrada (NF fornecedores) |
+| `dev-mkt` | Dev. Marketplace | Devoluções via Shopee/ML |
+| `empresa` | Por Empresa | Análise por filial |
+| `operacional` | Operacional | Tabela detalhada por NF-e |
+| `clientes` | Consolidação Frete | Oportunidades de consolidação + frete grátis por cliente |
+| `nao-vinculados` | Cobertura de Dados | CTe sem NF correspondente |
+| `geo` | Geográfico | Mapa SVG do Brasil + ranking por estado |
+| `rotas` | Rotas | Análise de rotas origem→destino (excl. Marketplace) |
+| `admin` | Admin | Gestão de usuários e permissões |
+
+`ALL_TABS_INFO` (array JS) controla quais abas aparecem no painel de permissões do admin — toda nova aba deve ser adicionada ali.
 
 ## Módulo Geográfico (index.html)
 
@@ -149,7 +169,7 @@ _geoByUF[uf] = {
   linhahum,   // frete Linhahum
   humana,     // frete Humana Alimentar
   qtd,        // nº de CT-e
-  total_nf,   // faturamento das NF-e
+  total_nf,   // valor das NF-e com frete (vendas + bonificações + transferências)
   byTr: {     // breakdown por transportadora (exclui Shopee/ML)
     [transportadora]: { frete, qtd }
   }
@@ -158,19 +178,49 @@ _geoByUF[uf] = {
 
 ### Tooltip do mapa (_geoHover)
 - Cores via variáveis tema-aware: `tipText`, `tipLabel`, `tipBorder`, `tipSep`, `tipAccent`, `tipGold`
-- Seção "Transportadoras neste estado (Top 5)": top 5 carriers por frete, com barra proporcional, valor e % do estado
+- Label do campo `total_nf`: **"Valor das Notas com Frete"** (não "de Venda")
 - **Shopee e Mercado Livre excluídos** do ranking — pertencem à aba Marketplace
 - `isMarketplace()` filtra SHPS TECNOLOGIA e EBAZARCOMBR
+
+## Módulo Rotas (index.html)
+
+- `renderRotas()` usa `filterRows(DATA.detalhes, {excMkt:true})` — exclui Marketplace
+- Agrupa por `origem_uf → destino_uf`
+- Campos disponíveis por rota: `frete`, `qtd`, `peso`, `byTr` (breakdown por transportadora)
+- Gráficos: Top 10 por custo total (`mkMultiBar`) + Top 10 por R$/kg (`mkBarRkg`)
+- Tabela: Top 25 por custo total com transportadora principal e % de concentração
+
+## Eficiência por Peso — Visão Geral (index.html)
+
+- Calculado inline em `renderAll()` sobre `filteredRows` (excMkt:true)
+- Filtra apenas linhas com `peso_kg > 0`; CTe sem peso são contados mas excluídos do cálculo
+- KPIs: R$/kg médio global, peso total, transportadora mais eficiente por kg
+- Gráfico `ch_rkg` via `mkBarRkg()` — top 10 transportadoras por volume de carga (não por R$/kg)
+
+## Política de Frete Grátis — Consolidação Frete (index.html)
+
+- `renderFreteGratis(rows)` chamado ao final de `renderClientes()`
+- Frete grátis = `frete_cobrado < 0.01` (cliente não foi cobrado na NF-e)
+- Ranking por custo absorvido (valor_frete pago à transportadora sem repasse ao cliente)
+
+## Helpers de gráfico (index.html)
+
+| Função | Uso |
+|---|---|
+| `mkBar(id, lbs, vals, color, lbl)` | Barras verticais — eixo Y em BRL |
+| `mkBarRkg(id, lbs, vals)` | Barras verticais — eixo Y em R$/kg (não BRL) |
+| `mkMultiBar(id, lbs, vals, colors)` | Barras com cor por coluna |
+| `mkDonut(id, lbs, vals)` | Rosca |
+| `mkLine / mkLinePct` | Linhas temporais |
 
 ## Arquitetura web (index.html)
 
 - **GitHub Pages:** https://controlehumana.github.io/humfrete/
 - **Firebase Auth v8.10.1 compat** (v10 causa falha no WebChannel)
 - **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks de 800 itens
-- `_mergeData()` soma corretamente: `total_cte`, `ctes_nao_vinculados_count`, `nfe_com_cte`, `nfe_fat_periodo` não é somado (vem global no spread de datas[0])
+- `_mergeData()` soma corretamente: `total_cte`, `ctes_nao_vinculados_count`, `nfe_com_cte`; `nfe_fat_periodo` não é somado (vem global no spread de datas[0])
 - **CDN Chart.js:** primário cdnjs, fallback jsdelivr via `onerror`
 - **CDN Font Awesome:** primário cdnjs, fallback fontawesome.com via `onerror`
-- **Firebase SDK:** guard `typeof firebase !== 'undefined'` antes de inicializar
 
 ## Etapas do atualizar.py
 
@@ -191,9 +241,10 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 5. **IDs únicos** — cada elemento com ID aparece exatamente uma vez
 6. **XSS** — dados externos sempre via `esc()` antes de inserir em innerHTML
 7. **Guards de null** — `document.getElementById` seguido de `.textContent`/`.style` deve ter `if(el)` ou `el?.`
-8. **Tooltip geo** — cores via variáveis `tipText`, `tipLabel`, `tipBorder`, `tipAccent`, `tipGold` (tema-aware); nunca hardcode hex no _geoHover
+8. **Tooltip geo** — cores via variáveis `tipText`, `tipLabel`, `tipBorder`, `tipAccent`, `tipGold` (tema-aware); nunca hardcode hex no `_geoHover`
 9. **Insight body** — `.ok`/`.hi`/`.bad` têm override para ocean em CSS (`html.ocean .insight-body .ok` etc.)
 10. **card-tip** — tem `z-index:1000` no hover para ficar acima de células `position:sticky` do heatmap
+11. **Nova aba** — ao criar nova aba: adicionar tab-btn no sidebar, tab panel HTML, entrada em `_TAB_NAMES`, caso no tab switching, entrada em `ALL_TABS_INFO`
 
 ## Globals críticos (ordem importa)
 
@@ -205,7 +256,6 @@ Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
 
 ## Erros de carregamento (catch no onAuthStateChanged)
 
-O catch exibe mensagem amigável ao usuário e loga erro técnico no console:
 - "Nenhuma empresa" → "Seu acesso não está configurado..."
 - "nao encontrados" → "Os dados ainda não foram processados..."
 - `permission-denied` → "Sem permissão..."
@@ -223,4 +273,4 @@ O catch exibe mensagem amigável ao usuário e loga erro técnico no console:
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
 - **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular
 - **`input()` no processar_frete.py** — envolvido em `try/except EOFError` para não travar execução automática
-- **Chart.js linha 1347** — `if(typeof Chart!=='undefined')` obrigatório; sem isso, falha de CDN derruba o script inteiro por TDZ em cascata
+- **Chart.js guard** — `if(typeof Chart!=='undefined')` obrigatório antes de qualquer config de Chart.js; falha de CDN derruba o script inteiro por TDZ em cascata
