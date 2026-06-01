@@ -1610,14 +1610,68 @@ function renderAlerts(agg){
 function renderInsights(agg){
   const el=document.getElementById('insights-grid');if(!el||!agg.qtd) return;
   const ins=[];
-  if(agg.topTransp){const tr=trName(agg.topTransp.label);const pct=agg.concTop1.toFixed(1);const cls=agg.concTop1>70?'bad':agg.concTop1>50?'hi':'ok';ins.push({i:'<i class="fa-solid fa-truck"></i>',t:'Parceiro Logistico Dominante',b:'<strong>'+tr+'</strong> concentra <span class="'+cls+'">'+pct+'%</span> do custo ('+BRL(agg.topTransp.frete)+').'});}
-  const pct=agg.fretePctFat;
-  ins.push({i:'<i class="fa-solid fa-chart-bar"></i>',t:'Custo Logistico vs Receita',b:'Frete = <strong><span class="'+(pct>8?'bad':pct>5?'hi':'ok')+'">'+pct.toFixed(2)+'%</span></strong> do faturamento vinculado. Benchmark: <strong>3-5%</strong>.'});
-  ins.push({i:'<i class="fa-solid fa-scale-balanced"></i>',t:'Resultado Financeiro do Frete',b:'Saldo cobrado vs pago: <strong><span class="'+(agg.difTot>=0?'ok':'bad')+'">'+BRL(agg.difTot)+'</span></strong>.'});
-  if(agg.byEst.length){const top=agg.byEst[0];const pctE=(top.frete/agg.tot*100).toFixed(1);ins.push({i:'<i class="fa-solid fa-location-dot"></i>',t:'Estado de Maior Impacto',b:'<strong>'+top.label+'</strong> responde por <strong>'+pctE+'%</strong> do frete ('+BRL(top.frete)+').'});}
-  if(agg.flh>0||agg.fhu>0){const tot2=agg.flh+agg.fhu||1;const pLH=(agg.flh/tot2*100).toFixed(1);const pHU=(agg.fhu/tot2*100).toFixed(1);ins.push({i:'<i class="fa-solid fa-box-open"></i>',t:'Mix de Frete por Produto',b:'Linhahum: <strong>'+BRL(agg.flh)+'</strong> ('+pLH+'%). Humana: <strong>'+BRL(agg.fhu)+'</strong> ('+pHU+'%).'});}
+  const _scope=state.empresas.length===1?'na empresa <strong>'+state.empresas[0]+'</strong>':state.empresas.length>1?'nas empresas selecionadas':'no grupo';
+
+  // 1. Parceiro Logístico Dominante
+  if(agg.topTransp){
+    const tr=trName(agg.topTransp.label);const pct=agg.concTop1;
+    const cls=pct>70?'bad':pct>40?'hi':'ok';
+    const acao=pct>70?'Dependência crítica — um reajuste ou ruptura contratual com esse parceiro impacta a maioria das entregas. É recomendado habilitar transportadoras alternativas para as principais rotas.':
+               pct>40?'Dependência moderada. Considere ampliar a participação de parceiros secundários para reduzir o risco de concentração.':
+               'Carteira bem distribuída — nenhuma transportadora detém poder excessivo de negociação.';
+    ins.push({i:'<i class="fa-solid fa-truck"></i>',t:'Parceiro Logistico Dominante',
+      b:'<strong>'+tr+'</strong> é a principal transportadora '+_scope+', com <span class="'+cls+'">'+pct.toFixed(1)+'%</span> do custo total ('+BRL(agg.topTransp.frete)+'). '+acao});
+  }
+
+  // 2. Custo Logístico vs Receita
+  const pctFr=agg.fretePctFat;
+  const clsFr=pctFr>8?'bad':pctFr>5?'hi':'ok';
+  const acaoFr=pctFr>8?'Acima do benchmark — revisar tabelas de frete e consolidar rotas longas pode reduzir este índice.':
+               pctFr>5?'Acima da meta de 5%. Monitorar reajustes de transportadoras e avaliar roteirização.':
+               pctFr>3?'Dentro da faixa adequada para o setor alimentício (benchmark 3–5%).':
+               'Excelente eficiência logística — abaixo de 3%, bem abaixo do benchmark do setor.';
+  ins.push({i:'<i class="fa-solid fa-chart-bar"></i>',t:'Custo Logistico vs Receita',
+    b:'Frete = <span class="'+clsFr+'">'+pctFr.toFixed(2)+'%</span> do faturamento vinculado '+_scope+'. De cada R$ 100 vendidos, R$ '+pctFr.toFixed(2)+' foi gasto com transporte. '+acaoFr});
+
+  // 3. Resultado Financeiro do Frete
+  const saldo=agg.difTot;
+  const pctSld=agg.cobTot>0?(Math.abs(saldo)/agg.cobTot*100).toFixed(1):'0';
+  const txtSld=saldo>=0
+    ?'A empresa arrecadou <span class="ok">'+BRL(saldo)+'</span> a mais em frete do que pagou às transportadoras — o repasse ao cliente está cobrindo o custo logístico.'
+    :'A empresa subsidiou <span class="bad">'+BRL(Math.abs(saldo))+'</span> em frete ('+pctSld+'% do total cobrado). Revise a política de frete grátis ou atualize as tabelas de cobrança ao cliente.';
+  ins.push({i:'<i class="fa-solid fa-scale-balanced"></i>',t:'Resultado Financeiro do Frete',b:txtSld});
+
+  // 4. Estado de Maior Impacto
+  if(agg.byEst.length){
+    const top=agg.byEst[0];const pctE=(top.frete/agg.tot*100).toFixed(1);const nEst=agg.byEst.length;
+    const seg=agg.byEst.length>1?' O segundo maior é <strong>'+agg.byEst[1].label+'</strong> ('+((agg.byEst[1].frete/agg.tot*100).toFixed(1))+'%).':'';
+    ins.push({i:'<i class="fa-solid fa-location-dot"></i>',t:'Estado de Maior Impacto',
+      b:'<strong>'+top.label+'</strong> concentra <strong>'+pctE+'%</strong> do custo de frete ('+BRL(top.frete)+') entre os <strong>'+nEst+'</strong> estados atendidos no período.'+seg});
+  }
+
+  // 5. Mix de Frete por Produto
+  if(agg.flh>0||agg.fhu>0){
+    const tot2=agg.flh+agg.fhu||1;
+    const pLH=(agg.flh/tot2*100).toFixed(1);const pHU=(agg.fhu/tot2*100).toFixed(1);
+    const pLHv=agg.nlh>0?(agg.flh/agg.nlh*100):null;
+    const pHUv=agg.nhu>0?(agg.fhu/agg.nhu*100):null;
+    const clsLH=pLHv?(pLHv>5?'bad':pLHv>3?'hi':'ok'):'';
+    const clsHU=pHUv?(pHUv>5?'bad':pHUv>3?'hi':'ok'):'';
+    const lhStr='Linhahum: <strong>'+BRL(agg.flh)+'</strong> ('+pLH+'% do frete'+(pLHv?', <span class="'+clsLH+'">'+pLHv.toFixed(2)+'% da venda</span>':'')+')';
+    const huStr='Humana Alimentar: <strong>'+BRL(agg.fhu)+'</strong> ('+pHU+'% do frete'+(pHUv?', <span class="'+clsHU+'">'+pHUv.toFixed(2)+'% da venda</span>':'')+')';
+    ins.push({i:'<i class="fa-solid fa-box-open"></i>',t:'Mix de Frete por Produto',b:lhStr+'. '+huStr+'.'});
+  }
+
+  // 6. Cobertura de Documentos
   const r=DATA?.resumo||{};const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
-  ins.push({i:'<i class="fa-solid fa-link"></i>',t:'Cobertura de Documentos',b:'<strong><span class="'+(taxa>=90?'ok':taxa>=70?'hi':'bad')+'">'+taxa.toFixed(1)+'%</span></strong> das NF-e possuem CTe ('+N(agg.qtd)+' de '+N(r.total_nfe_fat||0)+').'});
+  const clsCob=taxa>=90?'ok':taxa>=70?'hi':'bad';
+  const txtCob=taxa>=90
+    ?'<span class="ok">'+taxa.toFixed(1)+'%</span> das NF-e possuem CTe ('+N(agg.qtd)+' de '+N(r.total_nfe_fat||0)+'). Alta cobertura — a análise representa bem o universo de vendas do período.'
+    :taxa>=70
+    ?'<span class="hi">'+taxa.toFixed(1)+'%</span> das NF-e possuem CTe ('+N(agg.qtd)+' de '+N(r.total_nfe_fat||0)+'). As notas sem CTe são provavelmente retiradas no depósito ou entregas ex-works.'
+    :'<span class="bad">'+taxa.toFixed(1)+'%</span> das NF-e possuem CTe ('+N(agg.qtd)+' de '+N(r.total_nfe_fat||0)+'). Cobertura baixa — os totais de frete podem estar subestimados. Verifique se há períodos sem CTe importado no banco.';
+  ins.push({i:'<i class="fa-solid fa-link"></i>',t:'Cobertura de Documentos',b:txtCob});
+
   el.innerHTML=ins.map(i=>'<div class="insight-card"><div class="insight-icon">'+i.i+'</div><div class="insight-title">'+i.t+'</div><div class="insight-body">'+i.b+'</div></div>').join('');
 }
 
