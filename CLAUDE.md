@@ -176,6 +176,18 @@ _geoByUF[uf] = {
 }
 ```
 
+`_geoByUF_prev` e `_geoPrevLabel` guardam o período de comparação (mesmo shape, só `total` e `qtd`).
+
+### Evolução geográfica (tendência)
+`_geoPrevRows()` determina o período de comparação automaticamente:
+- **1 mês selecionado** → mês anterior
+- **Ano sem mês** → ano anterior
+- **Múltiplos meses ou sem filtro** → sem comparação (retorna null)
+
+Tendência exibida em dois lugares:
+- **Ranking** de estados: chip `▲/▼ X%` ao lado do valor (vermelho = cresceu, verde = caiu)
+- **Tooltip** do mapa: linha final `vs [período] → ▲/▼ X% (R$ anterior → R$ atual)`
+
 ### Tooltip do mapa (_geoHover)
 - Cores via variáveis tema-aware: `tipText`, `tipLabel`, `tipBorder`, `tipSep`, `tipAccent`, `tipGold`
 - Label do campo `total_nf`: **"Valor das Notas com Frete"** (não "de Venda")
