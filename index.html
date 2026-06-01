@@ -756,13 +756,13 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="kpi-card"><div class="kpi-tooltip">Quanto poderia ser economizado se todas as entregas da mesma semana para o mesmo cliente fossem feitas de uma so vez. Calculo conservador: considera o custo das entregas extras que seriam eliminadas.</div><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">se todos os grupos forem consolidados</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de viagens de entrega que poderiam ser eliminadas. Se um cliente recebeu 3 entregas na semana, 2 delas sao consolidaveis em uma unica visita, reduzindo custos e emissoes.</div><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
     <div class="kpi-card" style="border-top:3px solid var(--green2)">
-      <div class="kpi-tooltip">Indica o quanto confiar nos numeros de consolidacao. Combina duas metricas: Cobertura CTe (% de NF-e do periodo com CTe rastreado — exclui faturamento historico anterior ao inicio da coleta de CTe) e Dados Completos (% de NF-e com cliente, data e destino preenchidos). Quanto mais alto, mais confiavel e a analise.</div>
+      <div class="kpi-tooltip">Indica o quanto confiar nos numeros desta analise. Combina duas metricas: CTe Conciliados (% dos CTe recebidos que foram vinculados a uma NF de venda, compra ou devolucao — mede a qualidade dos dados de frete) e Dados Completos (% de registros com cliente, data e destino preenchidos). Cobertura de faturamento nao entra no calculo pois reflete o comportamento do cliente (retirada no deposito), nao a qualidade dos dados.</div>
       <div class="kpi-lbl">Integridade da Analise</div>
       <div class="kpi-val" id="cli_k_integ" style="color:var(--green2)">-</div>
       <div class="kpi-sub" id="cli_k_integ_lbl">confiabilidade geral</div>
       <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--bd);padding-top:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px">
-          <span style="color:var(--text3)">Cobertura CTe</span>
+          <span style="color:var(--text3)">CTe Conciliados</span>
           <span id="cli_k_cob" style="font-weight:700;font-size:11px">-</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px">
@@ -2004,18 +2004,18 @@ function renderClientes(){
   document.getElementById('cli_k_ctes').textContent=N(totalCtesConsolid);
   // KPI de integridade
   const r=DATA.resumo||{};
-  const _denCte=r.nfe_fat_periodo||r.total_nfe_fat;
-  const cobCte=_denCte>0?Math.min(100,r.nfe_com_cte/_denCte*100):0;
+  const totCte=r.total_cte||0;const semVincCt=r.ctes_nao_vinculados_count||0;
+  const pctConc=totCte>0?Math.min(100,(totCte-semVincCt)/totCte*100):0;
   const rowsComp=rows.filter(d=>d.cliente&&d.cliente!=='?'&&d.data&&getWeek(d.data)&&(d.destino_cidade||d.destino_uf)).length;
   const cobDados=rows.length>0?Math.min(100,rowsComp/rows.length*100):0;
-  const score=cobCte*0.6+cobDados*0.4;
-  const scoreColor=score>=85?'var(--green2)':score>=70?'var(--yellow)':'var(--red2)';
-  const scoreLbl=score>=85?'Alta confiabilidade':score>=70?'Confiabilidade moderada':'Baixa — verificar dados';
+  const score=pctConc*0.6+cobDados*0.4;
+  const scoreColor=score>=95?'var(--green2)':score>=85?'var(--yellow)':'var(--red2)';
+  const scoreLbl=score>=95?'Alta confiabilidade':score>=85?'Confiabilidade moderada':'Baixa — verificar dados';
   const integEl=document.getElementById('cli_k_integ');
   integEl.textContent=score.toFixed(1)+'%';integEl.style.color=scoreColor;
   document.getElementById('cli_k_integ_lbl').textContent=scoreLbl;
   const cobEl=document.getElementById('cli_k_cob');
-  cobEl.textContent=cobCte.toFixed(1)+'%';cobEl.style.color=cobCte>=85?'var(--green2)':cobCte>=70?'var(--yellow)':'var(--red2)';
+  cobEl.textContent=pctConc.toFixed(1)+'%';cobEl.style.color=pctConc>=98?'var(--green2)':pctConc>=90?'var(--yellow)':'var(--red2)';
   const compEl=document.getElementById('cli_k_comp');
   compEl.textContent=cobDados.toFixed(1)+'%';compEl.style.color=cobDados>=90?'var(--green2)':cobDados>=75?'var(--yellow)':'var(--red2)';
   cliPage=0;renderCliTable();
