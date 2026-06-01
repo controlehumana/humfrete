@@ -665,8 +665,8 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   </div>
   <div class="sdiv">Eficiencia por Peso</div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-    <div class="kpi-card"><div class="kpi-tooltip">Custo medio de frete por quilograma transportado em vendas. Quanto menor, mais eficiente a logistica. Util para comparar tarifas entre transportadoras independentemente do valor da mercadoria.</div><div class="kpi-lbl">Custo Medio / Kg (Vendas)</div><div class="kpi-val" id="k_rkg">-</div><div class="kpi-sub" id="k_rkg_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Total de quilogramas transportados em vendas no periodo. Inclui apenas CTe com peso informado pela transportadora no XML.</div><div class="kpi-lbl">Peso Total Transportado</div><div class="kpi-val" id="k_peso_total">-</div><div class="kpi-sub" id="k_peso_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio de frete por quilograma transportado nas operacoes de saida (vendas, bonificacoes, transferencias). Quanto menor, mais eficiente a logistica. Util para comparar tarifas entre transportadoras independentemente do valor da mercadoria.</div><div class="kpi-lbl">Custo Medio / Kg (Saida)</div><div class="kpi-val" id="k_rkg">-</div><div class="kpi-sub" id="k_rkg_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total de quilogramas transportados nas operacoes de saida no periodo. Inclui apenas CTe com peso informado pela transportadora no XML.</div><div class="kpi-lbl">Peso Total Transportado</div><div class="kpi-val" id="k_peso_total">-</div><div class="kpi-sub" id="k_peso_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Transportadora com menor R$/kg entre as de maior volume de carga no periodo. Indica qual parceiro e mais eficiente por quilo, independente do valor da mercadoria.</div><div class="kpi-lbl">Mais Eficiente por Kg</div><div class="kpi-val" id="k_best_rkg" style="font-size:16px">-</div><div class="kpi-sub" id="k_best_rkg_sub">-</div></div>
   </div>
   <div class="card"><div class="card-title">R$/kg por Transportadora — Top 10 por Volume de Carga<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Custo de frete por quilograma para cada transportadora, ordenado pelas que mais transportam em peso. Barras menores indicam maior eficiencia. Transportadoras com alto R$/kg em rotas longas podem ser justificadas — compare com o mapa de rotas para o contexto completo.</span></span></div><div class="ch-wrap"><canvas id="ch_rkg"></canvas></div></div>
@@ -683,7 +683,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="card-title">Custo Logistico Consolidado — Todas as Categorias <span style="font-size:9px;font-weight:400;color:var(--text3)" id="ct_filtro_lbl"></span></div>
     <p style="font-size:11px;color:var(--text2);margin:-4px 0 16px;line-height:1.6">
       Soma de <strong style="color:var(--text)">todas as categorias de frete</strong> no periodo selecionado — vendas, compras, devolucoes e casos em investigacao.
-      Mostra o custo logistico real total pago a transportadoras, nao apenas o frete de venda que aparece nos KPIs principais.
+      Mostra o custo logistico real total pago a transportadoras, nao apenas o frete de saida que aparece nos KPIs principais.
     </p>
     <!-- Total + barra global -->
     <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:14px 16px;background:var(--s2);border-radius:10px;margin-bottom:16px">
@@ -1877,7 +1877,7 @@ function renderAll(){
     document.getElementById('ct_pct_pend').textContent=pPend.toFixed(1)+'% pendente';
     // Linhas de detalhamento
     const cats=[
-      {label:'Frete de Venda',    val:vendas, qtd:qtdVendas, cor:'var(--blue)',    icon:'fa-truck',             desc:'CT-e cruzados com NF-e de venda registrada no faturamento. Custo ja apurado e vinculado a uma receita.'},
+      {label:'Frete de Saida',     val:vendas, qtd:qtdVendas, cor:'var(--blue)',    icon:'fa-truck',             desc:'CT-e vinculados a NF-e de saida registradas no faturamento — inclui vendas, bonificacoes, transferencias e demais operacoes de saida. Custo ja apurado e vinculado a uma nota fiscal.'},
       {label:'Frete de Compra',   val:compras,qtd:qtdComp,   cor:'var(--green)',   icon:'fa-boxes-stacked',     desc:'CT-e vinculados a NF de entrada de fornecedores. Custo logistico das compras identificado.'},
       {label:'Dev. Marketplace',  val:devMkt, qtd:qtdDev,    cor:'var(--purple2)', icon:'fa-rotate-left',       desc:'Fretes de devolucao via Shopee ou Mercado Livre. Custo de retorno de mercadorias ao estoque.'},
       {label:'CT-e c/ NF Cancelada',val:nfCanc,qtd:qtdNC,   cor:'var(--amber)',   icon:'fa-file-circle-xmark', desc:'CT-e valido emitido pela transportadora, porem a NF-e correspondente foi cancelada no ERP. Frete pago sem nota fiscal de venda associada — requer analise.'},
