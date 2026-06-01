@@ -1422,7 +1422,7 @@ function _heatmapCellFns(vMin,vMax){
   const fg=val=>{if(val===null) return _isOcean()?'#94A3B8':'rgba(255,255,255,.25)';const t=vMax===vMin?0.5:(val-vMin)/(vMax-vMin);const hue=Math.round(142-142*t);return _isOcean()?`hsl(${hue},60%,22%)`:'rgba(255,255,255,.92)';};
   return{bg,fg,_isOcean};
 }
-function _buildHeatmap(container,rows,keyFn,rowLabel,byYME_total,allPers,tlLbs,labelFn){
+function _buildHeatmap(container,rows,keyFn,rowLabel,byYME_total,allPers,tlLbs,labelFn,titleFn){
   if(!container) return;
   const allVals=[];
   rows.forEach(r=>allPers.forEach(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=keyFn(r,ano,mes);if(v&&v.nf)allVals.push(v.fr/v.nf*100);}));
@@ -1438,7 +1438,8 @@ function _buildHeatmap(container,rows,keyFn,rowLabel,byYME_total,allPers,tlLbs,l
     const cells=allPers.map(p=>{const ano=p.slice(3,7),mes=p.slice(0,2);const v=keyFn(row,ano,mes);const val=v&&v.nf?v.fr/v.nf*100:null;if(val!==null){totFr+=v.fr;totNf+=v.nf;}return{val,isJan:p.startsWith('01')};});
     const avg=totNf?totFr/totNf*100:null;
     const lbl=labelFn?labelFn(row):row;
-    html+=`<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;${stickyBase}" title="${esc(lbl)}">${esc(lbl)}</td>`;
+    const titleAttr=titleFn?titleFn(row):lbl;
+    html+=`<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;${stickyBase}" title="${esc(titleAttr)}">${esc(lbl)}</td>`;
     cells.forEach(({val,isJan})=>{const bg=cellBg(val),fg=cellFg(val);html+=`<td style="text-align:center;padding:5px 8px;background:${bg};color:${fg};border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap${isJan?';border-left:2px solid var(--bd2)':''}">${val!==null?val.toFixed(1)+'%':'--'}</td>`;});
     const ab=cellBg(avg),af=cellFg(avg);
     html+=`<td style="text-align:center;padding:5px 10px;background:${ab};color:${af};border-radius:4px;font-size:10px;font-weight:800;white-space:nowrap;border-left:2px solid var(--bd2)">${avg!==null?avg.toFixed(1)+'%':'--'}</td></tr>`;
@@ -1516,7 +1517,13 @@ function renderYoY(){
       'Transportadora',
       byYME,
       allPers,tlLbs,
-      tr=>trName(tr)
+      tr=>trName(tr),
+      tr=>{
+        const cnpjs=trCnpjMap[tr];
+        if(!cnpjs||!cnpjs.size) return trName(tr);
+        const fmt=c=>c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+        return trName(tr)+'\nCNPJ: '+[...cnpjs].map(fmt).join(' | ');
+      }
     );
     if(trContainer){
       const _oc=_isOcean();
@@ -1720,6 +1727,14 @@ function renderInsights(agg){
 let PAGE=+(localStorage.getItem('page_size')||50);let tablePage=0;let filteredRows=[];let tableRows=[];let tableSort={col:null,dir:'desc'};
 function renderAll(){
   if(!DATA) return;
+  // Mapa transportadora → Set de CNPJs (usa todos os detalhes, independente de filtro)
+  trCnpjMap={};
+  (DATA.detalhes||[]).forEach(d=>{
+    const tr=d.transportadora;const cnpj=d.transp_cnpj;
+    if(!tr||!cnpj) return;
+    if(!trCnpjMap[tr]) trCnpjMap[tr]=new Set();
+    trCnpjMap[tr].add(cnpj);
+  });
   filteredRows=filterRows(DATA.detalhes||[],{excMkt:true,onlyMkt:false});
   tableRows=applySortToRows(filteredRows);
   const agg=aggregate(tableRows);const r=DATA.resumo||{};
@@ -3213,6 +3228,7 @@ function renderRotas(){
   }).join('');
 }
 
+let trCnpjMap={};
 let _geoByUF={};
 let _geoByUF_prev={};
 let _geoPrevLabel='';
