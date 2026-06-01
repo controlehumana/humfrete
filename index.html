@@ -611,6 +611,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     </div>
     <select id="filter_estado" class="hd-filter-item"><option value="">Estado</option></select>
     <select id="filter_transp" class="hd-filter-item"><option value="">Transportadora</option></select>
+    <button id="btn_grupo_ec" onclick="toggleGrupoEc()" title="Quando ativo: filiais do mesmo CNPJ base aparecem como uma unica transportadora (ex: Rodonaves matriz e filial somadas). Desative para ver cada CNPJ separado." style="cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--bd2);background:rgba(94,106,210,.18);color:var(--blue2);white-space:nowrap;font-family:inherit;transition:background .15s,color .15s"><i class="fa-solid fa-layer-group"></i> Grupo Econômico</button>
     <select id="filter_canal" class="hd-filter-item"><option value="">Canal</option></select>
     <input type="text" id="hd_search" placeholder="Buscar cliente, NF..." class="hd-filter-item" style="width:140px;cursor:text">
     <div class="hd-sep"></div>
@@ -1380,6 +1381,30 @@ const TR_ALIAS={'SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','SHPS TECNOLOGIA E SER
 const MARKETPLACE_TR=new Set(['SHPS TECNOLOGIA E SERVICO LTDA','SHPS TECNOLOGIA E SERVICO LTDA','EBAZARCOMBR LTDA']);
 function trName(raw){if(!raw||raw==='-') return raw||'-';const clean=raw.replace(/^.*? - /,'').trim();return TR_ALIAS[clean.toUpperCase()]||clean;}
 function isMarketplace(tr){if(!tr) return false;const clean=tr.replace(/^.*? - /,'').trim().toUpperCase();if(MARKETPLACE_TR.has(clean)) return true;if(clean.includes('SHPS TECNOLOGIA')) return true;if(clean.includes('EBAZARCOMBR')) return true;return false;}
+// Agrupamento por grupo econômico (base 8 dígitos do CNPJ)
+function trKey(d){if(!d) return '?';if(!groupByEconGroup||!d.transp_cnpj) return d.transportadora||'?';const b=d.transp_cnpj.slice(0,8);return b||d.transportadora||'?';}
+function trDisp(key){if(!key||key==='?') return '-';if(!groupByEconGroup) return trName(key);return trName(trGroupMap[key]||key);}
+function _populateTranspSelect(){
+  const sel=document.getElementById('filter_transp');if(!sel) return;
+  sel.innerHTML='<option value="">Transportadora</option>';
+  if(!DATA) return;
+  if(groupByEconGroup){
+    const seen={};
+    DATA.detalhes.forEach(d=>{const k=trKey(d);if(!seen[k]) seen[k]=trDisp(k);});
+    Object.entries(seen).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,name])=>{const o=document.createElement('option');o.value=k;o.textContent=name;sel.appendChild(o);});
+  } else {
+    [...new Set(DATA.detalhes.map(d=>d.transportadora).filter(Boolean))].sort().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=trName(t);sel.appendChild(o);});
+  }
+}
+function toggleGrupoEc(){
+  groupByEconGroup=!groupByEconGroup;
+  localStorage.setItem('groupCarriers',groupByEconGroup?'1':'0');
+  state.transp=''; // limpa filtro de transportadora (chave mudou de tipo)
+  _populateTranspSelect();
+  const btn=document.getElementById('btn_grupo_ec');
+  if(btn){btn.style.background=groupByEconGroup?'rgba(94,106,210,.18)':'rgba(255,255,255,.05)';btn.style.color=groupByEconGroup?'var(--blue2)':'var(--text3)';}
+  renderAll();
+}
 function normCh(s){ return (s||'').toUpperCase().replace(/[\s_\-]+/g,''); }
 const ONLINE_CH_RAW=['AMAZON','ECOMMERCE','ECOMMERCETELEVENDAS','MAGALU','MERCADOLIVRE','RAIADROGASIL','SHOPPE','SHOPEE','SITELINHAHUM','TIKTOSHOP','TIKTOKSHOP','BELEZAWEB','BELEZANAWEB'];
 const ONLINE_CH_NORM=new Set(ONLINE_CH_RAW);
@@ -1517,9 +1542,10 @@ function renderYoY(){
       'Transportadora',
       byYME,
       allPers,tlLbs,
-      tr=>trName(tr),
+      tr=>trDisp(tr),
       tr=>{
-        const cnpjs=trCnpjMap[tr];
+        const rawName=trGroupMap[tr]||tr;
+        const cnpjs=trCnpjMap[rawName]||trCnpjMap[tr];
         if(!cnpjs||!cnpjs.size) return trName(tr);
         const fmt=c=>c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
         return trName(tr)+'\nCNPJ: '+[...cnpjs].map(fmt).join(' | ');
@@ -1597,7 +1623,7 @@ function filterRows(rows,opts){
     if(state.meses.length&&!state.meses.includes(dataMes(d))) return false;
     if(state.empresas.length&&!state.empresas.includes(d.empresa)) return false;if(state.linha&&d.linha!==state.linha) return false;
     if(state.natop.length&&!state.natop.includes(d.nat_operacao)) return false;
-    if(state.estado&&d.estado!==state.estado) return false;if(state.transp&&d.transportadora!==state.transp) return false;
+    if(state.estado&&d.estado!==state.estado) return false;if(state.transp&&trKey(d)!==state.transp) return false;
     if(state.canal&&d.canal!==state.canal) return false;
     if(state.q){const h=(d.empresa+' '+d.linha+' '+d.nat_operacao+' '+d.cliente+' '+d.estado+' '+d.transportadora+' '+d.numero).toLowerCase();if(!h.includes(state.q)) return false;}
     return true;
@@ -1634,7 +1660,7 @@ function aggregate(rows){
   rows.forEach(d=>{
     const fr=d.valor_frete,nf=d.total_nf,fl=d.frete_linhahum||0,fh=d.frete_humana||0;
     const cob=d.frete_cobrado||0,dif=d.diferenca_frete||0,nat=d.nat_operacao||'N/A';
-    inc(byEst,d.estado||'N/A',fr,nf,fl,fh);inc(byTr,d.transportadora||'N/A',fr,0,fl,fh);
+    inc(byEst,d.estado||'N/A',fr,nf,fl,fh);inc(byTr,trKey(d),fr,0,fl,fh);
     inc(byCn,d.canal||'N/A',fr,nf,0,0);inc(byEmp,d.empresa||'N/A',fr,nf,fl,fh);
     if(!byNat[nat])byNat[nat]={qtd:0,frete:0,nf:0,cobrado:0,diferenca:0};
     byNat[nat].qtd++;byNat[nat].frete+=fr;byNat[nat].nf+=nf;byNat[nat].cobrado+=cob;byNat[nat].diferenca+=dif;
@@ -1648,7 +1674,7 @@ function aggregate(rows){
 }
 function renderAlerts(agg){
   const el=document.getElementById('alerts-row');if(!el) return;const al=[];
-  if(agg.concTop1>70){const tr=agg.topTransp?trName(agg.topTransp.label):'?';al.push({t:'a-red',i:'<i class="fa-solid fa-triangle-exclamation"></i>',m:'<strong>Risco de Concentracao:</strong> '+tr+' representa '+agg.concTop1.toFixed(1)+'% do frete.'});}
+  if(agg.concTop1>70){const tr=agg.topTransp?trDisp(agg.topTransp.label):'?';al.push({t:'a-red',i:'<i class="fa-solid fa-triangle-exclamation"></i>',m:'<strong>Risco de Concentracao:</strong> '+tr+' representa '+agg.concTop1.toFixed(1)+'% do frete.'});}
   if(agg.difTot<-5000)al.push({t:'a-red',i:'<i class="fa-solid fa-arrow-trend-down"></i>',m:'<strong>Saldo Negativo:</strong> Empresa paga '+BRL(Math.abs(agg.difTot))+' a mais do que cobra.'});
   if(agg.fretePctFat>8)al.push({t:'a-yellow',i:'<i class="fa-solid fa-lightbulb"></i>',m:'<strong>Custo de Frete Elevado:</strong> '+agg.fretePctFat.toFixed(1)+'% do faturamento &mdash; acima do benchmark (&lt;5%).'});
   else if(agg.fretePctFat>5)al.push({t:'a-yellow',i:'<i class="fa-solid fa-chart-bar"></i>',m:'<strong>Frete na Zona de Atencao:</strong> '+agg.fretePctFat.toFixed(1)+'% do faturamento.'});
@@ -1663,7 +1689,7 @@ function renderInsights(agg){
 
   // 1. Parceiro Logístico Dominante
   if(agg.topTransp){
-    const tr=trName(agg.topTransp.label);const pct=agg.concTop1;
+    const tr=trDisp(agg.topTransp.label);const pct=agg.concTop1;
     const cls=pct>70?'bad':pct>40?'hi':'ok';
     const acao=pct>70?'Dependência crítica — um reajuste ou ruptura contratual com esse parceiro impacta a maioria das entregas. É recomendado habilitar transportadoras alternativas para as principais rotas.':
                pct>40?'Dependência moderada. Considere ampliar a participação de parceiros secundários para reduzir o risco de concentração.':
@@ -1727,14 +1753,19 @@ function renderInsights(agg){
 let PAGE=+(localStorage.getItem('page_size')||50);let tablePage=0;let filteredRows=[];let tableRows=[];let tableSort={col:null,dir:'desc'};
 function renderAll(){
   if(!DATA) return;
-  // Mapa transportadora → Set de CNPJs (usa todos os detalhes, independente de filtro)
+  // Mapas de transportadora (usa todos os detalhes, independente de filtro)
   trCnpjMap={};
+  const _bc={};
   (DATA.detalhes||[]).forEach(d=>{
     const tr=d.transportadora;const cnpj=d.transp_cnpj;
-    if(!tr||!cnpj) return;
-    if(!trCnpjMap[tr]) trCnpjMap[tr]=new Set();
-    trCnpjMap[tr].add(cnpj);
+    if(tr&&cnpj){if(!trCnpjMap[tr]) trCnpjMap[tr]=new Set();trCnpjMap[tr].add(cnpj);}
+    if(cnpj&&tr){const b=cnpj.slice(0,8);if(!_bc[b])_bc[b]={};_bc[b][tr]=(_bc[b][tr]||0)+1;}
   });
+  trGroupMap={};
+  Object.entries(_bc).forEach(([b,c])=>{trGroupMap[b]=Object.entries(c).sort((a,v)=>v[1]-a[1])[0][0];});
+  // Atualiza visual do botão de grupo econômico
+  const _btnGe=document.getElementById('btn_grupo_ec');
+  if(_btnGe){_btnGe.style.background=groupByEconGroup?'rgba(94,106,210,.18)':'rgba(255,255,255,.05)';_btnGe.style.color=groupByEconGroup?'var(--blue2)':'var(--text3)';}
   filteredRows=filterRows(DATA.detalhes||[],{excMkt:true,onlyMkt:false});
   tableRows=applySortToRows(filteredRows);
   const agg=aggregate(tableRows);const r=DATA.resumo||{};
@@ -1759,9 +1790,9 @@ function renderAll(){
   const _concSub=document.getElementById('k_cte_conc_sub');
   if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe';
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
-  document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trName(agg.topTransp.label):'';
+  document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trDisp(agg.topTransp.label):'';
   const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';
-  document.getElementById('k_conc_sub').textContent=agg.topTransp?trName(agg.topTransp.label):'';
+  document.getElementById('k_conc_sub').textContent=agg.topTransp?trDisp(agg.topTransp.label):'';
   document.getElementById('k_gratis').textContent=N(agg.nSem);
   document.getElementById('k_gratis_sub').textContent=(agg.qtd?(agg.nSem/agg.qtd*100).toFixed(1):0)+'% das entregas';
   const tot1=agg.tot||1;
@@ -1785,7 +1816,7 @@ function renderAll(){
   const allYears=[...new Set(tableRows.map(d=>dataAno(d)).filter(Boolean))].sort();
   const byYME={},byYMT={},trTotals={};
   tableRows.forEach(d=>{
-    const a=dataAno(d),m=dataMes(d),e=d.empresa||'N/A',t=d.transportadora||'N/A';
+    const a=dataAno(d),m=dataMes(d),e=d.empresa||'N/A',t=trKey(d);
     if(!a||!m) return;
     // totais gerais
     if(!byYME[a])byYME[a]={};if(!byYME[a][m])byYME[a][m]={fr:0,nf:0};
@@ -1801,7 +1832,7 @@ function renderAll(){
   const top10Tr=Object.entries(trTotals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([t])=>t);
   window._yoyData={allYears,allEmps,byYME,byYMT,top10Tr,allPers,tlLbs};renderYoY();
   const top15E=agg.byEst.slice(0,15);mkMultiBar('ch_estado',top15E.map(x=>x.label),top15E.map(x=>x.frete),top15E.map((_,i)=>'hsl('+(215-i*6)+',70%,'+(52-i)+'%)'));
-  const top10T=agg.byTr.slice(0,10);mkDonut('ch_transp',top10T.map(x=>trName(x.label)),top10T.map(x=>x.frete));
+  const top10T=agg.byTr.slice(0,10);mkDonut('ch_transp',top10T.map(x=>trDisp(x.label)),top10T.map(x=>x.frete));
   mkBar('ch_empresa',agg.byEmp.map(x=>x.label),agg.byEmp.map(x=>x.frete),'#059669');
   // R$/kg por transportadora
   (function(){
@@ -2463,7 +2494,7 @@ function initApp(){
   uniq(DATA.detalhes.map(d=>(d.data||'').slice(6,10))).forEach(a=>addOpt(selAno,a,a));
   uniq(DATA.detalhes.map(d=>d.linha)).forEach(l=>addOpt(selLnH,l,l));
   uniq(DATA.detalhes.map(d=>d.destino_uf)).forEach(e=>addOpt(selEst,e,e));
-  uniq(DATA.detalhes.map(d=>d.transportadora)).forEach(t=>addOpt(selTr,t,trName(t)));
+  _populateTranspSelect();
   buildCanalOptions();
   // Multiselect Meses
   (function(){
@@ -3181,7 +3212,7 @@ function renderRotas(){
     rotaMap[key].frete+=d.valor_frete||0;
     rotaMap[key].qtd++;
     rotaMap[key].peso+=d.peso_kg||0;
-    const tr=d.transportadora||'?';
+    const tr=trKey(d);
     if(!rotaMap[key].byTr[tr]) rotaMap[key].byTr[tr]={frete:0,qtd:0};
     rotaMap[key].byTr[tr].frete+=d.valor_frete||0;
     rotaMap[key].byTr[tr].qtd++;
@@ -3222,13 +3253,15 @@ function renderRotas(){
       +'<td style="color:var(--blue2);font-weight:700">'+BRL(v.frete)+'</td>'
       +'<td><div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--text2);white-space:nowrap">'+pct.toFixed(1)+'%</span><div style="flex:1;max-width:60px;height:4px;background:var(--s2);border-radius:2px"><div style="height:100%;width:'+Math.min(pct*4,100)+'%;background:var(--blue);border-radius:2px;opacity:.8"></div></div></div></td>'
       +'<td style="color:'+rkgColor+';font-weight:700">'+(rkg>0?'R$ '+rkg.toFixed(2):'-')+'</td>'
-      +'<td style="font-size:10px;color:var(--text2);max-width:160px;white-space:normal">'+(topTr?esc(trName(topTr[0])):'-')+'</td>'
+      +'<td style="font-size:10px;color:var(--text2);max-width:160px;white-space:normal">'+(topTr?esc(trDisp(topTr[0])):'-')+'</td>'
       +'<td style="font-size:10px;color:var(--text3)">'+(topTr?topTrPct.toFixed(0)+'%':'-')+'</td>'
       +'</tr>';
   }).join('');
 }
 
+let groupByEconGroup=localStorage.getItem('groupCarriers')!=='0';
 let trCnpjMap={};
+let trGroupMap={};
 let _geoByUF={};
 let _geoByUF_prev={};
 let _geoPrevLabel='';
@@ -3273,8 +3306,9 @@ async function renderGeo(){
     _geoByUF[uf].humana  +=d.frete_humana||d.humana_total||0;
     _geoByUF[uf].total_nf+=d.total_nf||0;
     _geoByUF[uf].qtd++;
-    const _tr=d.transportadora||'?';
-    if(!isMarketplace(_tr)){
+    const _trRaw=d.transportadora||'?';
+    const _tr=trKey(d);
+    if(!isMarketplace(_trRaw)){
       if(!_geoByUF[uf].byTr[_tr]) _geoByUF[uf].byTr[_tr]={frete:0,qtd:0};
       _geoByUF[uf].byTr[_tr].frete+=d.valor_frete||0;
       _geoByUF[uf].byTr[_tr].qtd++;
@@ -3439,7 +3473,7 @@ function _geoHover(e){
         const cor=cores[i%cores.length];
         return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
           <div style="width:8px;height:8px;border-radius:2px;background:${cor};flex-shrink:0"></div>
-          <div style="flex:1;min-width:0;font-size:10px;color:${tipText};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(trName(tr))}">${esc(trName(tr))}</div>
+          <div style="flex:1;min-width:0;font-size:10px;color:${tipText};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(trDisp(tr))}">${esc(trDisp(tr))}</div>
           <div style="width:44px;height:3px;background:${tipBorder};border-radius:2px;flex-shrink:0"><div style="width:${barW}%;height:100%;background:${cor};border-radius:2px;opacity:.8"></div></div>
           <div style="font-size:10px;font-weight:700;color:${tipText};white-space:nowrap;min-width:56px;text-align:right">${BRL(v.frete)}</div>
           <div style="font-size:9px;color:${tipLabel};white-space:nowrap;min-width:28px;text-align:right">${pctTr.toFixed(0)}%</div>
