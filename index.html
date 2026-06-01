@@ -138,8 +138,9 @@ html.ocean .tb-cat-pill.active{background:rgba(94,106,210,.12);color:#3730A3;bor
 .tab-panel.active{display:flex;flex-direction:column;gap:16px;padding:18px 20px 32px;position:relative;z-index:1;}
 .card{background:var(--card-bg);border:1px solid var(--bd);border-radius:var(--rL);padding:18px;box-shadow:var(--shadow);position:relative;backdrop-filter:blur(8px);}
 .card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
-.card-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.07);color:var(--text3);font-size:9px;cursor:help;flex-shrink:0;vertical-align:middle;}
-.card-tip:hover{background:rgba(94,106,210,.18);color:var(--blue2);z-index:1000;position:relative;}
+.card-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(94,106,210,.18);color:var(--blue2);font-size:9px;cursor:help;flex-shrink:0;vertical-align:middle;border:1px solid rgba(94,106,210,.35);transition:background .15s,box-shadow .15s;animation:tip-pulse 2s ease-in-out 1.5s 2;}
+@keyframes tip-pulse{0%,100%{box-shadow:0 0 0 0 rgba(94,106,210,.4)}50%{box-shadow:0 0 0 4px rgba(94,106,210,0)}}
+.card-tip:hover{background:rgba(94,106,210,.35);color:var(--blue2);box-shadow:0 0 0 3px rgba(94,106,210,.18);z-index:1000;position:relative;}
 .card-tip:hover .kpi-tooltip{display:block;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:300px;}
 .hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:1200px){.hero-grid{grid-template-columns:repeat(2,1fr)}}
@@ -427,6 +428,8 @@ html.ocean ::-webkit-scrollbar-thumb:hover{background:rgba(94,106,210,.5)}
 html.ocean .kpi-tooltip{color:#334155;border-color:#D1D9E6;box-shadow:0 8px 24px rgba(0,0,0,.12);}
 html.ocean .kpi-tooltip::after{border-bottom-color:#FFFFFF}
 html.ocean .kpi-card:hover{border-color:rgba(94,106,210,.3)}
+html.ocean .card-tip{background:rgba(94,106,210,.1);border-color:rgba(94,106,210,.3);}
+html.ocean .card-tip:hover{background:rgba(94,106,210,.22);box-shadow:0 0 0 3px rgba(94,106,210,.12);}
 html.ocean .sb-section{color:#94A3B8}
 html.ocean .hd-filter-item{background:#EEF4FA;border-color:rgba(0,0,0,.12);color:#334155}
 html.ocean .hd-filter-item option{background:#FFFFFF;color:#334155}
