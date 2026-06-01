@@ -3146,7 +3146,7 @@ function renderFreteGratis(rows){
 }
 
 function renderRotas(){
-  const rows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:false});
+  const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
   const rotaMap={};
   rows.forEach(d=>{
     const oriUF=(d.origem_uf||'').trim().toUpperCase();
