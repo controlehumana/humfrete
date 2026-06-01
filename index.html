@@ -6,7 +6,7 @@
 <title>Gestão de Fretes - Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onerror="this.onerror=null;this.href='https://use.fontawesome.com/releases/v6.5.1/css/all.css'">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';document.head.appendChild(s)"></script>
 <style>
 :root{
@@ -1052,6 +1052,11 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "420749351239",
   appId: "1:420749351239:web:d89b274be6c3812c43d462"
 };
+if(typeof firebase==='undefined'){
+  const _errEl=document.getElementById('login-error');
+  if(_errEl){_errEl.textContent='Falha ao carregar os serviços necessários. Verifique sua conexão e recarregue a página.';_errEl.style.display='block';}
+  throw new Error('Firebase SDK nao carregou — verifique conexao');
+}
 firebase.initializeApp(FIREBASE_CONFIG);
 const _auth = firebase.auth();
 const _db   = firebase.firestore();
@@ -1502,6 +1507,7 @@ const selCn  =document.getElementById('filter_canal');
 const inpQ   =document.getElementById('hd_search');
 
 function buildCanalOptions(cat){
+  if(!selCn) return;
   const ALL_CANAIS=[...new Set((DATA.detalhes||[]).filter(d=>!d.is_marketplace).map(d=>d.canal).filter(Boolean))].sort();
   const prev=state.canal;selCn.innerHTML='';
   let list,label;
@@ -1519,8 +1525,7 @@ function setCategoria(cat){
   document.getElementById('cat_b2b').classList.toggle('active',cat==='B2B');
   document.getElementById('cat_online').classList.toggle('active',cat==='Online');
   buildCanalOptions(cat);
-  selCn.style.borderColor=cat==='Online'?'var(--blue2)':cat==='B2B'?'var(--green2)':'var(--bd2)';
-  selCn.style.color=cat?'var(--text)':'';
+  if(selCn){selCn.style.borderColor=cat==='Online'?'var(--blue2)':cat==='B2B'?'var(--green2)':'var(--bd2)';selCn.style.color=cat?'var(--text)':'';}
   renderAll();
 }
 function toggleAdvFilters(){const w=document.getElementById('hd_adv_wrap');const a=document.getElementById('hd_adv_arrow');const hidden=w.classList.contains('hidden');w.classList.toggle('hidden',!hidden);a.textContent=hidden?'▲':'▼';}
@@ -1559,6 +1564,7 @@ function syncFilterUI(){
 }
 function updateTags(){
   const el=document.getElementById('active-filters');
+  if(!el) return;
   const L={ano:'Ano',meses:'Mes',linha:'Linha',empresas:'Empresa',natop:'Nat.Op.',estado:'UF',transp:'Transportadora',canal:'Canal',categoria:'Categoria'};
   const _mesLbl=state.meses.length===1?(MESES[+state.meses[0]]||state.meses[0]):state.meses.length>1?state.meses.length+' meses':'';
   const _empLbl=state.empresas.length===1?state.empresas[0]:state.empresas.length>1?state.empresas.length+' empresas':'';
@@ -1592,7 +1598,7 @@ function aggregate(rows){
   return{qtd:rows.length,tot,flh,fhu,nlh,nhu,cobTot,difTot,totalFat,margem,media:rows.length?tot/rows.length:0,fretePctFat:totalFat?tot/totalFat*100:0,nCom,nSem,numTransp:trList.length,topTransp:trList[0]||null,concTop1:trList.length&&tot?trList[0].frete/tot*100:0,byEst:toList(byEst),byTr:trList,byCn:toList(byCn),byEmp:toList(byEmp),byNat:toList(byNat)};
 }
 function renderAlerts(agg){
-  const el=document.getElementById('alerts-row');const al=[];
+  const el=document.getElementById('alerts-row');if(!el) return;const al=[];
   if(agg.concTop1>70){const tr=agg.topTransp?trName(agg.topTransp.label):'?';al.push({t:'a-red',i:'<i class="fa-solid fa-triangle-exclamation"></i>',m:'<strong>Risco de Concentracao:</strong> '+tr+' representa '+agg.concTop1.toFixed(1)+'% do frete.'});}
   if(agg.difTot<-5000)al.push({t:'a-red',i:'<i class="fa-solid fa-arrow-trend-down"></i>',m:'<strong>Saldo Negativo:</strong> Empresa paga '+BRL(Math.abs(agg.difTot))+' a mais do que cobra.'});
   if(agg.fretePctFat>8)al.push({t:'a-yellow',i:'<i class="fa-solid fa-lightbulb"></i>',m:'<strong>Custo de Frete Elevado:</strong> '+agg.fretePctFat.toFixed(1)+'% do faturamento &mdash; acima do benchmark (&lt;5%).'});
@@ -1610,16 +1616,17 @@ function renderInsights(agg){
   ins.push({i:'<i class="fa-solid fa-scale-balanced"></i>',t:'Resultado Financeiro do Frete',b:'Saldo cobrado vs pago: <strong><span class="'+(agg.difTot>=0?'ok':'bad')+'">'+BRL(agg.difTot)+'</span></strong>.'});
   if(agg.byEst.length){const top=agg.byEst[0];const pctE=(top.frete/agg.tot*100).toFixed(1);ins.push({i:'<i class="fa-solid fa-location-dot"></i>',t:'Estado de Maior Impacto',b:'<strong>'+top.label+'</strong> responde por <strong>'+pctE+'%</strong> do frete ('+BRL(top.frete)+').'});}
   if(agg.flh>0||agg.fhu>0){const tot2=agg.flh+agg.fhu||1;const pLH=(agg.flh/tot2*100).toFixed(1);const pHU=(agg.fhu/tot2*100).toFixed(1);ins.push({i:'<i class="fa-solid fa-box-open"></i>',t:'Mix de Frete por Produto',b:'Linhahum: <strong>'+BRL(agg.flh)+'</strong> ('+pLH+'%). Humana: <strong>'+BRL(agg.fhu)+'</strong> ('+pHU+'%).'});}
-  const r=DATA.resumo;const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
+  const r=DATA?.resumo||{};const taxa=r.total_nfe_fat?(agg.qtd/r.total_nfe_fat*100):0;
   ins.push({i:'<i class="fa-solid fa-link"></i>',t:'Cobertura de Documentos',b:'<strong><span class="'+(taxa>=90?'ok':taxa>=70?'hi':'bad')+'">'+taxa.toFixed(1)+'%</span></strong> das NF-e possuem CTe ('+N(agg.qtd)+' de '+N(r.total_nfe_fat||0)+').'});
   el.innerHTML=ins.map(i=>'<div class="insight-card"><div class="insight-icon">'+i.i+'</div><div class="insight-title">'+i.t+'</div><div class="insight-body">'+i.b+'</div></div>').join('');
 }
 
 let PAGE=+(localStorage.getItem('page_size')||50);let tablePage=0;let filteredRows=[];let tableRows=[];let tableSort={col:null,dir:'desc'};
 function renderAll(){
-  filteredRows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
+  if(!DATA) return;
+  filteredRows=filterRows(DATA.detalhes||[],{excMkt:true,onlyMkt:false});
   tableRows=applySortToRows(filteredRows);
-  const agg=aggregate(tableRows);const r=DATA.resumo;
+  const agg=aggregate(tableRows);const r=DATA.resumo||{};
   document.getElementById('h_total').textContent=BRL(agg.tot);
   const pctStr=agg.fretePctFat.toFixed(1)+'%';
   const chipEl=document.getElementById('h_pct_fat_chip');chipEl.textContent=pctStr;chipEl.className='chip '+(agg.fretePctFat>8?'chip-red':agg.fretePctFat>5?'chip-amber':'chip-green');
