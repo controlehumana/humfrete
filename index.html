@@ -3166,8 +3166,8 @@ function _geoHover(e){
   document.getElementById('geo_tip').innerHTML=
     `<div style="font-size:13px;font-weight:800;color:${tipText};margin-bottom:4px">${esc(nome)} <span style="font-size:10px;font-weight:600;color:#64748B">(${uf})</span></div>`
     +`<div style="font-size:9px;color:${tipAccent};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid ${tipSep}"><i class="fa-solid fa-filter"></i> ${esc(_filtTxt)}</div>`
-    +bloco('Valor das Notas de Venda', BRL(d.total_nf), tipText,
-      'Total faturado (NF-e de venda) com destino a este estado no período')
+    +bloco('Valor das Notas com Frete', BRL(d.total_nf), tipText,
+      'Total faturado das NF-e vinculadas a CT-e com destino a este estado (inclui vendas, bonificações e transferências)')
     +(()=>{
       const ticketEstado = d.qtd>0 ? d.total_nf/d.qtd : 0;
       const totalNfGlobal = Object.values(_geoByUF).reduce((s,v)=>s+v.total_nf,0);
@@ -3179,7 +3179,7 @@ function _geoHover(e){
         :`<span style="color:#F87171;font-size:9px;font-weight:700">▼ ${Math.abs(diffPct).toFixed(1)}% abaixo da média</span>`;
       const valor = ticketEstado>0 ? `${BRL(ticketEstado)} ${diffTxt}` : '-';
       return bloco('Ticket Médio por NF-e', valor, tipText,
-        `Valor médio de cada nota entregue neste estado. Média nacional: ${BRL(ticketMedio)} — pedidos maiores diluem o % de frete`);
+        `Valor médio de cada nota com frete neste estado. Média nacional: ${BRL(ticketMedio)} — pedidos maiores diluem o % de frete`);
     })()
     +bloco('Custo de Frete', BRL(d.total), tipAccent,
       `Representa ${pct.toFixed(1)}% do frete total pago em todos os estados no período`)
