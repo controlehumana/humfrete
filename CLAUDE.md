@@ -300,6 +300,32 @@ Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
 - `network/failed to fetch` → "Sem conexão..."
 - Outros → "Não foi possível carregar o dashboard..."
 
+## transp_cnpj no payload (processar_frete.py)
+
+Campo `cnpj_emitente` do CTe exportado como `transp_cnpj` em cada item de `detalhes`.
+- Necessário para `trKey()` e `trGroupMap` no frontend
+- Tooltip do heatmap de transportadoras exibe CNPJ(s) formatados via `titleFn`
+- `trCnpjMap[nomeRaw] = Set<cnpj>` — todos os CNPJs por nome bruto
+- `trGroupMap[base8] = nomeCanônico` — nome mais frequente por CNPJ base
+
+## Módulo Delivery (pendente)
+
+Aguardando tabela de referência de entregadores (nome + CPF + empresa do grupo) do usuário.
+
+**O que já está validado:**
+- Arquivo romaneio: HTML-XLS do ERP, colunas Empresa / Nr. NFe / Data / Cliente / Cidade / UF / Transportadora (=entregador) / R$ Frete / R$ Total
+- Vínculo por `numero_nfe + empresa` confirmado no banco — 100% de aproveitamento
+- Gap de cobertura ~46% é causado por **entregas próprias** (frota da empresa, sem CTe) — não retiradas no depósito
+
+**Pipeline planejado (quando dados chegarem):**
+```
+ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
+  importar_romaneio.py ← parseia HTML, cruza com vw_nf_saida, salva tabela romaneio
+  tabela romaneio      ← empresa, numero_nfe, data, entregador, frete, chave_nfe
+  processar_frete.py   ← lê romaneio → dataset delivery → Firestore
+  index.html           ← nova aba Delivery
+```
+
 ## Pitfalls conhecidos
 
 - **SDK Firebase v8** — usar v8.10.1 compat. v10 causa falha no WebChannel
