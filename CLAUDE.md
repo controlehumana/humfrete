@@ -122,22 +122,52 @@ CTe total (~58k)
 - Threshold: verde ≥80%, amarelo ≥65%, vermelho <65%
 
 ### CTe Conciliados
-- **Fórmula:** `(qtdTotal - qtdSV) / qtdTotal` — calculado dentro do IIFE do Custo Logístico
-- Respeita todos os filtros ativos (ano, mês, empresa, transportadora, etc.)
-- `qtdSV` = CTes sem vínculo nenhum (`ctes_nao_vinculados`)
+- **Fórmula:** usa dados **globais** de `r.total_cte` e `r.ctes_nao_vinculados_count` (DATA.resumo)
+- NÃO respeita filtros ativos — é métrica de qualidade global, não analítica
+- Consistente com a componente `pctConc` usada em Integridade da Análise
 - Threshold: verde ≥98%, amarelo ≥90%, vermelho <90%
+
+### Integridade da Análise (aba Clientes)
+- **Fórmula:** `pctConc × 0,6 + cobDados × 0,4`
+- `pctConc` = CTe Conciliados global (~99,4%) — substituiu cobCte (cobertura de faturamento)
+  - Razão: cobertura de faturamento (~46%) reflete retiradas no depósito pelo cliente, não falha de dados
+- `cobDados` = % de CTes com cliente, data e destino preenchidos
+- Threshold: verde ≥95%, amarelo ≥85%, vermelho <85%
+- Label "CTe Conciliados" (era "Cobertura CTe") na linha de detalhe do card
 
 ### % Frete / Venda — Mapa de Transportadoras
 - **Denominador:** faturamento das NF-e **transportadas por aquela carrier** (não o total da empresa)
 - Mede eficiência: quanto custa transportar R$100 de mercadoria com cada parceiro
 - Carriers com clientes de alto ticket médio têm % menor naturalmente
 
+## Módulo Geográfico (index.html)
+
+### Estrutura de dados `_geoByUF`
+```js
+_geoByUF[uf] = {
+  total,      // frete total para o estado
+  linhahum,   // frete Linhahum
+  humana,     // frete Humana Alimentar
+  qtd,        // nº de CT-e
+  total_nf,   // faturamento das NF-e
+  byTr: {     // breakdown por transportadora (exclui Shopee/ML)
+    [transportadora]: { frete, qtd }
+  }
+}
+```
+
+### Tooltip do mapa (_geoHover)
+- Cores via variáveis tema-aware: `tipText`, `tipLabel`, `tipBorder`, `tipSep`, `tipAccent`, `tipGold`
+- Seção "Transportadoras neste estado (Top 5)": top 5 carriers por frete, com barra proporcional, valor e % do estado
+- **Shopee e Mercado Livre excluídos** do ranking — pertencem à aba Marketplace
+- `isMarketplace()` filtra SHPS TECNOLOGIA e EBAZARCOMBR
+
 ## Arquitetura web (index.html)
 
 - **GitHub Pages:** https://controlehumana.github.io/humfrete/
 - **Firebase Auth v8.10.1 compat** (v10 causa falha no WebChannel)
 - **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks de 800 itens
-- `_mergeData()` combina dados de todas as empresas autorizadas, somando corretamente `total_cte` e `ctes_nao_vinculados_count`
+- `_mergeData()` soma corretamente: `total_cte`, `ctes_nao_vinculados_count`, `nfe_com_cte`, `nfe_fat_periodo` não é somado (vem global no spread de datas[0])
 - **CDN Chart.js:** primário cdnjs, fallback jsdelivr via `onerror`
 - **CDN Font Awesome:** primário cdnjs, fallback fontawesome.com via `onerror`
 - **Firebase SDK:** guard `typeof firebase !== 'undefined'` antes de inicializar
@@ -161,8 +191,9 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 5. **IDs únicos** — cada elemento com ID aparece exatamente uma vez
 6. **XSS** — dados externos sempre via `esc()` antes de inserir em innerHTML
 7. **Guards de null** — `document.getElementById` seguido de `.textContent`/`.style` deve ter `if(el)` ou `el?.`
-8. **Tooltip geo** — cores via variáveis `tipText`, `tipLabel`, `tipBorder`, `tipAccent`, `tipGold` (tema-aware)
+8. **Tooltip geo** — cores via variáveis `tipText`, `tipLabel`, `tipBorder`, `tipAccent`, `tipGold` (tema-aware); nunca hardcode hex no _geoHover
 9. **Insight body** — `.ok`/`.hi`/`.bad` têm override para ocean em CSS (`html.ocean .insight-body .ok` etc.)
+10. **card-tip** — tem `z-index:1000` no hover para ficar acima de células `position:sticky` do heatmap
 
 ## Globals críticos (ordem importa)
 
@@ -187,7 +218,8 @@ O catch exibe mensagem amigável ao usuário e loga erro técnico no console:
 - **Encoding Python** — sempre `$env:PYTHONIOENCODING = "utf-8"` antes de rodar scripts
 - **Faturamento período** — NF de Nov/Dez 2024 e Jan 2025 ainda ausentes; exportar do ERP
 - **~338 CTe sem vínculo** — não têm NF referenciada, investigação manual necessária
-- **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito pelo cliente (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
+- **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
+- **CTe Conciliados ≠ Integridade quando filtrado** — CTe Conciliados usa dados globais; se parecerem diferentes, verificar se filtro de canal/categoria está ativo
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
 - **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular
 - **`input()` no processar_frete.py** — envolvido em `try/except EOFError` para não travar execução automática
