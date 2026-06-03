@@ -856,7 +856,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card" id="nc_card" style="margin-top:16px;border-left:3px solid var(--amber);display:none">
     <div class="card-title" style="color:var(--amber)"><i class="fa-solid fa-file-circle-xmark"></i> CTe com NF Cancelada — Frete sem vinculo por cancelamento de NF</div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">O CTe foi emitido pela transportadora mas a NF-e correspondente foi cancelada no ERP. O frete e valido, porem nao ha nota de venda para vincular.</p>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Chave CTe</th><th>No CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Empresa NF</th><th>Valor Frete</th><th>NF Refs</th></tr></thead><tbody id="nc_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th style="width:36px"></th><th>Chave CTe</th><th>No CTe</th><th>Data</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Empresa NF</th><th>Valor Frete</th><th>NF Refs</th></tr></thead><tbody id="nc_tbody"></tbody></table></div>
   </div>
 
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
@@ -930,7 +930,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
       </div>
       <!-- Motivo -->
       <div class="nv-esp-motivo">
-        <span class="nv-esp-lbl">⚠ Motivo sem vínculo no faturamento</span>
+        <span class="nv-esp-lbl" id="esp_motivo_lbl">⚠ Motivo sem vínculo no faturamento</span>
         <span class="nv-esp-val" id="esp_motivo">—</span>
       </div>
       <div style="font-size:9px;color:#888;text-align:right;padding:4px 8px;background:#f8f9fa;border-top:1px solid #eee">Gerado pelo Dashboard de Gestão de Fretes — Controle Humana</div>
@@ -2847,11 +2847,11 @@ function initApp(){
     return v;
   }
   function _fmtChave(ch){return ch?ch.replace(/(.{4})/g,'$1 ').trim():'';}
-  function nvShowEspelho(chave){
-    const c=nvRows.find(r=>r.cte_chave===chave);if(!c)return;
+  function nvShowEspelho(data){
+    const c=typeof data==='string'?nvRows.find(r=>r.cte_chave===data):data;if(!c)return;
     const modal=document.getElementById('nv-espelho-modal');
-    const emp=_nvEmpresaTomadora(c);
-    const tomaCnpj=c.rem_cnpj&&CNPJ_EMPRESA[c.rem_cnpj]?c.rem_cnpj:'';
+    const emp=c.empresa_nf||_nvEmpresaTomadora(c);
+    const tomaCnpj=c.rem_cnpj&&CNPJ_EMPRESA[c.rem_cnpj]?c.rem_cnpj:(c.empresa_nf?Object.entries(CNPJ_EMPRESA).find(([,v])=>v===c.empresa_nf)?.[0]||'':'');
     const serie=c.cte_chave&&c.cte_chave.length>=25?parseInt(c.cte_chave.slice(22,25)):'—';
     // helper set
     const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val||'—';};
@@ -2882,7 +2882,9 @@ function initApp(){
     } else {
       document.getElementById('esp_nfes').textContent='Nenhuma NF-e referenciada neste CT-e';
     }
-    set('esp_motivo',c.motivo);
+    const motivoLbl=document.getElementById('esp_motivo_lbl');
+    if(motivoLbl) motivoLbl.textContent=c.empresa_nf?'⚠ NF-e cancelada no ERP':'⚠ Motivo sem vínculo no faturamento';
+    set('esp_motivo',c.motivo||(c.empresa_nf?'CTe emitido mas a NF-e correspondente foi cancelada no ERP — frete válido sem nota para vincular':'CTe sem NF-e referenciada'));
     modal.style.display='block';
   }
   nvInp.addEventListener('input',nvFilter);nvSelUf.addEventListener('change',nvFilter);nvSelTr.addEventListener('change',nvFilter);nvSelMotivo.addEventListener('change',nvFilter);
@@ -2898,9 +2900,11 @@ function initApp(){
     document.getElementById('nc_k_transp').textContent=N(new Set(ncData.map(c=>c.transportadora).filter(Boolean)).size);
     if(!ncData.length) return;
     document.getElementById('nc_card').style.display='';
-    document.getElementById('nc_tbody').innerHTML=ncData.map(c=>{
+    window._ncData=ncData;
+    document.getElementById('nc_tbody').innerHTML=ncData.map((c,i)=>{
       const nfChips=(c.nfe_refs||[]).slice(0,3).map(ch=>'<span style="font-family:monospace;font-size:9px;color:var(--text3)" title="'+ch+'">'+parseInt(ch.slice(25,34))+'</span>').join(' ');
       return '<tr>'
+        +'<td style="text-align:center;padding:4px 2px"><button onclick="if(window._nvShowEspelho&&window._ncData)window._nvShowEspelho(window._ncData['+i+'])" title="Ver Espelho CT-e" style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--amber);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:10px"><i class="fa-solid fa-file-lines"></i></button></td>'
         +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+c.cte_chave+'</td>'
         +'<td style="color:var(--text);font-weight:600">'+(c.numero_cte||'-')+'</td>'
         +'<td>'+fmtDate(c.data_emissao||'-')+'</td>'
@@ -2925,12 +2929,16 @@ function initApp(){
     const wrap=document.getElementById('cancel_list_wrap');
     const empty=document.getElementById('cancel_empty');
     if(!chaves.length){wrap.style.display='none';empty.style.display='block';return;}
-    tbody.innerHTML=cancelData.map(c=>'<tr>'
+    window._cancelData=cancelData;
+    tbody.innerHTML=cancelData.map((c,i)=>'<tr>'
       +'<td style="font-family:monospace;font-size:10px;color:var(--text)">'+c.cte_chave+'</td>'
       +'<td style="font-size:10px;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(c.transportadora||'')+'">'+esc(trName(c.transportadora||'-'))+'</td>'
       +'<td style="color:var(--red2);font-weight:600;white-space:nowrap">'+BRL(c.valor_frete)+'</td>'
-      +'<td style="text-align:center"><button onclick="navigator.clipboard.writeText(\''+c.cte_chave+'\');this.textContent=\'ok\';setTimeout(()=>{this.textContent=\'Copiar\'},1500)" '
-      +'style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:var(--red2);border-radius:4px;padding:2px 8px;font-size:9px;cursor:pointer">Copiar</button></td>'
+      +'<td style="text-align:center;display:flex;gap:4px;justify-content:center">'
+      +'<button onclick="if(window._nvShowEspelho&&window._cancelData)window._nvShowEspelho(window._cancelData['+i+'])" title="Ver Espelho CT-e" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--red2);border-radius:4px;padding:2px 7px;font-size:9px;cursor:pointer"><i class="fa-solid fa-file-lines"></i></button>'
+      +'<button onclick="navigator.clipboard.writeText(\''+c.cte_chave+'\');this.textContent=\'ok\';setTimeout(()=>{this.textContent=\'Copiar\'},1500)" '
+      +'style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:var(--red2);border-radius:4px;padding:2px 8px;font-size:9px;cursor:pointer">Copiar</button>'
+      +'</td>'
       +'</tr>').join('');
   })();
 
