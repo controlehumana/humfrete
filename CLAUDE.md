@@ -109,10 +109,26 @@ CTe total (~58k)
   ├── Frete de Compra (tomador Humana) → rem_cnpj Humana + NF externa → 'compras'
   ├── Dev. Marketplace         → transportadora Shopee/ML → 'devolucoes_mkt'
   ├── CTe c/ NF Cancelada      → NF de CNPJ Humana ausente do fat → 'ctes_nf_cancelada'
-  └── Sem Vínculo (~338)       → resto → 'ctes_nao_vinculados'
+  └── Sem Vínculo (~340)       → resto → 'ctes_nao_vinculados'
 ```
 
 **'detalhes' inclui todas as nat_operacao de saída** — vendas, bonificações, transferências e demais. Não é exclusivo de vendas.
+
+### Campos do payload `ctes_nao_vinculados`
+```python
+{
+  "cte_chave", "transportadora", "transp_cnpj",   # CNPJ da transportadora emitente
+  "data_emissao",                                   # DD/MM/YYYY
+  "origem_cidade", "origem_uf",
+  "destino_cidade", "destino_uf",
+  "dest_cnpj", "dest_nome",
+  "rem_cnpj", "rem_nome",                           # remetente (tomador frequente)
+  "numero_cte", "valor_frete", "peso_kg",
+  "nfe_refs",                                       # lista de chaves NF-e
+  "motivo",                                         # razão do sem-vínculo
+}
+```
+`ctes_nf_cancelada` tem o mesmo shape + `empresa_nf`.
 
 ## KPIs principais (index.html)
 
@@ -179,7 +195,7 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | `empresa` | Por Empresa | Análise por filial |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
 | `clientes` | Consolidação Frete | Oportunidades de consolidação + frete grátis por cliente |
-| `nao-vinculados` | Cobertura de Dados | CTe sem NF correspondente |
+| `nao-vinculados` | Cobertura de Dados | CTe sem NF correspondente — respeita filtros globais; botão espelho por linha |
 | `geo` | Geográfico | Mapa SVG do Brasil + ranking por estado |
 | `rotas` | Rotas | Análise de rotas origem→destino (excl. Marketplace) |
 | `admin` | Admin | Gestão de usuários e permissões |
@@ -284,12 +300,42 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 10. **card-tip** — tem `z-index:1000` no hover para ficar acima de células `position:sticky` do heatmap
 11. **Nova aba** — ao criar nova aba: adicionar tab-btn no sidebar, tab panel HTML, entrada em `_TAB_NAMES`, caso no tab switching, entrada em `ALL_TABS_INFO`
 
+## Módulo Cobertura de Dados — `nao-vinculados` (index.html)
+
+### Arquitetura de dados (3 camadas)
+| Variável | Conteúdo |
+|---|---|
+| `nvAllRows` | Dataset completo (sem filtros) — populado uma vez em `initApp()` |
+| `nvBase` | Filtrado pelos filtros globais (ano, mês, empresa) |
+| `nvRows` | Filtrado pelos filtros locais da aba (UF, transportadora, motivo, busca) |
+
+### Funções-chave
+| Função | Escopo | O que faz |
+|---|---|---|
+| `_nvEmpresaTomadora(c)` | local `initApp()` | Retorna empresa Humana: `rem_cnpj` → chave NF-e |
+| `nvRebuildBase()` | local + `window._renderNV` | Aplica filtros globais → repopula selects → atualiza KPIs → chama `nvFilter()` |
+| `nvFilter()` | local `initApp()` | Aplica filtros locais → `nvRows` → `nvRender()` |
+| `nvRender()` | local `initApp()` | Renderiza tabela da página atual; botão espelho em cada linha |
+| `nvShowEspelho(chave)` | local + `window._nvShowEspelho` | Abre modal DACTE com dados do CTe |
+
+### Integração com filtros globais
+- `renderAll()` chama `window._renderNV()` quando aba NV está ativa
+- Tab click handler chama `window._renderNV()` ao entrar na aba
+- Filtros aplicados: `state.ano`, `state.meses`, `state.empresas`
+- Filtros NÃO aplicados ao NV: `state.transp` (aba tem filtro local próprio), `state.linha`, `state.natop`, `state.canal`
+
+### Modal Espelho CT-e
+- Abre com `window._nvShowEspelho(cte_chave)`
+- Campos exibidos: transportadora + CNPJ, número/série/data/chave 44 dígitos, origem→destino, valor + peso, remetente, destinatário, tomador Humana, NF-e referenciadas, motivo
+- Botão **Imprimir / Salvar PDF** via `window.print()` com `@media print` que esconde tudo exceto `#nv-espelho-print`
+- Fechar: clique fora do modal ou botão "Fechar"
+
 ## Globals críticos (ordem importa)
 
 Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
 - `let DATA = null`
 - `let _currentUser = null`
-- `let nvBase = [], nvPage = 0, nvRows = []`
+- `let nvAllRows = [], nvBase = [], nvPage = 0, nvRows = []`
 - `let CNPJ_EMPRESA = {}`  ← Firebase v8 pode invocar onAuthStateChanged sincronamente
 
 ## Erros de carregamento (catch no onAuthStateChanged)
@@ -331,7 +377,7 @@ ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
 - **SDK Firebase v8** — usar v8.10.1 compat. v10 causa falha no WebChannel
 - **Encoding Python** — sempre `$env:PYTHONIOENCODING = "utf-8"` antes de rodar scripts
 - **Faturamento período** — NF de Nov/Dez 2024 e Jan 2025 ainda ausentes; exportar do ERP
-- **~338 CTe sem vínculo** — não têm NF referenciada, investigação manual necessária
+- **~340 CTe sem vínculo** — não têm NF referenciada, investigação via espelho CT-e na aba Cobertura de Dados
 - **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
 - **CTe Conciliados ≠ Integridade quando filtrado** — CTe Conciliados usa dados globais; se parecerem diferentes, verificar se filtro de canal/categoria está ativo
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
