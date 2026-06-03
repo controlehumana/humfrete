@@ -378,6 +378,7 @@ ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
 - **Encoding Python** — sempre `$env:PYTHONIOENCODING = "utf-8"` antes de rodar scripts
 - **Faturamento período** — NF de Nov/Dez 2024 e Jan 2025 ainda ausentes; exportar do ERP
 - **~340 CTe sem vínculo** — não têm NF referenciada, investigação via espelho CT-e na aba Cobertura de Dados
+- **`ctes_nao_vinculados` por empresa** — `_split_por_empresa()` usa `_nv_emp(c)` (rem_cnpj → nfe_refs) para filtrar por empresa. CTes sem empresa identificada entram em TODOS os documentos. `ctes_nf_cancelada` filtrado por `empresa_nf`. Antes deste fix, ALL CTes iam para TODOS os documentos.
 - **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
 - **CTe Conciliados ≠ Integridade quando filtrado** — CTe Conciliados usa dados globais; se parecerem diferentes, verificar se filtro de canal/categoria está ativo
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
