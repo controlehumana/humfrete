@@ -137,12 +137,14 @@ CTe total (~58k)
 - **"Frete de Saída"** — categoria no Custo Logístico Consolidado. Cobre todo CTe vinculado ao faturamento de saída, não apenas vendas.
 - **"Notas com Frete"** — campo `total_nf` no módulo geográfico e tooltips. Não usar "Notas de Venda".
 
-### Cobertura de Faturamento
+### Vendas com Frete Rastreado (antes "Cobertura de Faturamento")
+- **Label no dashboard:** "Vendas com Frete Rastreado" — card id `k_cobertura`, sub id `k_cobertura_sub`
 - **Fórmula:** `nfe_com_cte / nfe_fat_periodo`
 - **Denominador (`nfe_fat_periodo`):** NF-e do período CTe (2025+) **excluindo** nat. ops sem frete
 - **Nat. ops excluídas:** devoluções (qualquer tipo), entradas (qualquer tipo), perdas/roubo, saldo ICMS, imobilizado, NF consumidor, simples remessa, retorno de locação
 - **TRANSFERÊNCIA SAÍDA é mantida** — pode ter CTe associado
 - Threshold: verde ≥80%, amarelo ≥65%, vermelho <65%
+- Insight title: "Vendas com Frete Rastreado" (mesma lógica, linguagem simples sem termos técnicos)
 
 ### CTe Conciliados
 - **Fórmula:** usa dados **globais** de `r.total_cte` e `r.ctes_nao_vinculados_count` (DATA.resumo)
@@ -316,7 +318,12 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 | `nvRebuildBase()` | local + `window._renderNV` | Aplica filtros globais → repopula selects → atualiza KPIs → chama `nvFilter()` |
 | `nvFilter()` | local `initApp()` | Aplica filtros locais → `nvRows` → `nvRender()` |
 | `nvRender()` | local `initApp()` | Renderiza tabela da página atual; botão espelho em cada linha |
-| `nvShowEspelho(chave)` | local + `window._nvShowEspelho` | Abre modal DACTE com dados do CTe |
+| `nvShowEspelho(data)` | local + `window._nvShowEspelho` | Aceita chave string (busca em `nvRows`) **ou objeto direto**. Abre modal DACTE. |
+
+### Espelho CT-e — outras tabelas
+- **NF Cancelada (`nc_tbody`):** `window._ncData = ncData` exposto no IIFE; botão âmbar chama `window._nvShowEspelho(window._ncData[i])`. Campo `empresa_nf` usado para tomador.
+- **CTe Cancelados (`cancel_tbody`):** `window._cancelData = cancelData`; botão ao lado do "Copiar". Dados parciais (só chave, transportadora, valor) — campos sem dado mostram "—".
+- **Label motivo no modal:** dinâmico — "⚠ NF-e cancelada no ERP" se `c.empresa_nf` presente, senão "⚠ Motivo sem vínculo".
 
 ### Integração com filtros globais
 - `renderAll()` chama `window._renderNV()` quando aba NV está ativa
@@ -329,6 +336,10 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 - Campos exibidos: transportadora + CNPJ, número/série/data/chave 44 dígitos, origem→destino, valor + peso, remetente, destinatário, tomador Humana, NF-e referenciadas, motivo
 - Botão **Imprimir / Salvar PDF** via `window.print()` com `@media print` que esconde tudo exceto `#nv-espelho-print`
 - Fechar: clique fora do modal ou botão "Fechar"
+
+## Comportamento de inicialização
+
+- **Ano padrão:** ao carregar, `initApp()` pré-seleciona o ano mais recente disponível nos dados (`anos[anos.length-1]` após `.sort()`). Avança automaticamente quando chegar 2027+.
 
 ## Globals críticos (ordem importa)
 
