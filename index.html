@@ -2598,7 +2598,9 @@ function initApp(){
   clr(selAno,'Ano');clr(selLnH,'Linha');clr(selEst,'Estado');clr(selTr,'Transportadora');
   const addOpt=(sel,val,txt)=>{if(!sel)return;const o=document.createElement('option');o.value=val;o.textContent=txt;sel.appendChild(o);};
   const uniq=arr=>[...new Set(arr.map(v=>(v||'').trim()).filter(Boolean))].sort();
-  uniq(DATA.detalhes.map(d=>(d.data||'').slice(6,10))).forEach(a=>addOpt(selAno,a,a));
+  const anos=uniq(DATA.detalhes.map(d=>(d.data||'').slice(6,10)));
+  anos.forEach(a=>addOpt(selAno,a,a));
+  if(!state.ano&&anos.length){const defaultAno=anos[anos.length-1];state.ano=defaultAno;selAno.value=defaultAno;}
   uniq(DATA.detalhes.map(d=>d.linha)).forEach(l=>addOpt(selLnH,l,l));
   uniq(DATA.detalhes.map(d=>d.destino_uf)).forEach(e=>addOpt(selEst,e,e));
   _populateTranspSelect();
