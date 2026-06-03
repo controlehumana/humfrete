@@ -589,12 +589,15 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if cte["dest_cnpj"] in CNPJ_MAP: continue
         row={
             "cte_chave":cte["cte_chave"],"transportadora":cte["transportadora"],
+            "transp_cnpj":cte.get("transp_cnpj",""),
             "data_emissao":fmt_date(cte["data_emissao"]),
             "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
             "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
             "dest_cnpj":cte["dest_cnpj"],"dest_nome":cte.get("dest_nome",""),
-            "rem_nome":cte["rem_nome"],"numero_cte":cte.get("numero_cte",""),
-            "valor_frete":cte["valor_frete"],"nfe_refs":cte["nfe_chaves"],
+            "rem_cnpj":cte.get("rem_cnpj",""),"rem_nome":cte["rem_nome"],
+            "numero_cte":cte.get("numero_cte",""),
+            "valor_frete":cte["valor_frete"],"peso_kg":cte.get("peso_kg",0),
+            "nfe_refs":cte["nfe_chaves"],
             "motivo":_motivo_sem_vinculo(cte),
         }
         if _todas_nf_humana_ausentes(cte):
@@ -3617,6 +3620,18 @@ def split_by_empresa(dados):
     empresas.update(d.get("empresa","") for d in dados.get("detalhes",[]) if d.get("empresa"))
     empresas.update(d.get("empresa_dest","") for d in dados.get("compras",[]) if d.get("empresa_dest"))
     empresas.update(d.get("empresa_dest","") for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest"))
+    CNPJ_MAP_local = dados.get("cnpj_map", {})
+    def _nv_emp(c):
+        """Empresa tomadora de um CTe sem vínculo: rem_cnpj → primeira chave NF-e."""
+        e = CNPJ_MAP_local.get(c.get("rem_cnpj",""), "")
+        if e: return e
+        for ch in c.get("nfe_refs", []):
+            if len(ch) >= 20:
+                e = CNPJ_MAP_local.get(ch[6:20], "")
+                if e: return e
+        return ""
+    nv_all = dados.get("ctes_nao_vinculados", [])
+    nc_all = dados.get("ctes_nf_cancelada", [])
     result = {}
     for emp in sorted(empresas):
         det = [d for d in dados.get("detalhes",[]) if d.get("empresa")==emp]
@@ -3627,8 +3642,8 @@ def split_by_empresa(dados):
             "gerado_em": dados.get("gerado_em",""),
             "cnpj_map": dados.get("cnpj_map",{}),
             "por_nat_op": dados.get("por_nat_op",[]),
-            "ctes_nao_vinculados": dados.get("ctes_nao_vinculados",[]),
-            "ctes_nf_cancelada": dados.get("ctes_nf_cancelada",[]),
+            "ctes_nao_vinculados": [c for c in nv_all if not _nv_emp(c) or _nv_emp(c)==emp],
+            "ctes_nf_cancelada":   [c for c in nc_all if not c.get("empresa_nf","") or c.get("empresa_nf","")==emp],
             "cancelados_data": dados.get("cancelados_data",[]),
             "cte_cancelados_chaves": dados.get("cte_cancelados_chaves",[]),
             "detalhes": det,
