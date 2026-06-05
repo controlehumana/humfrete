@@ -322,9 +322,17 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 
 ### Espelho CT-e — outras tabelas
 - **NF Cancelada (`nc_tbody`):** `window._ncData = ncData` exposto no IIFE; botão âmbar chama `window._nvShowEspelho(window._ncData[i])`. Campo `empresa_nf` usado para tomador.
-- **CTe Cancelados (`cancel_tbody`):** `window._cancelData = cancelData`; botão ao lado do "Copiar". Payload inclui `cte_chave`, `transportadora`, `valor_frete`, `data_cancelamento` (YYYY-MM-DD) e `justificativa` (`xJust` do XML SEFAZ).
-- **Label motivo no modal:** dinâmico — "⚠ NF-e cancelada no ERP" se `c.empresa_nf` presente; "🚫 CT-e Cancelado" se `c.data_cancelamento` presente; senão "⚠ Motivo sem vínculo no faturamento".
-- **Seção de cancelamento no espelho:** `id="esp_cancel_section"` — visível apenas quando `c.data_cancelamento` está preenchido; exibe data formatada (DD/MM/YYYY) e justificativa. Campos: `esp_cancel_data`, `esp_cancel_just`.
+- **CTe Cancelados (`cancel_tbody`):** `window._cancelData = cancelData`; botão ao lado do "Copiar". Payload `cancelados_data` inclui:
+  - `cte_chave`, `transportadora`, `valor_frete`
+  - `data_cancelamento` (YYYY-MM-DD), `justificativa` (`xJust` do XML SEFAZ)
+  - `nfe_refs` — lista de chaves NF-e referenciadas (GROUP_CONCAT via LEFT JOIN `cte_nf`)
+  - `cte_substituto` — objeto `{cte_chave, transportadora, transp_cnpj, data_emissao, origem, destino, valor_frete}` se outro CTe ativo referencia as mesmas NF-e; `null` caso contrário. Query: JOIN duplo em `cte_nf` (cn_canc → cn_subst por `chave_nfe`) filtrando substituto fora de `cte_cancelamento`.
+- **Tabela CTe Cancelados:** colunas Data Canc., Justificativa, NF(s) Ref. (até 3 números + contador), chip Substituto (verde "✓ Reemitido" / cinza "— Sem subst.").
+- **Label motivo no espelho:** dinâmico — "⚠ NF-e cancelada no ERP" se `c.empresa_nf` presente; "🚫 CT-e Cancelado" se `c.data_cancelamento` presente; senão "⚠ Motivo sem vínculo no faturamento".
+- **Seções do espelho para CTe cancelados:**
+  - `esp_cancel_section` — data e justificativa do cancelamento
+  - `esp_subst_section` — seção verde com dados do CTe substituto (transportadora, data, rota, valor, chave); visível quando `c.cte_substituto` presente
+  - `esp_no_subst_section` — aviso cinza quando cancelado sem substituto encontrado
 
 ### Integração com filtros globais
 - `renderAll()` chama `window._renderNV()` quando aba NV está ativa
