@@ -756,7 +756,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <div id="tab-operacional" class="tab-panel">
   <div class="sdiv">Detalhamento Analitico por NF-e</div>
   <div class="card">
-    <div class="card-title">Detalhes por NF-e<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem completa de todas as vendas com frete rastreado. Total NF = valor da venda; Valor Frete = o que a empresa pagou ao transportador; Fr. Cobrado = o que o cliente pagou de frete na nota; Saldo = diferenca entre os dois.</span></span></div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>Detalhes por NF-e<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem completa de todas as vendas com frete rastreado. Total NF = valor da venda; Valor Frete = o que a empresa pagou ao transportador; Fr. Cobrado = o que o cliente pagou de frete na nota; Saldo = diferenca entre os dois.</span></span></span>
+      <button onclick="opExportXLSX()" title="Exportar tabela filtrada para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
       <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')">Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
     </div>
@@ -2156,6 +2159,55 @@ function renderTable(){
   const tbody=document.getElementById('tbody');const slice=tableRows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
   tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'dr'+(tablePage*PAGE+i))).join('');
   mkPager(tableRows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
+}
+function opExportXLSX(){
+  if(typeof XLSX==='undefined'){alert('Biblioteca de exportação ainda carregando. Aguarde alguns segundos e tente novamente.');return;}
+  if(!tableRows.length){alert('Nenhum registro para exportar com os filtros atuais.');return;}
+  const rows=tableRows.map(d=>{
+    const pct=d.total_nf?d.valor_frete/d.total_nf*100:0;
+    const cob=d.frete_cobrado||0;
+    return{
+      'Empresa':d.empresa||'',
+      'Linha':d.linha||'',
+      'NF':d.numero||'',
+      'Data':d.data||'',
+      'Canal':d.canal||'',
+      'Total NF':d.total_nf||0,
+      'Valor Frete':d.valor_frete||0,
+      '% Fr/Venda':parseFloat(pct.toFixed(2)),
+      'Linhahum':d.linhahum_total||0,
+      'Humana':d.humana_total||0,
+      'Fr. Cobrado':cob||0,
+      'Saldo':cob>0?(d.diferenca_frete||0):0,
+      'Frete LH':d.frete_linhahum||0,
+      'Frete HU':d.frete_humana||0,
+      'Qtd NF/CTe':d.qtd_nf_cte||1,
+      'Transportadora':trName(d.transportadora||''),
+      'Origem':(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:''),
+      'Destino':(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:''),
+      'Peso (kg)':d.peso_kg||0,
+      'Rateio':d.is_rateio?'Sim':'Não'
+    };
+  });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const moneyFmt='"R$"#,##0.00';
+  const pctFmt='0.00"%"';
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  const cols=Object.keys(rows[0]);
+  const moneyCols=['Total NF','Valor Frete','Linhahum','Humana','Fr. Cobrado','Saldo','Frete LH','Frete HU'];
+  for(let r=range.s.r+1;r<=range.e.r;r++){
+    cols.forEach((col,c)=>{
+      const cell=ws[XLSX.utils.encode_cell({r,c})];
+      if(!cell)return;
+      if(moneyCols.includes(col)){cell.t='n';cell.z=moneyFmt;}
+      else if(col==='% Fr/Venda'){cell.t='n';cell.z=pctFmt;}
+    });
+  }
+  ws['!cols']=[{wch:8},{wch:10},{wch:12},{wch:11},{wch:10},{wch:14},{wch:14},{wch:10},{wch:14},{wch:14},{wch:13},{wch:13},{wch:12},{wch:12},{wch:10},{wch:28},{wch:18},{wch:18},{wch:10},{wch:7}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Operacional');
+  const ts=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'operacional_'+ts+'.xlsx');
 }
 selAno.addEventListener('change',()=>{state.ano=selAno.value;renderAll();});
 selLnH.addEventListener('change',()=>{state.linha=selLnH.value;renderAll();});
