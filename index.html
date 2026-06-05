@@ -587,6 +587,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="sb-section">Analise</div>
     <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="operacional"><i data-lucide="list"></i><span class="sb-label">Operacional</span><span class="tab-badge" id="tb_op">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="natop"><i data-lucide="layers"></i><span class="sb-label">Nat. Operação</span></button>
     <button class="tab-btn tab-highlight" data-tab="clientes"><i data-lucide="users"></i><span class="sb-label">Consolidacao Frete</span><span class="tab-badge" id="tb_cli">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span class="sb-label">Cobertura de Dados</span><span class="tab-badge" id="tb_naov">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="geo"><i data-lucide="map"></i><span class="sb-label">Geografico</span></button>
@@ -767,6 +768,40 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')">Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
     </div>
     <div class="pager" id="pager"></div>
+  </div>
+</div>
+
+<!-- TAB NAT. OPERAÇÃO -->
+<div id="tab-natop" class="tab-panel">
+  <div class="sdiv">Resumo por Natureza de Operacao</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de naturezas de operacao distintas presentes no faturamento, considerando os filtros ativos.</div><div class="kpi-val" id="nat_k_nats">-</div><div class="kpi-lbl">Nats. Distintas</div><div class="kpi-sub">no periodo filtrado</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">NF-e que possuem ao menos um CTe de frete associado. Reflete os filtros ativos de empresa, ano e mes.</div><div class="kpi-val" id="nat_k_com" style="color:var(--green2)">-</div><div class="kpi-lbl">NF-e com Frete</div><div class="kpi-sub">conciliadas com CTe</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">NF-e do faturamento sem CTe associado. Contagem global — nao e afetada pelos filtros de empresa ou periodo.</div><div class="kpi-val" id="nat_k_sem" style="color:var(--red2)">-</div><div class="kpi-lbl">NF-e sem Frete</div><div class="kpi-sub">contagem global</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Valor total de frete das NF-e conciliadas, respeitando os filtros ativos.</div><div class="kpi-val" id="nat_k_frete" style="color:var(--blue2)">-</div><div class="kpi-lbl">Valor Total Frete</div><div class="kpi-sub">NF-e com CTe</div></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>Cobertura de Frete por Natureza de Operacao</span>
+      <button onclick="natopExportXLSX()" title="Exportar para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
+    <div id="natop_filter_warn" class="alert a-yellow" style="display:none;margin-bottom:12px;font-size:12px"><i class="fa-solid fa-circle-info"></i> Coluna <strong>Sem Frete</strong> exibe contagem global e nao e afetada pelos filtros de empresa / periodo ativos.</div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto">
+      <table>
+        <thead><tr>
+          <th style="width:32px">#</th>
+          <th class="sort-th" id="nth_nat" onclick="natopSortBy('nat')">Natureza de Operacao</th>
+          <th class="sort-th" id="nth_com" onclick="natopSortBy('com')" style="text-align:right">Com Frete</th>
+          <th class="sort-th" id="nth_sem" onclick="natopSortBy('sem')" style="text-align:right">Sem Frete <span style="font-size:9px;opacity:.6">global</span></th>
+          <th class="sort-th" id="nth_total" onclick="natopSortBy('total')" style="text-align:right">Total NF-e</th>
+          <th class="sort-th" id="nth_pct" onclick="natopSortBy('pct')">Cobertura</th>
+          <th class="sort-th" id="nth_frete" onclick="natopSortBy('frete')" style="text-align:right">Valor Frete</th>
+          <th class="sort-th" id="nth_nf" onclick="natopSortBy('nf')" style="text-align:right">Faturamento</th>
+          <th class="sort-th" id="nth_pctfr" onclick="natopSortBy('pctfr')" style="text-align:right">% Fr/Fat</th>
+        </tr></thead>
+        <tbody id="nat_tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -1320,6 +1355,7 @@ function _mergeData(datas) {
     gerado_em: datas[0]?.gerado_em || '',
     cnpj_map: Object.assign({}, ...datas.map(d=>d.cnpj_map||{})),
     por_nat_op: datas[0]?.por_nat_op || [],
+    nat_op_sem_cte: (()=>{const m={};datas.forEach(d=>{Object.entries(d.nat_op_sem_cte||{}).forEach(([k,v])=>{m[k]=(m[k]||0)+v;});});return m;})(),
     detalhes: datas.flatMap(d=>d.detalhes||[]),
     ctes_nao_vinculados: datas.flatMap(d=>d.ctes_nao_vinculados||[]),
     ctes_nf_cancelada: datas.flatMap(d=>d.ctes_nf_cancelada||[]),
@@ -2085,7 +2121,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difTot,prev.difTot,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras')renderCompras();else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras')renderCompras();else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -3363,7 +3399,7 @@ function initApp(){
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','natop':'Nat. Operacao','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -3384,6 +3420,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     else if(tab==='operacional') renderTable();
     else if(tab==='geo') renderGeo();
     else if(tab==='rotas') renderRotas();
+    else if(tab==='natop') renderNatOp();
     else if(tab==='admin') loadAdminData();
   });
 });
@@ -3427,6 +3464,7 @@ const ALL_TABS_INFO=[
   {id:'dev-mkt',label:'Dev. Marketplace'},
   {id:'empresa',label:'Por Empresa'},
   {id:'operacional',label:'Operacional'},
+  {id:'natop',label:'Nat. Operação'},
   {id:'clientes',label:'Consolidação Frete'},
   {id:'nao-vinculados',label:'Cobertura de Dados'},
   {id:'geo',label:'Geográfico'},
@@ -3651,6 +3689,103 @@ function renderFreteGratis(rows){
       +'<td style="color:var(--text2)">'+BRL(ticket)+'</td>'
       +'</tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--green2);padding:16px"><i class="fa-solid fa-circle-check"></i> Nenhuma entrega com frete gratis no periodo</td></tr>';
+}
+
+// ─── NAT. OPERAÇÃO ──────────────────────────────────────────────────────────
+let natopSort={col:'total',dir:'desc'};
+let _natopRows=[];
+
+function renderNatOp(){
+  if(!DATA) return;
+  const rows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:false});
+  const semCte=DATA.nat_op_sem_cte||{};
+  // agrupa "com frete" por nat_op
+  const comMap={};
+  rows.forEach(d=>{
+    const nat=d.nat_operacao||'N/A';
+    if(!comMap[nat]) comMap[nat]={qtd:0,frete:0,nf:0};
+    comMap[nat].qtd++;
+    comMap[nat].frete+=d.valor_frete||0;
+    comMap[nat].nf+=d.total_nf||0;
+  });
+  // une chaves de ambos os dicts
+  const allNats=new Set([...Object.keys(comMap),...Object.keys(semCte)]);
+  _natopRows=[...allNats].map(nat=>{
+    const c=comMap[nat]||{qtd:0,frete:0,nf:0};
+    const sem=semCte[nat]||0;
+    const total=c.qtd+sem;
+    const pct=total>0?c.qtd/total*100:0;
+    const pctFr=c.nf>0?c.frete/c.nf*100:0;
+    return{nat,com:c.qtd,sem,total,pct,frete:c.frete,nf:c.nf,pctFr};
+  });
+  // sort
+  _natopRows.sort((a,b)=>{
+    const v=natopSort.dir==='asc'?1:-1;
+    const k=natopSort.col;
+    if(k==='nat') return v*(a.nat.localeCompare(b.nat));
+    return v*(a[k]-b[k]);
+  });
+  // KPIs
+  const totCom=_natopRows.reduce((s,r)=>s+r.com,0);
+  const totSem=_natopRows.reduce((s,r)=>s+r.sem,0);
+  const totFrete=_natopRows.reduce((s,r)=>s+r.frete,0);
+  document.getElementById('nat_k_nats').textContent=N(_natopRows.length);
+  document.getElementById('nat_k_com').textContent=N(totCom);
+  document.getElementById('nat_k_sem').textContent=N(totSem);
+  document.getElementById('nat_k_frete').textContent=BRL(totFrete);
+  // aviso quando filtros ativos
+  const hasFilter=state.ano||state.meses.length||state.empresas.length;
+  const warnEl=document.getElementById('natop_filter_warn');
+  if(warnEl) warnEl.style.display=hasFilter?'':'none';
+  // sort headers
+  const _NATOP_COLS={nat:'Natureza de Operacao',com:'Com Frete',sem:'Sem Frete <span style="font-size:9px;opacity:.6">global</span>',total:'Total NF-e',pct:'Cobertura',frete:'Valor Frete',nf:'Faturamento',pctfr:'% Fr/Fat'};
+  Object.keys(_NATOP_COLS).forEach(c=>{
+    const el=document.getElementById('nth_'+c);
+    if(!el) return;
+    const isCur=natopSort.col===c;
+    el.style.color=isCur?'var(--blue2)':'';
+    el.innerHTML=_NATOP_COLS[c]+(isCur?(natopSort.dir==='asc'?' ▲':' ▼'):'');
+  });
+  // tabela
+  document.getElementById('nat_tbody').innerHTML=_natopRows.length?_natopRows.map((r,i)=>{
+    const pctC=r.pct>=80?'var(--green)':r.pct>=50?'var(--yellow)':'var(--red)';
+    const barW=Math.min(r.pct,100).toFixed(1);
+    const pctFrC=r.pctFr>8?'var(--red)':r.pctFr>5?'var(--yellow)':'var(--green)';
+    return '<tr>'
+      +'<td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td>'
+      +'<td style="color:var(--text);font-weight:500">'+esc(r.nat)+'</td>'
+      +'<td style="text-align:right;color:var(--green2);font-weight:600">'+N(r.com)+'</td>'
+      +'<td style="text-align:right;color:var(--red2)">'+N(r.sem)+'</td>'
+      +'<td style="text-align:right;color:var(--text);font-weight:600">'+N(r.total)+'</td>'
+      +'<td style="min-width:120px"><div style="display:flex;align-items:center;gap:6px">'
+      +'<div style="flex:1;background:var(--s2);border-radius:3px;height:6px;overflow:hidden">'
+      +'<div style="height:100%;width:'+barW+'%;background:'+pctC+';border-radius:3px;transition:width .4s"></div></div>'
+      +'<span style="font-size:11px;color:'+pctC+';font-weight:700;min-width:38px;text-align:right">'+r.pct.toFixed(1)+'%</span>'
+      +'</div></td>'
+      +'<td style="text-align:right;color:var(--blue2);font-weight:600">'+BRL(r.frete)+'</td>'
+      +'<td style="text-align:right">'+BRL(r.nf)+'</td>'
+      +'<td style="text-align:right;color:'+pctFrC+';font-weight:600">'+(r.nf>0?r.pctFr.toFixed(2)+'%':'--')+'</td>'
+      +'</tr>';
+  }).join('')
+  :'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">Sem dados no periodo</td></tr>';
+}
+
+function natopSortBy(col){
+  if(natopSort.col===col) natopSort.dir=natopSort.dir==='asc'?'desc':'asc';
+  else{natopSort.col=col;natopSort.dir='desc';}
+  renderNatOp();
+}
+
+function natopExportXLSX(){
+  if(!_natopRows.length){alert('Sem dados para exportar.');return;}
+  if(typeof XLSX==='undefined'){alert('Biblioteca XLSX nao carregada.');return;}
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['#','Natureza de Operacao','Com Frete','Sem Frete (global)','Total NF-e','Cobertura %','Valor Frete','Faturamento','% Frete/Fat'],
+    ..._natopRows.map((r,i)=>[i+1,r.nat,r.com,r.sem,r.total,+r.pct.toFixed(2),+r.frete.toFixed(2),+r.nf.toFixed(2),r.nf>0?+r.pctFr.toFixed(2):0])
+  ]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nat. Operacao');
+  const ts=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'nat_operacao_'+ts+'.xlsx');
 }
 
 function renderRotas(){

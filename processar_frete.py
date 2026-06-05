@@ -788,14 +788,17 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         mes=data[3:5] if len(data)>=5 else ""; ano=data[6:10] if len(data)>=10 else ""
         key=f"{nf.get('empresa','') or 'N/A'}||{ano}||{mes}"
         transf_fat[key]=transf_fat.get(key,0)+1
-    # NF-e sem CTe por empresa
+    # NF-e sem CTe por empresa e por nat. operacao (global)
     linked_nfe_chaves=set(d["chave_nfe"] for d in detalhes)
     nfe_sem_cte_por_empresa = {}
+    nat_op_sem_cte = {}
     for chave, nf in nfe_map.items():
         if chave in linked_nfe_chaves: continue
         emp = nf.get("empresa") or ""
         if emp:
             nfe_sem_cte_por_empresa[emp] = nfe_sem_cte_por_empresa.get(emp, 0) + 1
+        nat = nf.get("nat_operacao") or "N/A"
+        nat_op_sem_cte[nat] = nat_op_sem_cte.get(nat, 0) + 1
     # NF-e de transferência do faturamento sem CTe vinculado
     transf_sem_cte_list=[]
     for chave,nf in nfe_map.items():
@@ -886,7 +889,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
             "total_faturamento":total_faturamento},
         "transf_fat":transf_fat,"transf_sem_cte":transf_sem_cte_list,"cnpj_map":CNPJ_MAP,
-        "por_nat_op":make_list(por_nat_op),"detalhes":detalhes,"ctes_nao_vinculados":ctes_nao_vinculados,
+        "por_nat_op":make_list(por_nat_op),"nat_op_sem_cte":nat_op_sem_cte,"detalhes":detalhes,"ctes_nao_vinculados":ctes_nao_vinculados,
         "ctes_nf_cancelada":ctes_nf_cancelada,
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
     }
