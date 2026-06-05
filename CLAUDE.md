@@ -137,23 +137,41 @@ CTe total (~58k)
 - **"Frete de Saída"** — categoria no Custo Logístico Consolidado. Cobre todo CTe vinculado ao faturamento de saída, não apenas vendas.
 - **"Notas com Frete"** — campo `total_nf` no módulo geográfico e tooltips. Não usar "Notas de Venda".
 
-### Vendas com Frete Rastreado (antes "Cobertura de Faturamento")
-- **Label no dashboard:** "Vendas com Frete Rastreado" — card id `k_cobertura`, sub id `k_cobertura_sub`
-- **Fórmula:** `nfe_com_cte / nfe_fat_periodo`
-- **Denominador (`nfe_fat_periodo`):** NF-e do período CTe (2025+) **excluindo** nat. ops sem frete
-- **Nat. ops excluídas:** devoluções (qualquer tipo), entradas (qualquer tipo), perdas/roubo, saldo ICMS, imobilizado, NF consumidor, simples remessa, retorno de locação
-- **TRANSFERÊNCIA SAÍDA é mantida** — pode ter CTe associado
+### Vendas com Frete Rastreado + NF-e Vinculadas
+- **Cards:** `k_cobertura` / `k_cobertura_sub` e `k_vinc` / `k_vinc_sub`
+- **Numerador:** `agg.qtd` — NF-e vinculadas a CTe, já filtradas por todos os filtros ativos
+- **Denominador:** função `_effDen()` (escopo global) — cobre todos os filtros:
+  - empresa + ano → `nfe_fat_por_emp_ano[emp][ano]`
+  - só empresa   → `nfe_fat_por_empresa[emp]`
+  - só ano       → `nfe_fat_por_ano[ano]`
+  - nenhum       → `nfe_fat_periodo` (global 2025+)
+- **Nat. ops excluídas do denominador:** devoluções, entradas, perdas/roubo, saldo ICMS, imobilizado, NF consumidor, simples remessa, retorno de locação — TRANSFERÊNCIA SAÍDA mantida
+- **Subtítulo:** mostra `"X de Y vendas em AAAA — Empresa"` com o período ativo explícito
 - Threshold: verde ≥80%, amarelo ≥65%, vermelho <65%
-- Insight title: "Vendas com Frete Rastreado" (mesma lógica, linguagem simples sem termos técnicos)
+- **ATENÇÃO:** `_effDen()` deve ser definida no escopo global (antes de `renderInsights` e `renderAll`) — se definida dentro de `renderAll`, causa `ReferenceError` em `renderInsights`
+
+### Dicts por empresa/ano no resumo (processar_frete.py)
+Todos calculados com a mesma lógica de exclusão de nat. ops sem frete:
+| Campo | Estrutura | Uso |
+|---|---|---|
+| `nfe_fat_periodo` | `int` | denominador global (todos os anos/empresas) |
+| `nfe_fat_por_empresa` | `{emp: int}` | denominador por empresa |
+| `nfe_fat_por_ano` | `{ano: int}` | denominador por ano |
+| `nfe_fat_por_emp_ano` | `{emp: {ano: int}}` | denominador empresa×ano (combinação) |
+| `cte_conc_por_empresa` | `{emp: {total, nao_vinculados}}` | CTe Conciliados por empresa |
+| `nfe_sem_cte_por_empresa` | `{emp: int}` | warning NF sem CTe por empresa |
+Em `_mergeData` esses dicts são mesclados via `Object.assign` (mesmo objeto em todos os docs de empresa).
 
 ### CTe Conciliados
-- **Fórmula:** usa dados **globais** de `r.total_cte` e `r.ctes_nao_vinculados_count` (DATA.resumo)
-- NÃO respeita filtros ativos — é métrica de qualidade global, não analítica
+- **Fórmula:** `(total - nao_vinculados) / total` — **respeita filtro de empresa** via `cte_conc_por_empresa[state.empresa]`
+- Quando empresa não filtrada: usa `r.total_cte` e `r.ctes_nao_vinculados_count` globais
+- Fallback seguro: `{total:0, nao_vinculados:0}` — nunca cai nos valores globais indevidamente
 - Threshold: verde ≥98%, amarelo ≥90%, vermelho <90%
 
 ### Integridade da Análise (aba Consolidação Frete)
 - **Fórmula:** `pctConc × 0,6 + cobDados × 0,4`
-- `pctConc` = CTe Conciliados global; `cobDados` = % CTes com cliente, data e destino preenchidos
+- `pctConc` = CTe Conciliados — **respeita empresa** via `cte_conc_por_empresa` (igual ao card Visão Geral)
+- `cobDados` = % CTes com cliente, data e destino preenchidos — filtrado via `filterRows()`
 - Threshold: verde ≥95%, amarelo ≥85%, vermelho <85%
 
 ### % Frete / Faturamento — Mapa de Transportadoras
@@ -321,24 +339,28 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 | `nvShowEspelho(data)` | local + `window._nvShowEspelho` | Aceita chave string (busca em `nvRows`) **ou objeto direto**. Abre modal DACTE. |
 
 ### Espelho CT-e — outras tabelas
-- **NF Cancelada (`nc_tbody`):** `window._ncData = ncData` exposto no IIFE; botão âmbar chama `window._nvShowEspelho(window._ncData[i])`. Campo `empresa_nf` usado para tomador.
-- **CTe Cancelados (`cancel_tbody`):** `window._cancelData = cancelData`; botão ao lado do "Copiar". Payload `cancelados_data` inclui:
+- **NF Cancelada (`nc_tbody`):** `window._ncData` exposto; botão âmbar chama `window._nvShowEspelho(window._ncData[i])`. Campo `empresa_nf` usado para tomador e para filtro.
+- **CTe Cancelados (`cancel_tbody`):** `window._cancelData` exposto. Payload `cancelados_data` inclui:
+  - `empresa` (campo adicionado — CNPJ_MAP da empresa Humana tomadora)
   - `cte_chave`, `transportadora`, `valor_frete`
   - `data_cancelamento` (YYYY-MM-DD), `justificativa` (`xJust` do XML SEFAZ)
   - `nfe_refs` — lista de chaves NF-e referenciadas (GROUP_CONCAT via LEFT JOIN `cte_nf`)
-  - `cte_substituto` — objeto `{cte_chave, transportadora, transp_cnpj, data_emissao, origem, destino, valor_frete}` se outro CTe ativo referencia as mesmas NF-e; `null` caso contrário. Query: JOIN duplo em `cte_nf` (cn_canc → cn_subst por `chave_nfe`) filtrando substituto fora de `cte_cancelamento`.
-- **Tabela CTe Cancelados:** colunas Data Canc., Justificativa, NF(s) Ref. (até 3 números + contador), chip Substituto (verde "✓ Reemitido" / cinza "— Sem subst.").
-- **Label motivo no espelho:** dinâmico — "⚠ NF-e cancelada no ERP" se `c.empresa_nf` presente; "🚫 CT-e Cancelado" se `c.data_cancelamento` presente; senão "⚠ Motivo sem vínculo no faturamento".
-- **Seções do espelho para CTe cancelados:**
-  - `esp_cancel_section` — data e justificativa do cancelamento
-  - `esp_subst_section` — seção verde com dados do CTe substituto (transportadora, data, rota, valor, chave); visível quando `c.cte_substituto` presente
-  - `esp_no_subst_section` — aviso cinza quando cancelado sem substituto encontrado
+  - `cte_substituto` — `{cte_chave, transportadora, transp_cnpj, data_emissao, origem, destino, valor_frete}` ou `null`. Query: JOIN duplo em `cte_nf` (mesma `chave_nfe`, CTe ativo diferente).
+- **Tabela CTe Cancelados:** colunas Transportadora, Data Canc., Justificativa, NF(s) Ref. (até 3 + contador), chip Substituto ("✓ Reemitido" / "— Sem subst."), Valor Frete.
+- **Label motivo no espelho:** "⚠ NF-e cancelada no ERP" se `c.empresa_nf`; "🚫 CT-e Cancelado" se `c.data_cancelamento`; senão "⚠ Motivo sem vínculo".
+- **Seções do espelho para CTe cancelados:** `esp_cancel_section` (data + justificativa), `esp_subst_section` (verde — dados do substituto), `esp_no_subst_section` (aviso sem substituto).
+
+### Funções reativas NC e Cancelados (segurança da informação)
+- `_renderNC()` — filtra `DATA.ctes_nf_cancelada` por `empresa_nf === state.empresa` quando empresa ativa
+- `_renderCancel()` — filtra `DATA.cancelados_data` por `empresa === state.empresa` quando empresa ativa
+- Ambas expostas em `window` e chamadas dentro de `window._renderNV` (que por sua vez é chamado de `renderAll` quando a aba NV está ativa)
+- **NÃO são IIFEs** — rodam a cada mudança de filtro
 
 ### Integração com filtros globais
-- `renderAll()` chama `window._renderNV()` quando aba NV está ativa
+- `renderAll()` chama `window._renderNV()` quando aba NV está ativa → dispara NV + NC + Cancelados
 - Tab click handler chama `window._renderNV()` ao entrar na aba
-- Filtros aplicados: `state.ano`, `state.meses`, `state.empresas`
-- Filtros NÃO aplicados ao NV: `state.transp` (aba tem filtro local próprio), `state.linha`, `state.natop`, `state.canal`
+- Filtros aplicados: `state.ano`, `state.meses`, `state.empresa`, `state.empresas`
+- Filtros NÃO aplicados ao NV: `state.transp`, `state.linha`, `state.natop`, `state.canal`
 
 ### Modal Espelho CT-e
 - Abre com `window._nvShowEspelho(cte_chave)`
@@ -400,7 +422,9 @@ ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
 - **~340 CTe sem vínculo** — não têm NF referenciada, investigação via espelho CT-e na aba Cobertura de Dados
 - **`ctes_nao_vinculados` por empresa** — `_split_por_empresa()` usa `_nv_emp(c)` (rem_cnpj → nfe_refs) para filtrar por empresa. CTes sem empresa identificada entram em TODOS os documentos. `ctes_nf_cancelada` filtrado por `empresa_nf`. Antes deste fix, ALL CTes iam para TODOS os documentos.
 - **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
-- **CTe Conciliados ≠ Integridade quando filtrado** — CTe Conciliados usa dados globais; se parecerem diferentes, verificar se filtro de canal/categoria está ativo
+- **`_effDen()` deve ser global** — definir ANTES de `renderInsights` e `renderAll`. Se definida dentro de `renderAll`, causa `ReferenceError` silencioso que impede renderização de todos os blocos posteriores (gráficos, heatmap, etc.)
+- **Dev.Mkt data format** — `devolucoes_mkt.data_emissao` está em `DD/MM/YYYY` (igual a `compras`). Slice correto: ano=`slice(6,10)`, mês=`slice(3,5)`. Não usar `slice(0,4)`/`slice(5,7)` (formato YYYY-MM-DD)
+- **Filtros respeitam empresa em todos os módulos** — `_renderNC` filtra por `empresa_nf`, `_renderCancel` por `empresa`, cards Visão Geral usam `_effDen()`, Integridade usa `cte_conc_por_empresa`. Qualquer novo KPI deve ser auditado para não usar valor global quando empresa filtrada
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
 - **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular; select de transportadora populado via `_populateTranspSelect()` (não `addOpt` direto)
 - **Destinatário em transferências** — `CNPJ_EMPRESA[cnpjRaw]` onde `cnpjRaw = d.part_cnpj.replace(/\D/g,'')` normaliza formatação antes do lookup; empresas do grupo exibidas em laranja com CNPJ formatado abaixo
