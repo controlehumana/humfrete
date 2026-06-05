@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onerror="this.onerror=null;this.href='https://use.fontawesome.com/releases/v6.5.1/css/all.css'">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';document.head.appendChild(s)"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';document.head.appendChild(s)"></script>
 <style>
 :root{
   --bg:#0A0A0C;--s1:#111214;--s2:#161719;--s3:#1C1E22;
@@ -836,7 +837,10 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de notas fiscais mencionadas nos comprovantes de frete sem vinculo que nao foram encontradas no sistema de faturamento. Cada uma representa uma venda cujo custo de entrega nao foi apurado.</div><div class="kpi-val" id="nv_k_nferefs">-</div><div class="kpi-lbl">Notas Nao Localizadas</div><div class="kpi-sub">nao encontradas no faturamento</div></div>
   </div>
   <div class="card" style="margin-top:16px">
-    <div class="card-title">Documentos de Transporte sem NF-e Correspondente<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as entregas com comprovante de frete registrado mas sem uma venda correspondente encontrada. A coluna Motivo indica a causa mais provavel de cada caso — ajuda a identificar o que precisa ser corrigido.</span></span></div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>Documentos de Transporte sem NF-e Correspondente<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as entregas com comprovante de frete registrado mas sem uma venda correspondente encontrada. A coluna Motivo indica a causa mais provavel de cada caso — ajuda a identificar o que precisa ser corrigido.</span></span></span>
+      <button onclick="nvExportXLSX()" title="Exportar tabela filtrada para Excel" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:var(--green2);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Conhecimentos de Frete (CTe) cujas Notas Fiscais nao foram localizadas no faturamento.</p>
     <div class="sr">
       <input type="text" id="nv_search" placeholder="Buscar transportadora, cidade, chave CTe, numero NF...">
@@ -2895,6 +2899,45 @@ function initApp(){
         +'<td style="font-size:11px;color:var(--yellow)"><i class="fa-solid fa-triangle-exclamation"></i> '+(c.motivo||'Motivo nao identificado')+'</td></tr>';
     }).join('');
     mkPager(nvRows.length,nvPage,PAGE,'nv_pager',pg=>{nvPage=pg;nvRender();});
+  }
+  function nvExportXLSX(){
+    if(typeof XLSX==='undefined'){alert('Biblioteca de exportação ainda carregando. Aguarde alguns segundos e tente novamente.');return;}
+    if(!nvRows.length){alert('Nenhum registro para exportar com os filtros atuais.');return;}
+    const rows=nvRows.map(c=>{
+      const emp=_nvEmpresaTomadora(c);
+      const destEmp=c.dest_cnpj?CNPJ_EMPRESA[c.dest_cnpj]:'';
+      const destLabel=destEmp||c.dest_nome||c.dest_cnpj||'';
+      const nfeRefs=(c.nfe_refs||[]).map(ch=>String(parseInt(ch.slice(25,34)))).join(', ');
+      return{
+        'Chave CTe':c.cte_chave||'',
+        'Data':fmtDate(c.data_emissao||''),
+        'Transportadora':c.transportadora||'',
+        'Nº CTe':c.numero_cte||(c.cte_chave&&c.cte_chave.length>=34?parseInt(c.cte_chave.slice(25,34)):'')||'',
+        'Valor Frete':c.valor_frete||0,
+        'Empresa':emp||'',
+        'Remetente':c.rem_nome||'',
+        'Destinatário':destLabel,
+        'CNPJ Destinatário':c.dest_cnpj||'',
+        'Origem':( (c.origem_cidade||'')+(c.origem_uf?'/'+c.origem_uf:'')),
+        'Destino':((c.destino_cidade||'')+(c.destino_uf?'/'+c.destino_uf:'')),
+        'NF-e(s) Referenciadas':nfeRefs,
+        'Motivo':c.motivo||'Motivo nao identificado'
+      };
+    });
+    const ws=XLSX.utils.json_to_sheet(rows);
+    // formatar coluna Valor Frete como moeda
+    const range=XLSX.utils.decode_range(ws['!ref']);
+    const colValor=Object.keys(rows[0]).indexOf('Valor Frete');
+    for(let r=range.s.r+1;r<=range.e.r;r++){
+      const cell=ws[XLSX.utils.encode_cell({r,c:colValor})];
+      if(cell){cell.t='n';cell.z='"R$"#,##0.00';}
+    }
+    // largura das colunas
+    ws['!cols']=[{wch:46},{wch:12},{wch:28},{wch:10},{wch:14},{wch:8},{wch:32},{wch:32},{wch:18},{wch:20},{wch:20},{wch:30},{wch:40}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'CTe sem Vinculo');
+    const ts=new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb,'cte_sem_vinculo_'+ts+'.xlsx');
   }
   function _fmtCnpj(v){
     if(!v)return '—';const c=v.replace(/\D/g,'');
