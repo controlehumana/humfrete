@@ -1286,8 +1286,10 @@ async function _loadData(empresas) {
 function _mergeData(datas) {
   const totFrete = datas.reduce((s,d)=>s+(d.resumo?.valor_total_frete||0),0);
   const totNfe   = datas.reduce((s,d)=>s+(d.resumo?.nfe_com_cte||0),0);
-  // dicts por empresa: mesmo em todos os docs — mescla
-  const nfePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_empresa||{}));
+  // dicts por empresa/ano: mesmo em todos os docs — mescla
+  const nfePorEmp    = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_empresa||{}));
+  const nfePorAno    = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_ano||{}));
+  const nfePorEmpAno = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano||{}));
   const cteConcPorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_empresa||{}));
   const nfeSemCtePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_sem_cte_por_empresa||{}));
   // nfe_fat_periodo global: soma explícita dos valores por empresa
@@ -1316,6 +1318,8 @@ function _mergeData(datas) {
       ctes_nao_vinculados_count: datas.reduce((s,d)=>s+(d.resumo?.ctes_nao_vinculados_count||0),0),
       nfe_fat_periodo: totNfePeriodo,
       nfe_fat_por_empresa: nfePorEmp,
+      nfe_fat_por_ano: nfePorAno,
+      nfe_fat_por_emp_ano: nfePorEmpAno,
       cte_conc_por_empresa: cteConcPorEmp,
       nfe_sem_cte_por_empresa: nfeSemCtePorEmp,
     }
@@ -1877,7 +1881,7 @@ function renderInsights(agg){
 
   // 6. Vendas com Frete Rastreado
   const r=DATA?.resumo||{};
-  const _dCobIns=state.empresa?(r.nfe_fat_por_empresa?.[state.empresa]||r.nfe_fat_periodo||0):(r.nfe_fat_periodo||r.total_nfe_fat||0);
+  const _dCobIns=_effDen();
   const taxaIns=_dCobIns?(agg.qtd/_dCobIns*100):0;
   const txtCob=taxaIns>=90
     ?'<span class="ok">'+taxaIns.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCobIns||0)+'). Boa cobertura — os números do dashboard representam bem o movimento real do período.'
@@ -1917,12 +1921,21 @@ function renderAll(){
   document.getElementById('h_pct_rec_sub').innerHTML=agg.fretePctFat<=5?'<span class="chip chip-green"><i class="fa-solid fa-check"></i> Abaixo do benchmark</span>':agg.fretePctFat<=8?'<span class="chip chip-amber"><i class="fa-solid fa-triangle-exclamation"></i>Atencao &mdash; meta &lt;5%</span>':'<span class="chip chip-red"><i class="fa-solid fa-xmark"></i> Acima do benchmark</span>';
   document.getElementById('h_ticket').textContent=BRL(agg.media);
   document.getElementById('h_ticket_sub').textContent=N(agg.qtd)+' entregas vinculadas';
-  // denominador e numerador de cobertura respeitam filtro de empresa
-  const _denCob=state.empresa?(r.nfe_fat_por_empresa?.[state.empresa]||r.nfe_fat_periodo||0):(r.nfe_fat_periodo||r.total_nfe_fat||0);
+  // denominador: cobre todos os filtros (empresa, ano, empresa+ano)
+  function _effDen(){
+    const emp=state.empresa,ano=state.ano,r2=DATA.resumo||{};
+    if(emp&&ano) return r2.nfe_fat_por_emp_ano?.[emp]?.[ano]||0;
+    if(emp)      return r2.nfe_fat_por_empresa?.[emp]||0;
+    if(ano)      return r2.nfe_fat_por_ano?.[ano]||0;
+    return r2.nfe_fat_periodo||r2.total_nfe_fat||0;
+  }
+  const _denCob=_effDen();
   const _numCob=agg.qtd;
+  const _periodoLabel=state.empresa&&state.ano?(' em '+state.ano+' — '+state.empresa):state.empresa?' — '+state.empresa:state.ano?' em '+state.ano:'';
+  const _subCobTxt=N(_numCob)+' de '+N(_denCob)+'  vendas'+_periodoLabel;
   document.getElementById('k_vinc').textContent=N(_numCob);
-  document.getElementById('k_vinc_sub').textContent='de '+N(_denCob)+' vendas com entrega';
-  const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent='de '+N(_denCob)+' vendas com entrega';
+  document.getElementById('k_vinc_sub').textContent='de '+N(_denCob)+' vendas com entrega'+_periodoLabel;
+  const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent=_subCobTxt;
   const taxa=_denCob?(_numCob/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
   const _cteConcEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||{total:0,nao_vinculados:0}):null;

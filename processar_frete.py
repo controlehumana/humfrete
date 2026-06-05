@@ -834,14 +834,22 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     )
     nfe_excluidas = nfe_fat_periodo_bruto - nfe_fat_periodo
     print(f"   NF-e no periodo CTe ({ano_min_cte}+): {nfe_fat_periodo} de {nfe_fat_periodo_bruto} ({nfe_excluidas} excluidas — nat. op. sem frete)")
-    # Contagem de NF-e do período por empresa (mesma lógica do global)
+    # Contagem de NF-e do período por empresa, por ano e por empresa×ano
     nfe_fat_por_empresa = {}
+    nfe_fat_por_ano = {}
+    nfe_fat_por_emp_ano = {}  # {emp: {ano: count}} — cobre todos os filtros combinados
     for nf in nfe_map.values():
         emp = nf.get("empresa") or ""
-        if not emp: continue
-        if (nf.get("data_emissao") or "")[-4:] < ano_min_cte: continue
+        data = nf.get("data_emissao") or ""
+        ano = data[-4:] if len(data) >= 4 else ""
+        if not emp or not ano: continue
+        if ano < ano_min_cte: continue
         if _nat_sem_frete(nf.get("nat_operacao")): continue
         nfe_fat_por_empresa[emp] = nfe_fat_por_empresa.get(emp, 0) + 1
+        nfe_fat_por_ano[ano] = nfe_fat_por_ano.get(ano, 0) + 1
+        if emp not in nfe_fat_por_emp_ano:
+            nfe_fat_por_emp_ano[emp] = {}
+        nfe_fat_por_emp_ano[emp][ano] = nfe_fat_por_emp_ano[emp].get(ano, 0) + 1
     # CTe Conciliados por empresa: total e não-vinculados
     _cte_tot_emp = {}
     for cte in cte_list:
@@ -865,6 +873,8 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
             "nfe_fat_periodo":nfe_fat_periodo,
             "nfe_fat_por_empresa":nfe_fat_por_empresa,
+            "nfe_fat_por_ano":nfe_fat_por_ano,
+            "nfe_fat_por_emp_ano":nfe_fat_por_emp_ano,
             "cte_conc_por_empresa":cte_conc_por_empresa,
             "nfe_sem_cte":len(nfe_sem_cte),"nfe_sem_cte_por_empresa":nfe_sem_cte_por_empresa,"cte_sem_fat":cte_sem_fat,
             "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
