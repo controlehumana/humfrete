@@ -3290,9 +3290,10 @@ function initApp(){
     kpi('dm_sh_peso',N(Math.round(sh.reduce((s,d)=>s+d.peso_kg,0)))+' kg');
     kpi('dm_sh_medio',sh.length?BRL(sh.reduce((s,d)=>s+d.valor_frete,0)/sh.length):'R$ 0');
     const slice=base.slice(dmPage*PAGE,(dmPage+1)*PAGE);
+    const isOc=document.documentElement.classList.contains('ocean');
     const platChip=t=>t==='ml'
-      ?'<span class="chip" style="background:#FFE60022;color:#FFE600;font-size:9px;font-weight:700">ML</span>'
-      :'<span class="chip" style="background:#FF690022;color:#FF6900;font-size:9px;font-weight:700">Shopee</span>';
+      ?'<span class="chip" style="background:'+(isOc?'#FEF9C3':'#FFE60022')+';color:'+(isOc?'#854D0E':'#FFE600')+';border:1px solid '+(isOc?'#FDE047':'transparent')+';font-size:9px;font-weight:700">ML</span>'
+      :'<span class="chip" style="background:'+(isOc?'#FFEDD5':'#FF690022')+';color:'+(isOc?'#9A3412':'#FF6900')+';border:1px solid '+(isOc?'#FDBA74':'transparent')+';font-size:9px;font-weight:700">Shopee</span>';
     document.getElementById('dm_tbody').innerHTML=slice.map(d=>{
       const orig=esc((d.origem_cidade||'?')+(d.origem_uf?'/'+d.origem_uf:''));
       const dest=esc((d.destino_cidade||'?')+(d.destino_uf?'/'+d.destino_uf:''));
