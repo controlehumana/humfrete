@@ -114,7 +114,7 @@ def _parse_single_fat(fat_file, nfe_map, force_empresa=None):
             if not empresa: empresa=chave[6:20]
             nfe_map[chave]={
                 "chave":chave,"empresa":empresa,"numero":get(row,"NUMERO"),
-                "canal":get(row,"Canal"),"data_emissao":get(row,"Data Emissao"),
+                "canal":get(row,"Canal"),"nicho":get(row,"Nicho"),"data_emissao":get(row,"Data Emissao"),
                 "participante":get(row,"Participante"),"cidade":get(row,"Participante Cidade"),
                 "estado":get(row,"Participante Estado"),"part_cnpj":get(row,"CPF_CNPJ Participante"),
                 "nat_operacao":get(row,"Nat. OPERACAO"),"cod_nat_operacao":get(row,"Cod. Nat OPER"),
@@ -161,6 +161,7 @@ def _parse_faturamento_db():
                 "empresa":         r["empresa"] or CNPJ_MAP.get(chave[6:20], ""),
                 "numero":          r["numero"],
                 "canal":           r["canal"],
+                "nicho":           r.get("nicho") or "",
                 "data_emissao":    r["data_emissao"],
                 "participante":    r["participante"],
                 "cidade":          r["part_cidade"],
@@ -600,7 +601,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 diferenca=round(frete_cobrado-frete_rateado,2)
                 detalhes.append({
                     "chave_nfe":nfe["chave"],"empresa":nfe["empresa"],"numero":nfe["numero"],
-                    "data":nfe["data_emissao"],"canal":nfe["canal"],"nat_operacao":nfe["nat_operacao"],
+                    "data":nfe["data_emissao"],"canal":nfe["canal"],"nicho":nfe.get("nicho") or "","nat_operacao":nfe["nat_operacao"],
                     "cliente":nfe["participante"],"cidade":nfe["cidade"],"estado":nfe["estado"],
                     "part_cnpj":nfe["part_cnpj"],"cod_nat_operacao":nfe["cod_nat_operacao"],
                     "total_nf":round(nfe["total_nf"],2),"linhahum_total":round(nfe["linhahum_total"],2),

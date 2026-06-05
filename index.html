@@ -773,22 +773,27 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 
 <!-- TAB NAT. OPERAÇÃO -->
 <div id="tab-natop" class="tab-panel">
-  <div class="sdiv">Resumo por Natureza de Operacao</div>
+  <div class="sdiv" id="nat_sdiv">Resumo por Natureza de Operacao</div>
+  <div style="display:flex;gap:6px;margin-bottom:14px">
+    <button class="chip chip-blue" id="nat_view_natop" onclick="natopSetView('natop')" style="cursor:pointer;font-size:11px;padding:4px 12px">Nat. Operacao</button>
+    <button class="chip" id="nat_view_canal" onclick="natopSetView('canal')" style="cursor:pointer;font-size:11px;padding:4px 12px">Canal</button>
+    <button class="chip" id="nat_view_nicho" onclick="natopSetView('nicho')" style="cursor:pointer;font-size:11px;padding:4px 12px">Nicho</button>
+  </div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de naturezas de operacao distintas presentes no faturamento, considerando os filtros ativos.</div><div class="kpi-val" id="nat_k_nats">-</div><div class="kpi-lbl">Nats. Distintas</div><div class="kpi-sub">no periodo filtrado</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip" id="nat_k_nats_tip">Quantidade de grupos distintos presentes no faturamento, considerando os filtros ativos.</div><div class="kpi-val" id="nat_k_nats">-</div><div class="kpi-lbl" id="nat_k_nats_lbl">Grupos Distintos</div><div class="kpi-sub">no periodo filtrado</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">NF-e que possuem ao menos um CTe de frete associado. Reflete os filtros ativos de empresa, ano e mes.</div><div class="kpi-val" id="nat_k_com" style="color:var(--green2)">-</div><div class="kpi-lbl">NF-e com Frete</div><div class="kpi-sub">conciliadas com CTe</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">NF-e do faturamento sem CTe associado. Contagem global — nao e afetada pelos filtros de empresa ou periodo.</div><div class="kpi-val" id="nat_k_sem" style="color:var(--red2)">-</div><div class="kpi-lbl">NF-e sem Frete</div><div class="kpi-sub">contagem global</div></div>
+    <div class="kpi-card" id="nat_k_sem_card"><div class="kpi-tooltip">NF-e do faturamento sem CTe associado. Contagem global — nao e afetada pelos filtros de empresa ou periodo.</div><div class="kpi-val" id="nat_k_sem" style="color:var(--red2)">-</div><div class="kpi-lbl">NF-e sem Frete</div><div class="kpi-sub">contagem global</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Valor total de frete das NF-e conciliadas, respeitando os filtros ativos.</div><div class="kpi-val" id="nat_k_frete" style="color:var(--blue2)">-</div><div class="kpi-lbl">Valor Total Frete</div><div class="kpi-sub">NF-e com CTe</div></div>
   </div>
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span>Cobertura de Frete por Natureza de Operacao</span>
+      <span id="nat_card_title">Cobertura de Frete por Natureza de Operacao</span>
       <button onclick="natopExportXLSX()" title="Exportar para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
     <div id="natop_filter_warn" class="alert a-yellow" style="display:none;margin-bottom:12px;font-size:12px"><i class="fa-solid fa-circle-info"></i> Coluna <strong>Sem Frete</strong> exibe contagem global e nao e afetada pelos filtros de empresa / periodo ativos.</div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto">
       <table>
-        <thead><tr>
+        <thead><tr id="nat_thead_row">
           <th style="width:32px">#</th>
           <th class="sort-th" id="nth_nat" onclick="natopSortBy('nat')">Natureza de Operacao</th>
           <th class="sort-th" id="nth_com" onclick="natopSortBy('com')" style="text-align:right">Com Frete</th>
@@ -3693,32 +3698,48 @@ function renderFreteGratis(rows){
 
 // ─── NAT. OPERAÇÃO ──────────────────────────────────────────────────────────
 let natopSort={col:'total',dir:'desc'};
+let natopView='natop'; // 'natop' | 'canal' | 'nicho'
 let _natopRows=[];
+
+const _NATOP_VIEW_CFG={
+  natop:{field:'nat_operacao',label:'Natureza de Operacao',kpiLbl:'Nats. Distintas',title:'Cobertura de Frete por Natureza de Operacao',hasSem:true},
+  canal:{field:'canal',      label:'Canal',                kpiLbl:'Canais Distintos', title:'Cobertura de Frete por Canal',                hasSem:false},
+  nicho:{field:'nicho',      label:'Nicho',                kpiLbl:'Nichos Distintos', title:'Cobertura de Frete por Nicho',                hasSem:false},
+};
+
+function natopSetView(v){
+  natopView=v;
+  natopSort={col:'total',dir:'desc'};
+  ['natop','canal','nicho'].forEach(k=>{
+    const btn=document.getElementById('nat_view_'+k);
+    if(!btn) return;
+    btn.className=k===v?'chip chip-blue':'chip';
+  });
+  renderNatOp();
+}
 
 function renderNatOp(){
   if(!DATA) return;
+  const cfg=_NATOP_VIEW_CFG[natopView];
   const rows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:false});
-  const semCte=DATA.nat_op_sem_cte||{};
-  // agrupa "com frete" por nat_op
+  const semCte=(natopView==='natop')?(DATA.nat_op_sem_cte||{}):{};
   const comMap={};
   rows.forEach(d=>{
-    const nat=d.nat_operacao||'N/A';
-    if(!comMap[nat]) comMap[nat]={qtd:0,frete:0,nf:0};
-    comMap[nat].qtd++;
-    comMap[nat].frete+=d.valor_frete||0;
-    comMap[nat].nf+=d.total_nf||0;
+    const key=d[cfg.field]||'N/A';
+    if(!comMap[key]) comMap[key]={qtd:0,frete:0,nf:0};
+    comMap[key].qtd++;
+    comMap[key].frete+=d.valor_frete||0;
+    comMap[key].nf+=d.total_nf||0;
   });
-  // une chaves de ambos os dicts
-  const allNats=new Set([...Object.keys(comMap),...Object.keys(semCte)]);
-  _natopRows=[...allNats].map(nat=>{
-    const c=comMap[nat]||{qtd:0,frete:0,nf:0};
-    const sem=semCte[nat]||0;
+  const allKeys=new Set([...Object.keys(comMap),...Object.keys(semCte)]);
+  _natopRows=[...allKeys].map(key=>{
+    const c=comMap[key]||{qtd:0,frete:0,nf:0};
+    const sem=semCte[key]||0;
     const total=c.qtd+sem;
     const pct=total>0?c.qtd/total*100:0;
     const pctFr=c.nf>0?c.frete/c.nf*100:0;
-    return{nat,com:c.qtd,sem,total,pct,frete:c.frete,nf:c.nf,pctFr};
+    return{nat:key,com:c.qtd,sem,total,pct,frete:c.frete,nf:c.nf,pctFr};
   });
-  // sort
   _natopRows.sort((a,b)=>{
     const v=natopSort.dir==='asc'?1:-1;
     const k=natopSort.col;
@@ -3730,44 +3751,61 @@ function renderNatOp(){
   const totSem=_natopRows.reduce((s,r)=>s+r.sem,0);
   const totFrete=_natopRows.reduce((s,r)=>s+r.frete,0);
   document.getElementById('nat_k_nats').textContent=N(_natopRows.length);
+  const kNatsLbl=document.getElementById('nat_k_nats_lbl');if(kNatsLbl) kNatsLbl.textContent=cfg.kpiLbl;
   document.getElementById('nat_k_com').textContent=N(totCom);
-  document.getElementById('nat_k_sem').textContent=N(totSem);
+  document.getElementById('nat_k_sem').textContent=cfg.hasSem?N(totSem):'--';
   document.getElementById('nat_k_frete').textContent=BRL(totFrete);
-  // aviso quando filtros ativos
+  const semCard=document.getElementById('nat_k_sem_card');if(semCard) semCard.style.opacity=cfg.hasSem?'1':'0.4';
+  const cardTitle=document.getElementById('nat_card_title');if(cardTitle) cardTitle.textContent=cfg.title;
+  const sdiv=document.getElementById('nat_sdiv');if(sdiv) sdiv.textContent='Resumo por '+cfg.label;
+  // aviso Sem Frete (só Nat. Op.)
   const hasFilter=state.ano||state.meses.length||state.empresas.length;
   const warnEl=document.getElementById('natop_filter_warn');
-  if(warnEl) warnEl.style.display=hasFilter?'':'none';
+  if(warnEl) warnEl.style.display=(cfg.hasSem&&hasFilter)?'':'none';
+  // cabeçalho da tabela
+  const colSemEl=document.getElementById('nth_sem');
+  if(colSemEl) colSemEl.style.display=cfg.hasSem?'':'none';
+  const colTotalEl=document.getElementById('nth_total');
+  if(colTotalEl) colTotalEl.style.display=cfg.hasSem?'':'none';
+  const colPctEl=document.getElementById('nth_pct');
+  if(colPctEl) colPctEl.style.display=cfg.hasSem?'':'none';
+  // label da coluna principal
+  const natThEl=document.getElementById('nth_nat');if(natThEl) natThEl.textContent=cfg.label;
   // sort headers
-  const _NATOP_COLS={nat:'Natureza de Operacao',com:'Com Frete',sem:'Sem Frete <span style="font-size:9px;opacity:.6">global</span>',total:'Total NF-e',pct:'Cobertura',frete:'Valor Frete',nf:'Faturamento',pctfr:'% Fr/Fat'};
+  const _NATOP_COLS={nat:cfg.label,com:'Com Frete',sem:'Sem Frete <span style="font-size:9px;opacity:.6">global</span>',total:'Total NF-e',pct:'Cobertura',frete:'Valor Frete',nf:'Faturamento',pctfr:'% Fr/Fat'};
   Object.keys(_NATOP_COLS).forEach(c=>{
     const el=document.getElementById('nth_'+c);
-    if(!el) return;
+    if(!el||el.style.display==='none') return;
     const isCur=natopSort.col===c;
     el.style.color=isCur?'var(--blue2)':'';
     el.innerHTML=_NATOP_COLS[c]+(isCur?(natopSort.dir==='asc'?' ▲':' ▼'):'');
   });
+  const cols=cfg.hasSem?9:6;
   // tabela
   document.getElementById('nat_tbody').innerHTML=_natopRows.length?_natopRows.map((r,i)=>{
     const pctC=r.pct>=80?'var(--green)':r.pct>=50?'var(--yellow)':'var(--red)';
     const barW=Math.min(r.pct,100).toFixed(1);
     const pctFrC=r.pctFr>8?'var(--red)':r.pctFr>5?'var(--yellow)':'var(--green)';
-    return '<tr style="cursor:pointer" onclick="natopDrillDown('+i+')" title="Ver NF-e desta natureza no modulo Operacional">'
+    const semCol=cfg.hasSem?'<td style="text-align:right;color:var(--red2)">'+N(r.sem)+'</td>':'';
+    const totalCol=cfg.hasSem?'<td style="text-align:right;color:var(--text);font-weight:600">'+N(r.total)+'</td>':'';
+    const pctCol=cfg.hasSem
+      ?'<td style="min-width:120px"><div style="display:flex;align-items:center;gap:6px">'
+        +'<div style="flex:1;background:var(--s2);border-radius:3px;height:6px;overflow:hidden">'
+        +'<div style="height:100%;width:'+barW+'%;background:'+pctC+';border-radius:3px;transition:width .4s"></div></div>'
+        +'<span style="font-size:11px;color:'+pctC+';font-weight:700;min-width:38px;text-align:right">'+r.pct.toFixed(1)+'%</span>'
+        +'</div></td>'
+      :'';
+    return '<tr style="cursor:pointer" onclick="natopDrillDown('+i+')" title="Ver NF-e no modulo Operacional">'
       +'<td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td>'
       +'<td style="color:var(--text);font-weight:500">'+esc(r.nat)+'</td>'
       +'<td style="text-align:right;color:var(--green2);font-weight:600">'+N(r.com)+'</td>'
-      +'<td style="text-align:right;color:var(--red2)">'+N(r.sem)+'</td>'
-      +'<td style="text-align:right;color:var(--text);font-weight:600">'+N(r.total)+'</td>'
-      +'<td style="min-width:120px"><div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="flex:1;background:var(--s2);border-radius:3px;height:6px;overflow:hidden">'
-      +'<div style="height:100%;width:'+barW+'%;background:'+pctC+';border-radius:3px;transition:width .4s"></div></div>'
-      +'<span style="font-size:11px;color:'+pctC+';font-weight:700;min-width:38px;text-align:right">'+r.pct.toFixed(1)+'%</span>'
-      +'</div></td>'
+      +semCol+totalCol+pctCol
       +'<td style="text-align:right;color:var(--blue2);font-weight:600">'+BRL(r.frete)+'</td>'
       +'<td style="text-align:right">'+BRL(r.nf)+'</td>'
       +'<td style="text-align:right;color:'+pctFrC+';font-weight:600">'+(r.nf>0?r.pctFr.toFixed(2)+'%':'--')+'</td>'
       +'</tr>';
   }).join('')
-  :'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">Sem dados no periodo</td></tr>';
+  :'<tr><td colspan="'+cols+'" style="text-align:center;color:var(--text3);padding:24px">Sem dados no periodo</td></tr>';
 }
 
 function natopSortBy(col){
@@ -3790,13 +3828,17 @@ function natopExportXLSX(){
 
 function natopDrillDown(i){
   const r=_natopRows[i];if(!r) return;
-  const nat=r.nat;
-  // aplica filtro de nat. operação
-  state.natop=[nat];
-  document.querySelectorAll('#ms_natop_drop input').forEach(c=>{c.checked=(c.value===nat);});
-  const btn=document.getElementById('ms_natop_btn');
-  if(btn) btn.innerHTML=(nat.length>18?nat.slice(0,16)+'…':nat)+' <span class="ms-arrow">v</span>';
-  // troca para aba Operacional
+  const val=r.nat;
+  if(natopView==='natop'){
+    state.natop=[val];
+    document.querySelectorAll('#ms_natop_drop input').forEach(c=>{c.checked=(c.value===val);});
+    const btn=document.getElementById('ms_natop_btn');
+    if(btn) btn.innerHTML=(val.length>18?val.slice(0,16)+'…':val)+' <span class="ms-arrow">v</span>';
+  } else if(natopView==='canal'){
+    state.canal=val;
+    const sel=document.getElementById('filter_canal');if(sel) sel.value=val;
+  }
+  // nicho ainda nao tem filtro global — drill-down apenas para nat_op e canal
   document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('[data-tab="operacional"]').forEach(b=>b.classList.add('active'));
