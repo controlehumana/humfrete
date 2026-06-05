@@ -63,7 +63,7 @@ ClaudeCode/
 |---|---|
 | `cte_campos` | Dados dos CTe (58k+ registros) |
 | `cte_nf` | Mapeamento CTe → NF-e referenciadas (chave_cte, chave_nfe) |
-| `cte_cancelamento` | CTe cancelados (chave_cte, chave_canc, data_cancelamento) |
+| `cte_cancelamento` | CTe cancelados (chave_cte, chave_canc, data_cancelamento, justificativa) |
 | `nf_saida_items` | Faturamento de saída — 1 linha por item, acumulativo |
 | `nf_entrada` | NF de entrada (compras) — 1 linha por NF |
 
@@ -322,8 +322,9 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 
 ### Espelho CT-e — outras tabelas
 - **NF Cancelada (`nc_tbody`):** `window._ncData = ncData` exposto no IIFE; botão âmbar chama `window._nvShowEspelho(window._ncData[i])`. Campo `empresa_nf` usado para tomador.
-- **CTe Cancelados (`cancel_tbody`):** `window._cancelData = cancelData`; botão ao lado do "Copiar". Dados parciais (só chave, transportadora, valor) — campos sem dado mostram "—".
-- **Label motivo no modal:** dinâmico — "⚠ NF-e cancelada no ERP" se `c.empresa_nf` presente, senão "⚠ Motivo sem vínculo".
+- **CTe Cancelados (`cancel_tbody`):** `window._cancelData = cancelData`; botão ao lado do "Copiar". Payload inclui `cte_chave`, `transportadora`, `valor_frete`, `data_cancelamento` (YYYY-MM-DD) e `justificativa` (`xJust` do XML SEFAZ).
+- **Label motivo no modal:** dinâmico — "⚠ NF-e cancelada no ERP" se `c.empresa_nf` presente; "🚫 CT-e Cancelado" se `c.data_cancelamento` presente; senão "⚠ Motivo sem vínculo no faturamento".
+- **Seção de cancelamento no espelho:** `id="esp_cancel_section"` — visível apenas quando `c.data_cancelamento` está preenchido; exibe data formatada (DD/MM/YYYY) e justificativa. Campos: `esp_cancel_data`, `esp_cancel_just`.
 
 ### Integração com filtros globais
 - `renderAll()` chama `window._renderNV()` quando aba NV está ativa

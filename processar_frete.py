@@ -266,16 +266,20 @@ def parse_ctes_from_db(db_path):
     try:
         cur.execute("""
             SELECT cc.chave,
-                   COALESCE(cc.valor_total_prestacao, 0) AS valor,
-                   COALESCE(cc.nome_emitente, '')         AS transp
+                   COALESCE(cc.valor_total_prestacao, 0)  AS valor,
+                   COALESCE(cc.nome_emitente, '')          AS transp,
+                   COALESCE(ccan.data_cancelamento, '')    AS data_cancelamento,
+                   COALESCE(ccan.justificativa, '')        AS justificativa
             FROM cte_campos cc
             JOIN cte_cancelamento ccan ON cc.chave = ccan.chave_cte
         """)
         for row in cur.fetchall():
             cancelados_lista.append({
-                "cte_chave":     row["chave"],
-                "valor_frete":   round(float(row["valor"] or 0), 2),
-                "transportadora": row["transp"] or "",
+                "cte_chave":          row["chave"],
+                "valor_frete":        round(float(row["valor"] or 0), 2),
+                "transportadora":     row["transp"] or "",
+                "data_cancelamento":  row["data_cancelamento"] or "",
+                "justificativa":      row["justificativa"] or "",
             })
     except Exception as e:
         print(f"   [AVISO] Nao foi possivel ler cancelamentos: {e}")
