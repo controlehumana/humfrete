@@ -214,6 +214,7 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | `dev-mkt` | Dev. Marketplace | Devoluções via Shopee/ML |
 | `empresa` | Por Empresa | Análise por filial |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
+| `natop` | Nat. Operação | Cobertura de frete por natureza de operação — drill-down para Operacional |
 | `clientes` | Consolidação Frete | Oportunidades de consolidação + frete grátis por cliente |
 | `nao-vinculados` | Cobertura de Dados | CTe sem NF correspondente — respeita filtros globais; botão espelho por linha |
 | `geo` | Geográfico | Mapa SVG do Brasil + ranking por estado |
@@ -359,6 +360,39 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 11. **Nova aba** — ao criar nova aba: adicionar tab-btn no sidebar, tab panel HTML, entrada em `_TAB_NAMES`, caso no tab switching, entrada em `ALL_TABS_INFO`
 12. **Botões de ação nos cards** — usar classe `btn-xlsx` (definida no CSS global com override `html.ocean`) para garantir legibilidade em ambos os temas; nunca hardcode de cor inline nesses botões
 
+## Módulo Nat. Operação — `natop` (index.html)
+
+### Fonte de dados
+| Campo | Origem | Comportamento |
+|---|---|---|
+| Com Frete | `filterRows(DATA.detalhes, {excMkt:false})` agrupado por `d.nat_operacao` | Respeita todos os filtros globais |
+| Sem Frete | `DATA.nat_op_sem_cte` (dict `{nat: count}`) | **Global** — não filtrado por empresa/ano/mês |
+
+`nat_op_sem_cte` é calculado em `processar_frete.py` sobre todas as NF-e do `nfe_map` que não estão em `linked_nfe_chaves`. É um campo global e **deve ser incluído explicitamente em `split_by_empresa`** (copiado inteiro para cada empresa — não filtrado). Se omitido, chega como `{}` no frontend e a coluna Sem Frete fica zerada.
+
+Em `_mergeData()`, é mesclado somando os valores: `datas.forEach(d=>Object.entries(d.nat_op_sem_cte||{}).forEach(([k,v])=>{m[k]=(m[k]||0)+v}))`.
+
+### State e sort
+- `let natopSort = {col:'total', dir:'desc'}` — global
+- `let _natopRows = []` — array de `{nat, com, sem, total, pct, frete, nf, pctFr}` — populado por `renderNatOp()`
+
+### Funções
+| Função | O que faz |
+|---|---|
+| `renderNatOp()` | Reconstrói `_natopRows`, atualiza KPIs, aviso de filtro, sort headers e tabela |
+| `natopSortBy(col)` | Alterna `natopSort.dir` ou muda `natopSort.col`, re-renderiza |
+| `natopExportXLSX()` | Exporta `_natopRows` para Excel via SheetJS |
+| `natopDrillDown(i)` | Aplica `state.natop=[nat]`, atualiza checkboxes e label do multiselect, troca para aba `operacional`, chama `renderAll()` |
+
+### Aviso de filtro
+`natop_filter_warn` (div `.alert.a-yellow`) fica visível quando `state.ano || state.meses.length || state.empresas.length`. Informa que a coluna Sem Frete é global e não reflete os filtros ativos.
+
+### Cobertura — cores
+- Verde ≥ 80%, Amarelo ≥ 50%, Vermelho < 50%
+
+### Drill-down
+Clicar em qualquer linha aplica o filtro de nat_op e navega para o módulo Operacional. A função `natopDrillDown(i)` usa o índice `i` de `_natopRows` (passado via `onclick`) para evitar problemas de escape de aspas no HTML gerado.
+
 ## Módulo Cobertura de Dados — `nao-vinculados` (index.html)
 
 ### Arquitetura de dados (3 camadas)
@@ -470,3 +504,4 @@ ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
 - **Destinatário em transferências** — `CNPJ_EMPRESA[cnpjRaw]` onde `cnpjRaw = d.part_cnpj.replace(/\D/g,'')` normaliza formatação antes do lookup; empresas do grupo exibidas em laranja com CNPJ formatado abaixo
 - **`input()` no processar_frete.py** — envolvido em `try/except EOFError` para não travar execução automática
 - **Chart.js guard** — `if(typeof Chart!=='undefined')` obrigatório antes de qualquer config de Chart.js; falha de CDN derruba o script inteiro por TDZ em cascata
+- **`nat_op_sem_cte` deve estar em `split_by_empresa`** — campo global calculado sobre todas as empresas; deve ser copiado inteiro (`dados.get("nat_op_sem_cte",{})`) para cada empresa em `split_by_empresa`. Se omitido, o campo não vai ao Firestore e a coluna "Sem Frete" no módulo Nat. Operação fica zerada. O mesmo vale para qualquer novo campo global adicionado ao payload de `processar_frete.py`.
