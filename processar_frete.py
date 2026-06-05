@@ -3749,6 +3749,7 @@ def split_by_empresa(dados):
             "gerado_em": dados.get("gerado_em",""),
             "cnpj_map": dados.get("cnpj_map",{}),
             "por_nat_op": dados.get("por_nat_op",[]),
+            "nat_op_sem_cte": dados.get("nat_op_sem_cte",{}),
             "ctes_nao_vinculados": [c for c in nv_all if not _nv_emp(c) or _nv_emp(c)==emp],
             "ctes_nf_cancelada":   [c for c in nc_all if not c.get("empresa_nf","") or c.get("empresa_nf","")==emp],
             "cancelados_data": [c for c in dados.get("cancelados_data",[]) if not c.get("empresa") or c.get("empresa")==emp],
