@@ -839,7 +839,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>Documentos de Transporte sem NF-e Correspondente<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as entregas com comprovante de frete registrado mas sem uma venda correspondente encontrada. A coluna Motivo indica a causa mais provavel de cada caso — ajuda a identificar o que precisa ser corrigido.</span></span></span>
-      <button onclick="nvExportXLSX()" title="Exportar tabela filtrada para Excel" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:var(--green2);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+      <button onclick="if(window.nvExportXLSX)window.nvExportXLSX()" title="Exportar tabela filtrada para Excel" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:var(--green2);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Conhecimentos de Frete (CTe) cujas Notas Fiscais nao foram localizadas no faturamento.</p>
     <div class="sr">
@@ -3023,6 +3023,7 @@ function initApp(){
   nvRebuildBase();
   window._renderNV=function(){nvRebuildBase();if(window._renderNC)window._renderNC();if(window._renderCancel)window._renderCancel();};
   window._nvShowEspelho=nvShowEspelho;
+  window.nvExportXLSX=nvExportXLSX;
 
   // CTe com NF Cancelada — função reativa (chamada pelo _renderNV e ao init)
   function _renderNC(){
