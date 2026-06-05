@@ -161,7 +161,7 @@ def _parse_faturamento_db():
                 "empresa":         r["empresa"] or CNPJ_MAP.get(chave[6:20], ""),
                 "numero":          r["numero"],
                 "canal":           r["canal"],
-                "nicho":           r.get("nicho") or "",
+                "nicho":           r["nicho"] or "",
                 "data_emissao":    r["data_emissao"],
                 "participante":    r["participante"],
                 "cidade":          r["part_cidade"],
@@ -181,6 +181,68 @@ def _parse_faturamento_db():
     except Exception as e:
         print(f"[FAT-DB] Erro ao ler banco: {e} — usando CSV como fallback")
         return None
+
+def _popular_cnpj_nomes(nfe_map):
+    """Garante que cnpj_nomes em cte.db tenha nomes para todos os CNPJs do faturamento.
+    Consulta BrasilAPI apenas para CNPJs ainda nao resolvidos."""
+    import urllib.request, json as _json, re as _re
+    if not os.path.exists(QUIVE_DB):
+        return
+    conn = sqlite3.connect(QUIVE_DB)
+    cur  = conn.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS cnpj_nomes (
+        cnpj         TEXT PRIMARY KEY,
+        razao_social TEXT,
+        consultado_em TEXT
+    )""")
+    conn.commit()
+    # CNPJs distintos do faturamento (14 digitos)
+    todos = set()
+    for nf in nfe_map.values():
+        c = _re.sub(r'\D','', nf.get('part_cnpj') or '')
+        if len(c) == 14:
+            todos.add(c)
+    existentes = {r[0] for r in cur.execute("SELECT cnpj FROM cnpj_nomes").fetchall()}
+    novos = todos - existentes
+    print(f"   [CNPJ] {len(existentes)} em cache  |  {len(novos)} novos para consultar")
+    ok = 0
+    for cnpj in sorted(novos):
+        nome = ''
+        try:
+            with urllib.request.urlopen(f'https://brasilapi.com.br/api/cnpj/v1/{cnpj}', timeout=8) as r:
+                d = _json.loads(r.read())
+                nome = (d.get('razao_social') or d.get('nome_fantasia') or '').strip()
+        except Exception:
+            pass
+        if not nome:
+            try:
+                with urllib.request.urlopen(f'https://publica.cnpj.ws/cnpj/{cnpj}', timeout=8) as r:
+                    d = _json.loads(r.read())
+                    nome = (d.get('razao_social') or d.get('nome_fantasia') or '').strip()
+            except Exception:
+                pass
+        cur.execute("INSERT OR REPLACE INTO cnpj_nomes VALUES (?,?,?)",
+                    (cnpj, nome or '', datetime.now().strftime('%Y-%m-%d')))
+        if nome:
+            ok += 1
+    conn.commit()
+    conn.close()
+    if novos:
+        print(f"   [CNPJ] {ok}/{len(novos)} nomes resolvidos via API")
+
+
+def _ler_cnpj_nomes():
+    """Retorna dict {cnpj: razao_social} da tabela cnpj_nomes, apenas com nomes preenchidos."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        rows = conn.execute("SELECT cnpj, razao_social FROM cnpj_nomes WHERE razao_social != ''").fetchall()
+        conn.close()
+        return {r[0]: r[1] for r in rows}
+    except Exception:
+        return {}
+
 
 def parse_faturamento(base_dir):
     # Tenta banco primeiro
@@ -3751,6 +3813,7 @@ def split_by_empresa(dados):
             "cnpj_map": dados.get("cnpj_map",{}),
             "por_nat_op": dados.get("por_nat_op",[]),
             "nat_op_sem_cte": dados.get("nat_op_sem_cte",{}),
+            "cnpj_nomes": dados.get("cnpj_nomes",{}),
             "ctes_nao_vinculados": [c for c in nv_all if not _nv_emp(c) or _nv_emp(c)==emp],
             "ctes_nf_cancelada":   [c for c in nc_all if not c.get("empresa_nf","") or c.get("empresa_nf","")==emp],
             "cancelados_data": [c for c in dados.get("cancelados_data",[]) if not c.get("empresa") or c.get("empresa")==emp],
@@ -3851,6 +3914,11 @@ def main():
     nfe_map = parse_faturamento(BASE_DIR)
 
     if nfe_map:
+        _popular_cnpj_nomes(nfe_map)
+    cnpj_nomes = _ler_cnpj_nomes()
+    print(f"   [CNPJ] {len(cnpj_nomes)} nomes carregados para o payload")
+
+    if nfe_map:
         fat_dates = [nf.get("data_emissao","") for nf in nfe_map.values() if nf.get("data_emissao")]
         if fat_dates:
             try:
@@ -3886,6 +3954,7 @@ def main():
     dados["resumo"]["cte_cancelados"] = n_cancel
     dados["cte_cancelados_chaves"]    = [c["cte_chave"] for c in c_lista]
     dados["cancelados_data"]          = c_lista
+    dados["cnpj_nomes"]               = cnpj_nomes
 
     json_str = json.dumps(dados, ensure_ascii=False)
     json_str = json_str.replace('</', '<\\/')

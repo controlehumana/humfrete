@@ -1361,6 +1361,7 @@ function _mergeData(datas) {
     cnpj_map: Object.assign({}, ...datas.map(d=>d.cnpj_map||{})),
     por_nat_op: datas[0]?.por_nat_op || [],
     nat_op_sem_cte: (()=>{const m={};datas.forEach(d=>{Object.entries(d.nat_op_sem_cte||{}).forEach(([k,v])=>{m[k]=(m[k]||0)+v;});});return m;})(),
+    cnpj_nomes: Object.assign({},...datas.map(d=>d.cnpj_nomes||{})),
     detalhes: datas.flatMap(d=>d.detalhes||[]),
     ctes_nao_vinculados: datas.flatMap(d=>d.ctes_nao_vinculados||[]),
     ctes_nf_cancelada: datas.flatMap(d=>d.ctes_nf_cancelada||[]),
@@ -1581,11 +1582,30 @@ function _cliClientCell(cliente,partCnpj){
   return '<span data-cnpj="'+cnpj+'" style="font-family:monospace;font-size:11px;color:var(--text2)">'+fmt+'</span>'
     +'<span style="font-size:9px;color:var(--text3);margin-left:4px">⟳</span>';
 }
+function _applyCnpjToEl(el,nm){
+  const cnpj=el.getAttribute('data-cnpj');
+  const fmt=cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  const td=el.closest('td');if(!td)return;
+  if(nm&&nm!=='?') td.innerHTML='<strong>'+esc(nm)+'</strong><div style="font-size:9px;color:var(--text3);font-family:monospace;margin-top:1px">'+fmt+'</div>';
+  else td.innerHTML='<span style="font-family:monospace;font-size:11px;color:var(--text2)">'+fmt+'</span><span style="font-size:9px;color:var(--text3);margin-left:4px" title="Nao encontrado">—</span>';
+}
 async function _loadCnpjNames(){
-  const cnpjs=[...new Set([...document.querySelectorAll('[data-cnpj]')].map(e=>e.getAttribute('data-cnpj')))].filter(c=>!_cnpjNameCache[c]);
-  if(!cnpjs.length) return;
-  cnpjs.forEach(c=>_cnpjNameCache[c]='?');
-  await Promise.all(cnpjs.map(async cnpj=>{
+  const preloaded=DATA?.cnpj_nomes||{};
+  const els=[...document.querySelectorAll('[data-cnpj]')];
+  if(!els.length) return;
+  // 1. Resolve do mapa pré-carregado (Firestore) e do cache local
+  const toFetch=[];
+  els.forEach(el=>{
+    const cnpj=el.getAttribute('data-cnpj');
+    if(_cnpjNameCache[cnpj]&&_cnpjNameCache[cnpj]!=='?'){_applyCnpjToEl(el,_cnpjNameCache[cnpj]);return;}
+    if(preloaded[cnpj]){_cnpjNameCache[cnpj]=preloaded[cnpj];_applyCnpjToEl(el,preloaded[cnpj]);return;}
+    toFetch.push(cnpj);
+  });
+  if(!toFetch.length){try{localStorage.setItem('_cnpjNC',JSON.stringify(_cnpjNameCache));}catch{} return;}
+  // 2. Apenas os que ainda faltam vão para a API
+  const uniq=[...new Set(toFetch)].filter(c=>!_cnpjNameCache[c]);
+  uniq.forEach(c=>_cnpjNameCache[c]='?');
+  await Promise.all(uniq.map(async cnpj=>{
     try{
       let nm='';
       const r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpj);
@@ -1595,14 +1615,7 @@ async function _loadCnpjNames(){
     }catch{}
   }));
   try{localStorage.setItem('_cnpjNC',JSON.stringify(_cnpjNameCache));}catch{}
-  document.querySelectorAll('[data-cnpj]').forEach(el=>{
-    const cnpj=el.getAttribute('data-cnpj');
-    const nm=_cnpjNameCache[cnpj];
-    const fmt=cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
-    const td=el.closest('td');if(!td)return;
-    if(nm&&nm!=='?') td.innerHTML='<strong>'+esc(nm)+'</strong><div style="font-size:9px;color:var(--text3);font-family:monospace;margin-top:1px">'+fmt+'</div>';
-    else td.innerHTML='<span style="font-family:monospace;font-size:11px;color:var(--text2)">'+fmt+'</span><span style="font-size:9px;color:var(--text3);margin-left:4px" title="Nao encontrado na base publica">—</span>';
-  });
+  document.querySelectorAll('[data-cnpj]').forEach(el=>_applyCnpjToEl(el,_cnpjNameCache[el.getAttribute('data-cnpj')]));
 }
 function fmtDate(s){if(!s||s==='-')return s||'-';s=String(s).trim();if(s.length>=10&&s[4]==='-')return s[8]+s[9]+'/'+s[5]+s[6]+'/'+s[0]+s[1]+s[2]+s[3];return s;}
 function showToast(msg,type='ok',dur=2800){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.className='show toast-'+type;clearTimeout(t._tid);t._tid=setTimeout(()=>{t.className='';},dur);}
