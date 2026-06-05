@@ -294,6 +294,47 @@ def parse_ctes_from_db(db_path):
     cancelados_chaves = {c["cte_chave"] for c in cancelados_lista}
     print(f"   {n_cancel} CTe cancelados")
 
+    # CTe substituto: para cada NF-e do CTe cancelado, verifica se outro CTe ativo a referencia
+    try:
+        cur.execute("""
+            SELECT
+                cn_canc.chave_cte                              AS cte_cancelado,
+                cc_subst.chave                                 AS cte_subst,
+                COALESCE(cc_subst.nome_emitente, '')           AS transp_subst,
+                COALESCE(cc_subst.cnpj_emitente, '')           AS transp_cnpj_subst,
+                COALESCE(cc_subst.data_emissao, '')            AS data_subst,
+                COALESCE(cc_subst.municipio_origem, '')        AS origem_subst,
+                COALESCE(cc_subst.uf_origem, '')               AS uf_orig_subst,
+                COALESCE(cc_subst.municipio_destino, '')       AS destino_subst,
+                COALESCE(cc_subst.uf_destino, '')              AS uf_dest_subst,
+                COALESCE(cc_subst.valor_total_prestacao, 0)   AS valor_subst
+            FROM cte_nf cn_canc
+            JOIN cte_nf cn_subst ON cn_canc.chave_nfe = cn_subst.chave_nfe
+                AND cn_subst.chave_cte != cn_canc.chave_cte
+            JOIN cte_campos cc_subst ON cn_subst.chave_cte = cc_subst.chave
+            WHERE cn_canc.chave_cte IN (SELECT chave_cte FROM cte_cancelamento)
+              AND cc_subst.chave NOT IN (SELECT chave_cte FROM cte_cancelamento)
+        """)
+        subst_map = {}
+        for row in cur.fetchall():
+            chave_canc = row["cte_cancelado"]
+            if chave_canc not in subst_map:
+                subst_map[chave_canc] = {
+                    "cte_chave":      row["cte_subst"],
+                    "transportadora": row["transp_subst"] or "",
+                    "transp_cnpj":    row["transp_cnpj_subst"] or "",
+                    "data_emissao":   row["data_subst"] or "",
+                    "origem":         (row["origem_subst"] or "") + ("/" + row["uf_orig_subst"] if row["uf_orig_subst"] else ""),
+                    "destino":        (row["destino_subst"] or "") + ("/" + row["uf_dest_subst"] if row["uf_dest_subst"] else ""),
+                    "valor_frete":    round(float(row["valor_subst"] or 0), 2),
+                }
+        for item in cancelados_lista:
+            item["cte_substituto"] = subst_map.get(item["cte_chave"])
+    except Exception as e:
+        print(f"   [AVISO] Nao foi possivel buscar CTe substituto: {e}")
+        for item in cancelados_lista:
+            item.setdefault("cte_substituto", None)
+
     # CTes ativos
     cur.execute("""
         SELECT cc.empresa,
