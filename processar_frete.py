@@ -140,7 +140,7 @@ def _parse_faturamento_db():
     if not os.path.exists(QUIVE_DB):
         return None
     try:
-        conn = sqlite3.connect(QUIVE_DB)
+        conn = sqlite3.connect(QUIVE_DB, timeout=30)
         conn.row_factory = sqlite3.Row
         cur  = conn.cursor()
         cur.execute("SELECT name FROM sqlite_master WHERE type='view' AND name='vw_nf_saida'")
@@ -188,7 +188,7 @@ def _popular_cnpj_nomes(nfe_map):
     import urllib.request, json as _json, re as _re
     if not os.path.exists(QUIVE_DB):
         return
-    conn = sqlite3.connect(QUIVE_DB)
+    conn = sqlite3.connect(QUIVE_DB, timeout=30)
     cur  = conn.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS cnpj_nomes (
         cnpj         TEXT PRIMARY KEY,
@@ -236,7 +236,7 @@ def _ler_cnpj_nomes():
     if not os.path.exists(QUIVE_DB):
         return {}
     try:
-        conn = sqlite3.connect(QUIVE_DB)
+        conn = sqlite3.connect(QUIVE_DB, timeout=30)
         rows = conn.execute("SELECT cnpj, razao_social FROM cnpj_nomes WHERE razao_social != ''").fetchall()
         conn.close()
         return {r[0]: r[1] for r in rows}
