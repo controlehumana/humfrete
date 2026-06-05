@@ -1286,6 +1286,11 @@ async function _loadData(empresas) {
 function _mergeData(datas) {
   const totFrete = datas.reduce((s,d)=>s+(d.resumo?.valor_total_frete||0),0);
   const totNfe   = datas.reduce((s,d)=>s+(d.resumo?.nfe_com_cte||0),0);
+  // nfe_fat_por_empresa: mescla os dicts (mesmo dict em todos os docs — usa o primeiro não-vazio)
+  const nfePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_empresa||{}));
+  // nfe_fat_periodo global: soma explícita dos valores por empresa (evita depender do spread)
+  const totNfePeriodo = Object.values(nfePorEmp).reduce((s,v)=>s+v,0)
+    || (datas[0]?.resumo?.nfe_fat_periodo||0);
   return {
     gerado_em: datas[0]?.gerado_em || '',
     cnpj_map: Object.assign({}, ...datas.map(d=>d.cnpj_map||{})),
@@ -1307,6 +1312,8 @@ function _mergeData(datas) {
       media_frete: totNfe ? Math.round(totFrete/totNfe*100)/100 : 0,
       total_cte: datas.reduce((s,d)=>s+(d.resumo?.total_cte||0),0),
       ctes_nao_vinculados_count: datas.reduce((s,d)=>s+(d.resumo?.ctes_nao_vinculados_count||0),0),
+      nfe_fat_periodo: totNfePeriodo,
+      nfe_fat_por_empresa: nfePorEmp,
     }
   };
 }
@@ -1865,12 +1872,14 @@ function renderInsights(agg){
   }
 
   // 6. Vendas com Frete Rastreado
-  const r=DATA?.resumo||{};const _dCob=r.nfe_fat_periodo||r.total_nfe_fat||0;const taxa=_dCob?(r.nfe_com_cte/_dCob*100):0;
-  const txtCob=taxa>=90
-    ?'<span class="ok">'+taxa.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCob||0)+'). Boa cobertura — os números do dashboard representam bem o movimento real do período.'
-    :taxa>=70
-    ?'<span class="hi">'+taxa.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCob||0)+'). A diferença é normal: parte dos clientes retira a mercadoria diretamente no depósito, sem gerar frete.'
-    :'<span class="bad">'+taxa.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCob||0)+'). Cobertura baixa — verifique se os arquivos de frete de todos os períodos foram importados corretamente.';
+  const r=DATA?.resumo||{};
+  const _dCobIns=state.empresa?(r.nfe_fat_por_empresa?.[state.empresa]||r.nfe_fat_periodo||0):(r.nfe_fat_periodo||r.total_nfe_fat||0);
+  const taxaIns=_dCobIns?(agg.qtd/_dCobIns*100):0;
+  const txtCob=taxaIns>=90
+    ?'<span class="ok">'+taxaIns.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCobIns||0)+'). Boa cobertura — os números do dashboard representam bem o movimento real do período.'
+    :taxaIns>=70
+    ?'<span class="hi">'+taxaIns.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCobIns||0)+'). A diferença é normal: parte dos clientes retira a mercadoria diretamente no depósito, sem gerar frete.'
+    :'<span class="bad">'+taxaIns.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCobIns||0)+'). Cobertura baixa — verifique se os arquivos de frete de todos os períodos foram importados corretamente.';
   ins.push({i:'<i class="fa-solid fa-link"></i>',t:'Vendas com Frete Rastreado',b:txtCob});
 
   el.innerHTML=ins.map(i=>'<div class="insight-card"><div class="insight-icon">'+i.i+'</div><div class="insight-title">'+i.t+'</div><div class="insight-body">'+i.b+'</div></div>').join('');
@@ -1904,11 +1913,13 @@ function renderAll(){
   document.getElementById('h_pct_rec_sub').innerHTML=agg.fretePctFat<=5?'<span class="chip chip-green"><i class="fa-solid fa-check"></i> Abaixo do benchmark</span>':agg.fretePctFat<=8?'<span class="chip chip-amber"><i class="fa-solid fa-triangle-exclamation"></i>Atencao &mdash; meta &lt;5%</span>':'<span class="chip chip-red"><i class="fa-solid fa-xmark"></i> Acima do benchmark</span>';
   document.getElementById('h_ticket').textContent=BRL(agg.media);
   document.getElementById('h_ticket_sub').textContent=N(agg.qtd)+' entregas vinculadas';
-  document.getElementById('k_vinc').textContent=N(agg.qtd);
-  document.getElementById('k_vinc_sub').textContent='de '+N(r.nfe_fat_periodo||r.total_nfe_fat||0)+' vendas com entrega';
-  const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent='de '+N(r.nfe_fat_periodo||r.total_nfe_fat||0)+' vendas com entrega';
-  const _denCob=r.nfe_fat_periodo||r.total_nfe_fat||0;
-  const taxa=_denCob?(r.nfe_com_cte/_denCob*100):0;
+  // denominador e numerador de cobertura respeitam filtro de empresa
+  const _denCob=state.empresa?(r.nfe_fat_por_empresa?.[state.empresa]||r.nfe_fat_periodo||0):(r.nfe_fat_periodo||r.total_nfe_fat||0);
+  const _numCob=agg.qtd;
+  document.getElementById('k_vinc').textContent=N(_numCob);
+  document.getElementById('k_vinc_sub').textContent='de '+N(_denCob)+' vendas com entrega';
+  const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent='de '+N(_denCob)+' vendas com entrega';
+  const taxa=_denCob?(_numCob/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
   const _totCteG=r.total_cte||0,_svG=r.ctes_nao_vinculados_count||0;
   const _pctConcG=_totCteG>0?((_totCteG-_svG)/_totCteG*100):0;

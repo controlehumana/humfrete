@@ -824,10 +824,19 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     )
     nfe_excluidas = nfe_fat_periodo_bruto - nfe_fat_periodo
     print(f"   NF-e no periodo CTe ({ano_min_cte}+): {nfe_fat_periodo} de {nfe_fat_periodo_bruto} ({nfe_excluidas} excluidas — nat. op. sem frete)")
+    # Contagem de NF-e do período por empresa (mesma lógica do global)
+    nfe_fat_por_empresa = {}
+    for nf in nfe_map.values():
+        emp = nf.get("empresa") or ""
+        if not emp: continue
+        if (nf.get("data_emissao") or "")[-4:] < ano_min_cte: continue
+        if _nat_sem_frete(nf.get("nat_operacao")): continue
+        nfe_fat_por_empresa[emp] = nfe_fat_por_empresa.get(emp, 0) + 1
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
             "nfe_fat_periodo":nfe_fat_periodo,
+            "nfe_fat_por_empresa":nfe_fat_por_empresa,
             "nfe_sem_cte":len(nfe_sem_cte),"cte_sem_fat":cte_sem_fat,
             "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
