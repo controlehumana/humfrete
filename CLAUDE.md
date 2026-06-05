@@ -295,6 +295,44 @@ Tendência exibida em dois lugares:
 - `_mergeData()` soma corretamente: `total_cte`, `ctes_nao_vinculados_count`, `nfe_com_cte`; `nfe_fat_periodo` não é somado (vem global no spread de datas[0])
 - **CDN Chart.js:** primário cdnjs, fallback jsdelivr via `onerror`
 - **CDN Font Awesome:** primário cdnjs, fallback fontawesome.com via `onerror`
+- **CDN SheetJS (xlsx):** primário cdnjs, fallback jsdelivr via `onerror` — necessário para export Excel
+
+## Exportação para Excel (index.html)
+
+Dois botões com classe CSS `btn-xlsx` (verde, tema-aware via `html.ocean .btn-xlsx`):
+
+| Função | Escopo | Aba |
+|---|---|---|
+| `nvExportXLSX()` | local `initApp()` + `window.nvExportXLSX` | Cobertura de Dados — exporta `nvRows` (filtros locais + globais) |
+| `opExportXLSX()` | global | Operacional — exporta `tableRows` (filtros + ordenação ativos) |
+
+- Guard obrigatório: `if(typeof XLSX==='undefined')` antes de usar SheetJS
+- Funções dentro de `initApp()` **devem** ser expostas via `window.fn = fn` para o `onclick` do HTML alcançar — mesmo padrão de `window._renderNV`, `window._nvShowEspelho`
+- Colunas monetárias recebem `cell.z = '"R$"#,##0.00'` após `json_to_sheet`
+- Arquivo gerado: `<prefixo>_YYYY-MM-DD.xlsx`
+
+## Lookup de Razão Social por CNPJ (index.html)
+
+Usado na aba **Consolidação Frete** para exibir o nome do cliente quando `d.cliente` contém um CNPJ bruto (ERP exporta participante sem nome).
+
+### Globals
+- `_cnpjNameCache` — `{}` carregado de `localStorage('_cnpjNC')` na inicialização; persiste entre sessões
+
+### Funções
+| Função | O que faz |
+|---|---|
+| `_isCNPJ(s)` | Retorna `true` se `s` tem 14 dígitos (remove não-dígitos antes) |
+| `_cliClientCell(cliente, partCnpj)` | Renderiza célula: nome se em cache, senão CNPJ formatado + `⟳` + `data-cnpj` attr |
+| `_loadCnpjNames()` | `Promise.all` paralelo — BrasilAPI primária, CNPJ.ws fallback; atualiza DOM após todas resolverem |
+
+### Fluxo
+1. `renderCliTable()` chama `_cliClientCell(g.cliente, g.ctes[0].part_cnpj)` por linha
+2. CNPJs sem cache recebem `data-cnpj="14digitos"` no HTML
+3. `_loadCnpjNames()` chamada após render — coleta todos `[data-cnpj]`, dispara em paralelo
+4. Ao completar, substitui célula por `<strong>Razão Social</strong>` + CNPJ em cinza abaixo
+5. Salva cache atualizado em `localStorage('_cnpjNC')`
+
+**APIs:** `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` (primária) → `https://publica.cnpj.ws/cnpj/{cnpj}` (fallback). Campo: `razao_social || nome_fantasia`.
 
 ## Etapas do atualizar.py
 
@@ -319,6 +357,7 @@ Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 9. **Insight body** — `.ok`/`.hi`/`.bad` têm override para ocean em CSS (`html.ocean .insight-body .ok` etc.)
 10. **card-tip** — tem `z-index:1000` no hover para ficar acima de células `position:sticky` do heatmap
 11. **Nova aba** — ao criar nova aba: adicionar tab-btn no sidebar, tab panel HTML, entrada em `_TAB_NAMES`, caso no tab switching, entrada em `ALL_TABS_INFO`
+12. **Botões de ação nos cards** — usar classe `btn-xlsx` (definida no CSS global com override `html.ocean`) para garantir legibilidade em ambos os temas; nunca hardcode de cor inline nesses botões
 
 ## Módulo Cobertura de Dados — `nao-vinculados` (index.html)
 
@@ -379,6 +418,7 @@ Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
 - `let _currentUser = null`
 - `let nvAllRows = [], nvBase = [], nvPage = 0, nvRows = []`
 - `let CNPJ_EMPRESA = {}`  ← Firebase v8 pode invocar onAuthStateChanged sincronamente
+- `const _cnpjNameCache = (()=>{try{return JSON.parse(localStorage.getItem('_cnpjNC')||'{}')}catch{return {};}})()` ← cache CNPJ→nome
 
 ## Erros de carregamento (catch no onAuthStateChanged)
 
