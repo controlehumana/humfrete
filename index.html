@@ -437,6 +437,10 @@ html.ocean .hd-filter-item option{background:#FFFFFF;color:#334155}
 html.ocean .hd-adv{background:rgba(0,0,0,.04);border-top-color:var(--bd)}
 html.ocean .cat-pill{color:#64748B}
 html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
+.btn-xlsx{background:rgba(52,211,153,.35);border:1px solid rgba(52,211,153,.65);color:#6EE7B7;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s,color .15s}
+.btn-xlsx:hover{background:rgba(52,211,153,.55);border-color:rgba(52,211,153,.9)}
+html.ocean .btn-xlsx{background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.45);color:#065F46}
+html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,150,105,.7)}
 /* Responsive */
 @media(max-width:900px){
   :root{--sb-w:60px}
@@ -839,7 +843,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>Documentos de Transporte sem NF-e Correspondente<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as entregas com comprovante de frete registrado mas sem uma venda correspondente encontrada. A coluna Motivo indica a causa mais provavel de cada caso — ajuda a identificar o que precisa ser corrigido.</span></span></span>
-      <button onclick="if(window.nvExportXLSX)window.nvExportXLSX()" title="Exportar tabela filtrada para Excel" onmouseover="this.style.background='rgba(52,211,153,.55)';this.style.borderColor='rgba(52,211,153,.9)'" onmouseout="this.style.background='rgba(52,211,153,.35)';this.style.borderColor='rgba(52,211,153,.65)'" style="background:rgba(52,211,153,.35);border:1px solid rgba(52,211,153,.65);color:#6EE7B7;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+      <button onclick="if(window.nvExportXLSX)window.nvExportXLSX()" title="Exportar tabela filtrada para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Conhecimentos de Frete (CTe) cujas Notas Fiscais nao foram localizadas no faturamento.</p>
     <div class="sr">
