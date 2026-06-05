@@ -376,6 +376,7 @@ def parse_ctes_from_db(db_path):
         chave = row["chave"]
         nfe_chaves = nf_map.get(chave, [])
         cte_data = {
+            "empresa":       row["empresa"],
             "cte_chave":     chave,
             "transportadora": row["transportadora"],
             "transp_cnpj":   row["transp_cnpj"],
@@ -832,11 +833,30 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if (nf.get("data_emissao") or "")[-4:] < ano_min_cte: continue
         if _nat_sem_frete(nf.get("nat_operacao")): continue
         nfe_fat_por_empresa[emp] = nfe_fat_por_empresa.get(emp, 0) + 1
+    # CTe Conciliados por empresa: total e não-vinculados
+    _cte_tot_emp = {}
+    for cte in cte_list:
+        emp = cte.get("empresa") or ""
+        if emp: _cte_tot_emp[emp] = _cte_tot_emp.get(emp, 0) + 1
+    def _emp_from_nv(nv):
+        for ch in (nv.get("nfe_refs") or []):
+            e = CNPJ_MAP.get(ch[6:20], "")
+            if e: return e
+        return CNPJ_MAP.get(nv.get("rem_cnpj", "") or "", "")
+    _cte_nv_emp = {}
+    for nv in ctes_nao_vinculados:
+        emp = _emp_from_nv(nv) or ""
+        if emp: _cte_nv_emp[emp] = _cte_nv_emp.get(emp, 0) + 1
+    cte_conc_por_empresa = {
+        emp: {"total": _cte_tot_emp[emp], "nao_vinculados": _cte_nv_emp.get(emp, 0)}
+        for emp in _cte_tot_emp if emp
+    }
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
             "nfe_fat_periodo":nfe_fat_periodo,
             "nfe_fat_por_empresa":nfe_fat_por_empresa,
+            "cte_conc_por_empresa":cte_conc_por_empresa,
             "nfe_sem_cte":len(nfe_sem_cte),"cte_sem_fat":cte_sem_fat,
             "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
@@ -3717,6 +3737,9 @@ def split_by_empresa(dados):
                 "media_frete": round(total_frete/qtd,2) if qtd else 0,
                 "nfe_com_cte": qtd,
                 "total_faturamento": round(sum(d.get("total_nf",0) for d in det),2),
+                # per-empresa para que _mergeData some corretamente (sem duplicar o global)
+                "total_cte": dados.get("resumo",{}).get("cte_conc_por_empresa",{}).get(emp,{}).get("total", 0),
+                "ctes_nao_vinculados_count": dados.get("resumo",{}).get("cte_conc_por_empresa",{}).get(emp,{}).get("nao_vinculados", 0),
             },
         }
     return result

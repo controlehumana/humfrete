@@ -1286,9 +1286,10 @@ async function _loadData(empresas) {
 function _mergeData(datas) {
   const totFrete = datas.reduce((s,d)=>s+(d.resumo?.valor_total_frete||0),0);
   const totNfe   = datas.reduce((s,d)=>s+(d.resumo?.nfe_com_cte||0),0);
-  // nfe_fat_por_empresa: mescla os dicts (mesmo dict em todos os docs — usa o primeiro não-vazio)
+  // nfe_fat_por_empresa e cte_conc_por_empresa: mesmo dict em todos os docs — mescla
   const nfePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_empresa||{}));
-  // nfe_fat_periodo global: soma explícita dos valores por empresa (evita depender do spread)
+  const cteConcPorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_empresa||{}));
+  // nfe_fat_periodo global: soma explícita dos valores por empresa
   const totNfePeriodo = Object.values(nfePorEmp).reduce((s,v)=>s+v,0)
     || (datas[0]?.resumo?.nfe_fat_periodo||0);
   return {
@@ -1314,6 +1315,7 @@ function _mergeData(datas) {
       ctes_nao_vinculados_count: datas.reduce((s,d)=>s+(d.resumo?.ctes_nao_vinculados_count||0),0),
       nfe_fat_periodo: totNfePeriodo,
       nfe_fat_por_empresa: nfePorEmp,
+      cte_conc_por_empresa: cteConcPorEmp,
     }
   };
 }
@@ -1921,7 +1923,9 @@ function renderAll(){
   const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent='de '+N(_denCob)+' vendas com entrega';
   const taxa=_denCob?(_numCob/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
-  const _totCteG=r.total_cte||0,_svG=r.ctes_nao_vinculados_count||0;
+  const _cteConcEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||null):null;
+  const _totCteG=_cteConcEmp?_cteConcEmp.total:(r.total_cte||0);
+  const _svG=_cteConcEmp?_cteConcEmp.nao_vinculados:(r.ctes_nao_vinculados_count||0);
   const _pctConcG=_totCteG>0?((_totCteG-_svG)/_totCteG*100):0;
   const _concEl=document.getElementById('k_cte_conc');
   if(_concEl){_concEl.textContent=_pctConcG.toFixed(1)+'%';_concEl.style.color=_pctConcG>=98?'var(--green)':_pctConcG>=90?'var(--yellow)':'var(--red)';}
