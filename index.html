@@ -1824,6 +1824,13 @@ function renderAlerts(agg){
   if(al.length===0&&agg.qtd>0)al.push({t:'a-green',i:'<i class="fa-solid fa-circle-check"></i>',m:'<strong>Indicadores dentro do esperado.</strong> Nenhum desvio critico identificado.'});
   el.innerHTML=al.map(a=>'<div class="alert '+a.t+'"><span class="alert-icon">'+a.i+'</span><span class="alert-text">'+a.m+'</span></div>').join('');
 }
+function _effDen(){
+  const emp=state.empresa,ano=state.ano,r2=DATA?.resumo||{};
+  if(emp&&ano) return r2.nfe_fat_por_emp_ano?.[emp]?.[ano]||0;
+  if(emp)      return r2.nfe_fat_por_empresa?.[emp]||0;
+  if(ano)      return r2.nfe_fat_por_ano?.[ano]||0;
+  return r2.nfe_fat_periodo||r2.total_nfe_fat||0;
+}
 function renderInsights(agg){
   const el=document.getElementById('insights-grid');if(!el||!agg.qtd) return;
   const ins=[];
@@ -1922,13 +1929,6 @@ function renderAll(){
   document.getElementById('h_ticket').textContent=BRL(agg.media);
   document.getElementById('h_ticket_sub').textContent=N(agg.qtd)+' entregas vinculadas';
   // denominador: cobre todos os filtros (empresa, ano, empresa+ano)
-  function _effDen(){
-    const emp=state.empresa,ano=state.ano,r2=DATA.resumo||{};
-    if(emp&&ano) return r2.nfe_fat_por_emp_ano?.[emp]?.[ano]||0;
-    if(emp)      return r2.nfe_fat_por_empresa?.[emp]||0;
-    if(ano)      return r2.nfe_fat_por_ano?.[ano]||0;
-    return r2.nfe_fat_periodo||r2.total_nfe_fat||0;
-  }
   const _denCob=_effDen();
   const _numCob=agg.qtd;
   const _periodoLabel=state.empresa&&state.ano?(' em '+state.ano+' — '+state.empresa):state.empresa?' — '+state.empresa:state.ano?' em '+state.ano:'';
