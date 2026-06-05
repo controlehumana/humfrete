@@ -64,8 +64,9 @@ ClaudeCode/
 | `cte_campos` | Dados dos CTe (58k+ registros) |
 | `cte_nf` | Mapeamento CTe → NF-e referenciadas (chave_cte, chave_nfe) |
 | `cte_cancelamento` | CTe cancelados (chave_cte, chave_canc, data_cancelamento, justificativa) |
-| `nf_saida_items` | Faturamento de saída — 1 linha por item, acumulativo |
+| `nf_saida_items` | Faturamento de saída — 1 linha por item, acumulativo. Colunas: `canal` (L), `nicho` (J) |
 | `nf_entrada` | NF de entrada (compras) — 1 linha por NF |
+| `cnpj_nomes` | Cache CNPJ→Razão Social consultado via API. Chave: 14 dígitos sem formatação |
 
 ### Views principais
 | View | O que agrega |
@@ -312,28 +313,49 @@ Dois botões com classe CSS `btn-xlsx` (verde, tema-aware via `html.ocean .btn-x
 - Colunas monetárias recebem `cell.z = '"R$"#,##0.00'` após `json_to_sheet`
 - Arquivo gerado: `<prefixo>_YYYY-MM-DD.xlsx`
 
-## Lookup de Razão Social por CNPJ (index.html)
+## Lookup de Razão Social por CNPJ
 
-Usado na aba **Consolidação Frete** para exibir o nome do cliente quando `d.cliente` contém um CNPJ bruto (ERP exporta participante sem nome).
+### Arquitetura (3 camadas, da mais rápida para a mais lenta)
+1. **`_cnpjNameCache`** — dict em `localStorage('_cnpjNC')`: persiste entre sessões, carregado na inicialização
+2. **`DATA.cnpj_nomes`** — dict `{cnpj: razao_social}` pré-carregado do Firestore: populado pelo `processar_frete.py` a cada execução
+3. **API pública** — consultada apenas para CNPJs ausentes nas duas camadas acima
 
-### Globals
-- `_cnpjNameCache` — `{}` carregado de `localStorage('_cnpjNC')` na inicialização; persiste entre sessões
+`_loadCnpjNames()` resolve na ordem 1 → 2 → 3. A API só é chamada para CNPJs genuinamente novos. Isso elimina a lentidão anterior onde todos os CNPJs iam para a API a cada render.
 
-### Funções
+### Tabela SQLite `cnpj_nomes` (cte.db)
+```sql
+CREATE TABLE cnpj_nomes (
+    cnpj          TEXT PRIMARY KEY,  -- 14 dígitos sem formatação
+    razao_social  TEXT,
+    consultado_em TEXT               -- YYYY-MM-DD
+)
+```
+Criada automaticamente em `_popular_cnpj_nomes()`. CNPJs sem resultado da API ficam com `razao_social = ''` para não re-consultar.
+
+### Funções Python (processar_frete.py)
+| Função | O que faz |
+|---|---|
+| `_popular_cnpj_nomes(nfe_map)` | Cria tabela, coleta CNPJs distintos do `nfe_map`, consulta API só para os novos, salva resultados |
+| `_ler_cnpj_nomes()` | Lê `cnpj_nomes` e retorna `{cnpj: razao_social}` (só com nome preenchido) |
+
+Chamadas em `main()` logo após `parse_faturamento()`. O dict vai para `dados["cnpj_nomes"]` → `split_by_empresa` → Firestore.
+
+### Funções JS (index.html)
 | Função | O que faz |
 |---|---|
 | `_isCNPJ(s)` | Retorna `true` se `s` tem 14 dígitos (remove não-dígitos antes) |
 | `_cliClientCell(cliente, partCnpj)` | Renderiza célula: nome se em cache, senão CNPJ formatado + `⟳` + `data-cnpj` attr |
-| `_loadCnpjNames()` | `Promise.all` paralelo — BrasilAPI primária, CNPJ.ws fallback; atualiza DOM após todas resolverem |
+| `_applyCnpjToEl(el, nm)` | Aplica nome (ou "—" se vazio) à célula `td` mais próxima do elemento `[data-cnpj]` |
+| `_loadCnpjNames()` | Resolve camada 1→2→3; API só para os restantes; salva cache; atualiza DOM |
 
-### Fluxo
-1. `renderCliTable()` chama `_cliClientCell(g.cliente, g.ctes[0].part_cnpj)` por linha
-2. CNPJs sem cache recebem `data-cnpj="14digitos"` no HTML
-3. `_loadCnpjNames()` chamada após render — coleta todos `[data-cnpj]`, dispara em paralelo
-4. Ao completar, substitui célula por `<strong>Razão Social</strong>` + CNPJ em cinza abaixo
-5. Salva cache atualizado em `localStorage('_cnpjNC')`
+### Fluxo JS
+1. `renderCliTable()` chama `_cliClientCell()` por linha — renderiza CNPJ formatado com `data-cnpj`
+2. `_loadCnpjNames()` chamada após render
+3. Resolve imediatamente do `_cnpjNameCache` (localStorage) ou `DATA.cnpj_nomes` (Firestore)
+4. Apenas CNPJs ausentes em ambos vão para BrasilAPI → fallback CNPJ.ws
+5. DOM atualizado via `_applyCnpjToEl()`; cache salvo em localStorage
 
-**APIs:** `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` (primária) → `https://publica.cnpj.ws/cnpj/{cnpj}` (fallback). Campo: `razao_social || nome_fantasia`.
+**APIs:** `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` → `https://publica.cnpj.ws/cnpj/{cnpj}`. Campo: `razao_social || nome_fantasia`.
 
 ## Etapas do atualizar.py
 
@@ -390,8 +412,27 @@ Em `_mergeData()`, é mesclado somando os valores: `datas.forEach(d=>Object.entr
 ### Cobertura — cores
 - Verde ≥ 80%, Amarelo ≥ 50%, Vermelho < 50%
 
+### Toggle de visão
+Três botões no topo do módulo: **Nat. Operação | Canal | Nicho**. Controlado por `natopView` (`'natop'|'canal'|'nicho'`) e `natopSetView(v)`. Config centralizada em `_NATOP_VIEW_CFG`:
+```javascript
+{field, label, kpiLbl, title, hasSem}
+```
+- `hasSem:true` apenas para `natop` (colunas Sem Frete / Total / Cobertura são ocultadas para Canal e Nicho)
+- `field` é o campo de `d` usado para agrupar: `nat_operacao`, `canal`, `nicho`
+
+### Campo `nicho` no pipeline
+- Coluna J do CSV de faturamento, header `"Nicho"`
+- Adicionada em `importar_faturamento.py` (COLS, idx, CREATE TABLE, INSERT, vw_nf_saida)
+- `nf_saida_items` — `ALTER TABLE ADD COLUMN nicho TEXT` (executar uma vez em bancos existentes)
+- `vw_nf_saida` — `MAX(nicho) AS nicho`
+- `processar_frete.py` — `nfe_map[chave]["nicho"]` e `detalhes.append({"nicho":...})`
+- **Atenção:** usar `r["nicho"]` (não `r.get("nicho")`) — `sqlite3.Row` não tem método `.get()`
+
 ### Drill-down
-Clicar em qualquer linha aplica o filtro de nat_op e navega para o módulo Operacional. A função `natopDrillDown(i)` usa o índice `i` de `_natopRows` (passado via `onclick`) para evitar problemas de escape de aspas no HTML gerado.
+`natopDrillDown(i)` usa índice de `_natopRows` (evita escape de aspas no onclick gerado). Comportamento por visão:
+- `natop` → aplica `state.natop=[nat]`, atualiza checkboxes e label do multiselect
+- `canal` → aplica `state.canal=val`, atualiza `#filter_canal`
+- `nicho` → navega para Operacional mas sem filtro (nicho não tem filtro global ainda)
 
 ## Módulo Cobertura de Dados — `nao-vinculados` (index.html)
 
@@ -504,4 +545,5 @@ ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
 - **Destinatário em transferências** — `CNPJ_EMPRESA[cnpjRaw]` onde `cnpjRaw = d.part_cnpj.replace(/\D/g,'')` normaliza formatação antes do lookup; empresas do grupo exibidas em laranja com CNPJ formatado abaixo
 - **`input()` no processar_frete.py** — envolvido em `try/except EOFError` para não travar execução automática
 - **Chart.js guard** — `if(typeof Chart!=='undefined')` obrigatório antes de qualquer config de Chart.js; falha de CDN derruba o script inteiro por TDZ em cascata
-- **`nat_op_sem_cte` deve estar em `split_by_empresa`** — campo global calculado sobre todas as empresas; deve ser copiado inteiro (`dados.get("nat_op_sem_cte",{})`) para cada empresa em `split_by_empresa`. Se omitido, o campo não vai ao Firestore e a coluna "Sem Frete" no módulo Nat. Operação fica zerada. O mesmo vale para qualquer novo campo global adicionado ao payload de `processar_frete.py`.
+- **`nat_op_sem_cte` e `cnpj_nomes` devem estar em `split_by_empresa`** — campos globais copiados inteiros para cada documento de empresa. Se omitidos, chegam como `{}` no frontend. Regra geral: qualquer campo global novo no payload de `processar_frete.py` precisa ser adicionado explicitamente em `split_by_empresa`.
+- **`sqlite3.Row` não tem `.get()`** — ao ler campos de `vw_nf_saida` ou qualquer query SQLite com `row_factory = sqlite3.Row`, usar sempre `r["campo"]` (KeyError se ausente) ou `dict(r).get("campo","")` para acesso seguro. Nunca `r.get("campo")` — isso causa `AttributeError` silenciado pelo fallback de CSV, zerando todo o faturamento e gerando payload de 11MB no Firestore.
