@@ -1530,14 +1530,11 @@ function _cliClientCell(cliente,partCnpj){
   return '<span data-cnpj="'+cnpj+'" style="font-family:monospace;font-size:11px;color:var(--text2)">'+fmt+'</span>'
     +'<span style="font-size:9px;color:var(--text3);margin-left:4px">⟳</span>';
 }
-let _cnpjFetchRunning=false;
 async function _loadCnpjNames(){
-  if(_cnpjFetchRunning) return;
   const cnpjs=[...new Set([...document.querySelectorAll('[data-cnpj]')].map(e=>e.getAttribute('data-cnpj')))].filter(c=>!_cnpjNameCache[c]);
   if(!cnpjs.length) return;
-  _cnpjFetchRunning=true;
-  for(const cnpj of cnpjs){
-    _cnpjNameCache[cnpj]='?';
+  cnpjs.forEach(c=>_cnpjNameCache[c]='?');
+  await Promise.all(cnpjs.map(async cnpj=>{
     try{
       let nm='';
       const r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpj);
@@ -1545,9 +1542,7 @@ async function _loadCnpjNames(){
       if(!nm){const r2=await fetch('https://publica.cnpj.ws/cnpj/'+cnpj);if(r2.ok){const j2=await r2.json();nm=(j2.razao_social||j2.nome_fantasia||'').trim();}}
       if(nm)_cnpjNameCache[cnpj]=nm;
     }catch{}
-    await new Promise(res=>setTimeout(res,350));
-  }
-  _cnpjFetchRunning=false;
+  }));
   try{localStorage.setItem('_cnpjNC',JSON.stringify(_cnpjNameCache));}catch{}
   document.querySelectorAll('[data-cnpj]').forEach(el=>{
     const cnpj=el.getAttribute('data-cnpj');
