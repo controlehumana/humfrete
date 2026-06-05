@@ -550,8 +550,10 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     # Marketplace detectado pelo nome da transportadora OU pelo canal de venda
     SHOPEE_TR  = {"SHPS TECNOLOGIA E SERVIÇO LTDA","SHPS TECNOLOGIA E SERVICO LTDA","SHOPEE"}
     ML_TR      = {"EBAZARCOMBR LTDA","MERCADO LIVRE"}
+    TIKTOK_TR  = {"TIKTOK LOGISTICS BRAZIL LTDA"}
     SHOPEE_CH  = {"SHOPPE","SHOPEE"}
     ML_CH      = {"MERCADO LIVRE"}
+    TIKTOK_CH  = {"TIKTOSHOP","TIKTOKSHOP","TIKTOK SHOP"}
     def _marketplace_type(tr, canal):
         tr_up = (tr or "").upper().strip()
         ch_up = (canal or "").upper().strip()
@@ -559,6 +561,8 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             return "shopee"
         if any(s in tr_up for s in ["EBAZAR","MERCADO LIVRE"]) or ch_up in ML_CH:
             return "ml"
+        if "TIKTOK" in tr_up or ch_up in TIKTOK_CH:
+            return "tiktok"
         return None
     def _is_marketplace(tr, canal):
         return _marketplace_type(tr, canal) is not None
@@ -683,6 +687,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         t=(tr or "").upper()
         if any(s in t for s in ["SHPS","SHOPEE"]): return "shopee"
         if any(s in t for s in ["EBAZAR","MERCADO LIVRE"]): return "ml"
+        if "TIKTOK" in t: return "tiktok"
         return None
     compras=[]; devolucoes_mkt=[]
     # Compras via NF de Entrada (fonte primária — mais completa)

@@ -437,6 +437,9 @@ html.ocean .hd-filter-item option{background:#FFFFFF;color:#334155}
 html.ocean .hd-adv{background:rgba(0,0,0,.04);border-top-color:var(--bd)}
 html.ocean .cat-pill{color:#64748B}
 html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
+html.ocean .dm-lbl-ml{color:#854D0E!important}
+html.ocean .dm-lbl-shopee{color:#9A3412!important}
+html.ocean .dm-lbl-tiktok{color:#9D174D!important}
 .btn-xlsx{background:rgba(52,211,153,.35);border:1px solid rgba(52,211,153,.65);color:#6EE7B7;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s,color .15s}
 .btn-xlsx:hover{background:rgba(52,211,153,.55);border-color:rgba(52,211,153,.9)}
 html.ocean .btn-xlsx{background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.45);color:#065F46}
@@ -1001,25 +1004,32 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <!-- TAB DEVOLUCAO MARKETPLACE -->
 <div id="tab-dev-mkt" class="tab-panel">
   <div class="sdiv">Devolucao Marketplace</div>
-  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FFE600;margin-bottom:6px;padding-left:2px">MERCADO LIVRE</div>
+  <div class="dm-lbl-ml" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FFE600;margin-bottom:6px;padding-left:2px">MERCADO LIVRE</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de devolucoes de clientes recebidas via Mercado Livre no periodo. Cada item e uma mercadoria que retornou ao estoque e gerou um custo de frete reverso.</div><div class="kpi-val" id="dm_ml_qtd">-</div><div class="kpi-lbl">CTe Devolucoes ML</div><div class="kpi-sub">documentos processados</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Total pago pelo transporte reverso das devolucoes do Mercado Livre. Este custo nao esta incluido no frete de vendas da aba Marketplace — e um custo adicional gerado pelo retorno de mercadorias.</div><div class="kpi-val" id="dm_ml_frete">-</div><div class="kpi-lbl">Frete Total ML</div><div class="kpi-sub">logistica do Mercado Livre</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via Mercado Livre, em quilogramas. Ajuda a dimensionar o volume fisico do fluxo reverso e negociar tarifas de devolucao com o canal.</div><div class="kpi-val" id="dm_ml_peso">-</div><div class="kpi-lbl">Peso Total ML</div><div class="kpi-sub">kg devolvidos</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via Mercado Livre. Comparar com o frete medio de venda mostra o impacto financeiro de cada produto retornado — o custo de devolucao pode superar o lucro da venda original.</div><div class="kpi-val" id="dm_ml_medio">-</div><div class="kpi-lbl">Frete Medio ML</div><div class="kpi-sub">por CTe</div></div>
   </div>
-  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FF6900;margin-bottom:6px;padding-left:2px">SHOPEE</div>
+  <div class="dm-lbl-shopee" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FF6900;margin-bottom:6px;padding-left:2px">SHOPEE</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de devolucoes de clientes recebidas via Shopee no periodo. Cada item e uma mercadoria que retornou ao estoque e gerou um custo de frete reverso pela logistica da Shopee.</div><div class="kpi-val" id="dm_sh_qtd">-</div><div class="kpi-lbl">CTe Devolucoes Shopee</div><div class="kpi-sub">documentos processados</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Total pago pelo transporte reverso das devolucoes da Shopee. Custo separado do frete de vendas, representa o impacto financeiro dos retornos deste canal.</div><div class="kpi-val" id="dm_sh_frete">-</div><div class="kpi-lbl">Frete Total Shopee</div><div class="kpi-sub">logistica da Shopee</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via Shopee, em quilogramas. Ajuda a entender o volume fisico do fluxo reverso deste canal e identificar se ha padrao nos produtos mais devolvidos.</div><div class="kpi-val" id="dm_sh_peso">-</div><div class="kpi-lbl">Peso Total Shopee</div><div class="kpi-sub">kg devolvidos</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via Shopee. Se for proximo ou superior ao valor medio do produto vendido, a devolucao pode estar gerando prejuizo liquido alem da perda de venda.</div><div class="kpi-val" id="dm_sh_medio">-</div><div class="kpi-lbl">Frete Medio Shopee</div><div class="kpi-sub">por CTe</div></div>
   </div>
+  <div class="dm-lbl-tiktok" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#FF0050;margin-bottom:6px;padding-left:2px">TIKTOK SHOP</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de devolucoes de clientes recebidas via TikTok Shop no periodo. Cada item e uma mercadoria que retornou ao estoque e gerou um custo de frete reverso pela logistica da plataforma.</div><div class="kpi-val" id="dm_tk_qtd">-</div><div class="kpi-lbl">CTe Devolucoes TikTok</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total pago pelo transporte reverso das devolucoes do TikTok Shop. Custo separado do frete de vendas, representa o impacto financeiro dos retornos deste canal.</div><div class="kpi-val" id="dm_tk_frete">-</div><div class="kpi-lbl">Frete Total TikTok</div><div class="kpi-sub">logistica do TikTok Shop</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via TikTok Shop, em quilogramas. Ajuda a dimensionar o volume fisico do fluxo reverso deste canal.</div><div class="kpi-val" id="dm_tk_peso">-</div><div class="kpi-lbl">Peso Total TikTok</div><div class="kpi-sub">kg devolvidos</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via TikTok Shop. Comparar com o frete medio de venda mostra o impacto financeiro de cada produto retornado.</div><div class="kpi-val" id="dm_tk_medio">-</div><div class="kpi-lbl">Frete Medio TikTok</div><div class="kpi-sub">por CTe</div></div>
+  </div>
   <div class="card">
-    <div class="card-title">Detalhamento por CTe de Devolucao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada devolucao de cliente recebida via Shopee ou Mercado Livre com o custo de frete reverso. Use o filtro de plataforma para analisar cada canal separadamente.</span></span></div>
+    <div class="card-title">Detalhamento por CTe de Devolucao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada devolucao de cliente recebida via Shopee, Mercado Livre ou TikTok Shop com o custo de frete reverso. Use o filtro de plataforma para analisar cada canal separadamente.</span></span></div>
     <div class="sr">
       <input type="text" id="dm_search" placeholder="Buscar remetente, origem, empresa, NF-e...">
-      <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option></select>
+      <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option><option value="tiktok">TikTok Shop</option></select>
       <select id="dm_sel_emp"><option value="">Todas as empresas</option></select>
     </div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto;margin-top:10px">
@@ -1558,10 +1568,10 @@ function showToast(msg,type='ok',dur=2800){const t=document.getElementById('toas
 const BRL  = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const N    = (v,d=0) => v.toLocaleString('pt-BR',{maximumFractionDigits:d});
 const MESES= ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const TR_ALIAS={'SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','EBAZARCOMBR LTDA':'MERCADO LIVRE'};
-const MARKETPLACE_TR=new Set(['SHPS TECNOLOGIA E SERVICO LTDA','SHPS TECNOLOGIA E SERVICO LTDA','EBAZARCOMBR LTDA']);
+const TR_ALIAS={'SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','SHPS TECNOLOGIA E SERVIÇO LTDA':'SHOPEE','EBAZARCOMBR LTDA':'MERCADO LIVRE','TIKTOK LOGISTICS BRAZIL LTDA':'TIKTOK SHOP'};
+const MARKETPLACE_TR=new Set(['SHPS TECNOLOGIA E SERVICO LTDA','SHPS TECNOLOGIA E SERVIÇO LTDA','EBAZARCOMBR LTDA','TIKTOK LOGISTICS BRAZIL LTDA']);
 function trName(raw){if(!raw||raw==='-') return raw||'-';const clean=raw.replace(/^.*? - /,'').trim();return TR_ALIAS[clean.toUpperCase()]||clean;}
-function isMarketplace(tr){if(!tr) return false;const clean=tr.replace(/^.*? - /,'').trim().toUpperCase();if(MARKETPLACE_TR.has(clean)) return true;if(clean.includes('SHPS TECNOLOGIA')) return true;if(clean.includes('EBAZARCOMBR')) return true;return false;}
+function isMarketplace(tr){if(!tr) return false;const clean=tr.replace(/^.*? - /,'').trim().toUpperCase();if(MARKETPLACE_TR.has(clean)) return true;if(clean.includes('SHPS TECNOLOGIA')) return true;if(clean.includes('EBAZARCOMBR')) return true;if(clean.includes('TIKTOK LOGISTICS')) return true;return false;}
 // Agrupamento por grupo econômico (base 8 dígitos do CNPJ)
 function trKey(d){if(!d) return '?';if(!groupByEconGroup||!d.transp_cnpj) return d.transportadora||'?';const b=d.transp_cnpj.slice(0,8);return b||d.transportadora||'?';}
 function trDisp(key){if(!key||key==='?') return '-';if(!groupByEconGroup) return trName(key);return trName(trGroupMap[key]||key);}
@@ -3280,6 +3290,7 @@ function initApp(){
     });
     const ml=allBase.filter(d=>d.mkt_type==='ml');
     const sh=allBase.filter(d=>d.mkt_type==='shopee');
+    const tk=allBase.filter(d=>d.mkt_type==='tiktok');
     const kpi=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
     kpi('dm_ml_qtd',N(ml.length));
     kpi('dm_ml_frete',BRL(ml.reduce((s,d)=>s+d.valor_frete,0)));
@@ -3289,11 +3300,18 @@ function initApp(){
     kpi('dm_sh_frete',BRL(sh.reduce((s,d)=>s+d.valor_frete,0)));
     kpi('dm_sh_peso',N(Math.round(sh.reduce((s,d)=>s+d.peso_kg,0)))+' kg');
     kpi('dm_sh_medio',sh.length?BRL(sh.reduce((s,d)=>s+d.valor_frete,0)/sh.length):'R$ 0');
+    kpi('dm_tk_qtd',N(tk.length));
+    kpi('dm_tk_frete',BRL(tk.reduce((s,d)=>s+d.valor_frete,0)));
+    kpi('dm_tk_peso',N(Math.round(tk.reduce((s,d)=>s+d.peso_kg,0)))+' kg');
+    kpi('dm_tk_medio',tk.length?BRL(tk.reduce((s,d)=>s+d.valor_frete,0)/tk.length):'R$ 0');
     const slice=base.slice(dmPage*PAGE,(dmPage+1)*PAGE);
     const isOc=document.documentElement.classList.contains('ocean');
-    const platChip=t=>t==='ml'
-      ?'<span class="chip" style="background:'+(isOc?'#FEF9C3':'#FFE60022')+';color:'+(isOc?'#854D0E':'#FFE600')+';border:1px solid '+(isOc?'#FDE047':'transparent')+';font-size:9px;font-weight:700">ML</span>'
-      :'<span class="chip" style="background:'+(isOc?'#FFEDD5':'#FF690022')+';color:'+(isOc?'#9A3412':'#FF6900')+';border:1px solid '+(isOc?'#FDBA74':'transparent')+';font-size:9px;font-weight:700">Shopee</span>';
+    const platChip=t=>{
+      if(t==='ml') return '<span class="chip" style="background:'+(isOc?'#FEF9C3':'#FFE60022')+';color:'+(isOc?'#854D0E':'#FFE600')+';border:1px solid '+(isOc?'#FDE047':'transparent')+';font-size:9px;font-weight:700">ML</span>';
+      if(t==='shopee') return '<span class="chip" style="background:'+(isOc?'#FFEDD5':'#FF690022')+';color:'+(isOc?'#9A3412':'#FF6900')+';border:1px solid '+(isOc?'#FDBA74':'transparent')+';font-size:9px;font-weight:700">Shopee</span>';
+      if(t==='tiktok') return '<span class="chip" style="background:'+(isOc?'#FFE4EC':'rgba(255,0,80,.18)')+';color:'+(isOc?'#9D174D':'#FF0050')+';border:1px solid '+(isOc?'#FECDD3':'transparent')+';font-size:9px;font-weight:700">TikTok</span>';
+      return '<span class="chip chip-gray" style="font-size:9px;font-weight:700">'+esc(t||'?')+'</span>';
+    };
     document.getElementById('dm_tbody').innerHTML=slice.map(d=>{
       const orig=esc((d.origem_cidade||'?')+(d.origem_uf?'/'+d.origem_uf:''));
       const dest=esc((d.destino_cidade||'?')+(d.destino_uf?'/'+d.destino_uf:''));
