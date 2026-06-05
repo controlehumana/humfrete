@@ -265,7 +265,8 @@ def parse_ctes_from_db(db_path):
     cancelados_lista = []
     try:
         cur.execute("""
-            SELECT cc.chave,
+            SELECT cc.empresa,
+                   cc.chave,
                    COALESCE(cc.valor_total_prestacao, 0)  AS valor,
                    COALESCE(cc.nome_emitente, '')          AS transp,
                    COALESCE(ccan.data_cancelamento, '')    AS data_cancelamento,
@@ -274,12 +275,13 @@ def parse_ctes_from_db(db_path):
             FROM cte_campos cc
             JOIN cte_cancelamento ccan ON cc.chave = ccan.chave_cte
             LEFT JOIN cte_nf cn ON cc.chave = cn.chave_cte
-            GROUP BY cc.chave, ccan.data_cancelamento, ccan.justificativa
+            GROUP BY cc.empresa, cc.chave, ccan.data_cancelamento, ccan.justificativa
         """)
         for row in cur.fetchall():
             nfe_raw = row["nfe_refs_raw"] or ""
             nfe_refs = [n for n in nfe_raw.split("||") if n] if nfe_raw else []
             cancelados_lista.append({
+                "empresa":            row["empresa"] or "",
                 "cte_chave":          row["chave"],
                 "valor_frete":        round(float(row["valor"] or 0), 2),
                 "transportadora":     row["transp"] or "",
@@ -781,8 +783,15 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         mes=data[3:5] if len(data)>=5 else ""; ano=data[6:10] if len(data)>=10 else ""
         key=f"{nf.get('empresa','') or 'N/A'}||{ano}||{mes}"
         transf_fat[key]=transf_fat.get(key,0)+1
-    # NF-e de transferência do faturamento sem CTe vinculado
+    # NF-e sem CTe por empresa
     linked_nfe_chaves=set(d["chave_nfe"] for d in detalhes)
+    nfe_sem_cte_por_empresa = {}
+    for chave, nf in nfe_map.items():
+        if chave in linked_nfe_chaves: continue
+        emp = nf.get("empresa") or ""
+        if emp:
+            nfe_sem_cte_por_empresa[emp] = nfe_sem_cte_por_empresa.get(emp, 0) + 1
+    # NF-e de transferência do faturamento sem CTe vinculado
     transf_sem_cte_list=[]
     for chave,nf in nfe_map.items():
         if chave in linked_nfe_chaves: continue
@@ -857,7 +866,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "nfe_fat_periodo":nfe_fat_periodo,
             "nfe_fat_por_empresa":nfe_fat_por_empresa,
             "cte_conc_por_empresa":cte_conc_por_empresa,
-            "nfe_sem_cte":len(nfe_sem_cte),"cte_sem_fat":cte_sem_fat,
+            "nfe_sem_cte":len(nfe_sem_cte),"nfe_sem_cte_por_empresa":nfe_sem_cte_por_empresa,"cte_sem_fat":cte_sem_fat,
             "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
             "total_faturamento":total_faturamento},
@@ -3724,8 +3733,8 @@ def split_by_empresa(dados):
             "por_nat_op": dados.get("por_nat_op",[]),
             "ctes_nao_vinculados": [c for c in nv_all if not _nv_emp(c) or _nv_emp(c)==emp],
             "ctes_nf_cancelada":   [c for c in nc_all if not c.get("empresa_nf","") or c.get("empresa_nf","")==emp],
-            "cancelados_data": dados.get("cancelados_data",[]),
-            "cte_cancelados_chaves": dados.get("cte_cancelados_chaves",[]),
+            "cancelados_data": [c for c in dados.get("cancelados_data",[]) if not c.get("empresa") or c.get("empresa")==emp],
+            "cte_cancelados_chaves": [c["cte_chave"] for c in dados.get("cancelados_data",[]) if not c.get("empresa") or c.get("empresa")==emp],
             "detalhes": det,
             "compras": [d for d in dados.get("compras",[]) if d.get("empresa_dest")==emp],
             "devolucoes_mkt": [d for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest")==emp],

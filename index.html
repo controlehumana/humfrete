@@ -1286,9 +1286,10 @@ async function _loadData(empresas) {
 function _mergeData(datas) {
   const totFrete = datas.reduce((s,d)=>s+(d.resumo?.valor_total_frete||0),0);
   const totNfe   = datas.reduce((s,d)=>s+(d.resumo?.nfe_com_cte||0),0);
-  // nfe_fat_por_empresa e cte_conc_por_empresa: mesmo dict em todos os docs — mescla
+  // dicts por empresa: mesmo em todos os docs — mescla
   const nfePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_empresa||{}));
   const cteConcPorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_empresa||{}));
+  const nfeSemCtePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_sem_cte_por_empresa||{}));
   // nfe_fat_periodo global: soma explícita dos valores por empresa
   const totNfePeriodo = Object.values(nfePorEmp).reduce((s,v)=>s+v,0)
     || (datas[0]?.resumo?.nfe_fat_periodo||0);
@@ -1316,6 +1317,7 @@ function _mergeData(datas) {
       nfe_fat_periodo: totNfePeriodo,
       nfe_fat_por_empresa: nfePorEmp,
       cte_conc_por_empresa: cteConcPorEmp,
+      nfe_sem_cte_por_empresa: nfeSemCtePorEmp,
     }
   };
 }
@@ -1923,7 +1925,7 @@ function renderAll(){
   const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent='de '+N(_denCob)+' vendas com entrega';
   const taxa=_denCob?(_numCob/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
-  const _cteConcEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||null):null;
+  const _cteConcEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||{total:0,nao_vinculados:0}):null;
   const _totCteG=_cteConcEmp?_cteConcEmp.total:(r.total_cte||0);
   const _svG=_cteConcEmp?_cteConcEmp.nao_vinculados:(r.ctes_nao_vinculados_count||0);
   const _pctConcG=_totCteG>0?((_totCteG-_svG)/_totCteG*100):0;
@@ -2002,8 +2004,9 @@ function renderAll(){
     const bestSubEl=document.getElementById('k_best_rkg_sub');if(bestSubEl) bestSubEl.textContent=bestRkg?'R$ '+bestRkg.rkg.toFixed(2)+'/kg':'';
     if(rkgList.length) mkBarRkg('ch_rkg',rkgList.map(v=>trName(v.tr)),rkgList.map(v=>+v.rkg.toFixed(2)));
   })();
-  const wShow=r.nfe_sem_cte>0&&!state.ano&&!state.meses.length&&!state.empresas.length&&!state.linha;
-  document.getElementById('warn_box').style.display=wShow?'':'none';document.getElementById('warn_sem').textContent=N(r.nfe_sem_cte);
+  const _nfeSemCteVal=state.empresa?(r.nfe_sem_cte_por_empresa?.[state.empresa]||0):(r.nfe_sem_cte||0);
+  const wShow=_nfeSemCteVal>0&&!state.ano&&!state.meses.length&&!state.empresa&&!state.empresas.length&&!state.linha;
+  document.getElementById('warn_box').style.display=wShow?'':'none';document.getElementById('warn_sem').textContent=N(_nfeSemCteVal);
   document.getElementById('natop_tbody').innerHTML=agg.byNat.map((n,i)=>{const saldo=n.diferenca||0;const sC=saldo>0?'color:var(--green)':saldo<0?'color:var(--red)':'color:var(--text3)';const pct=agg.tot?(n.frete/agg.tot*100):0;return '<tr><td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td><td style="color:var(--text);font-weight:500">'+n.label+'</td><td>'+N(n.qtd)+'</td><td style="color:var(--text);font-weight:600">'+BRL(n.frete)+'</td><td>'+BRL(n.cobrado)+'</td><td style="'+sC+';font-weight:700">'+BRL(saldo)+'</td><td>'+pct.toFixed(1)+'%</td><td><div style="width:'+Math.min(pct*4,100)+'px;height:3px;background:var(--blue);border-radius:2px;opacity:.7"></div></td></tr>';}).join('');
   updateTags();syncFilterUI();
   document.getElementById('tb_vinc').textContent=N(agg.qtd);document.getElementById('tb_op').textContent=N(agg.qtd);
@@ -2249,9 +2252,11 @@ function renderClientes(){
   document.getElementById('cli_k_grupos').textContent=N(cliData.length);
   document.getElementById('cli_k_eco').textContent=BRL(ecoTotal);
   document.getElementById('cli_k_ctes').textContent=N(totalCtesConsolid);
-  // KPI de integridade
+  // KPI de integridade — respeita filtro de empresa
   const r=DATA.resumo||{};
-  const totCte=r.total_cte||0;const semVincCt=r.ctes_nao_vinculados_count||0;
+  const _ccEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||{total:0,nao_vinculados:0}):null;
+  const totCte=_ccEmp?_ccEmp.total:(r.total_cte||0);
+  const semVincCt=_ccEmp?_ccEmp.nao_vinculados:(r.ctes_nao_vinculados_count||0);
   const pctConc=totCte>0?Math.min(100,(totCte-semVincCt)/totCte*100):0;
   const rowsComp=rows.filter(d=>d.cliente&&d.cliente!=='?'&&d.data&&getWeek(d.data)&&(d.destino_cidade||d.destino_uf)).length;
   const cobDados=rows.length>0?Math.min(100,rowsComp/rows.length*100):0;
@@ -2960,17 +2965,19 @@ function initApp(){
   }
   nvInp.addEventListener('input',nvFilter);nvSelUf.addEventListener('change',nvFilter);nvSelTr.addEventListener('change',nvFilter);nvSelMotivo.addEventListener('change',nvFilter);
   nvRebuildBase();
-  window._renderNV=nvRebuildBase;
+  window._renderNV=function(){nvRebuildBase();if(window._renderNC)window._renderNC();if(window._renderCancel)window._renderCancel();};
   window._nvShowEspelho=nvShowEspelho;
 
-  // CTe com NF Cancelada
-  (function(){
-    const ncData=DATA.ctes_nf_cancelada||[];
+  // CTe com NF Cancelada — função reativa (chamada pelo _renderNV e ao init)
+  function _renderNC(){
+    const ncAll=DATA.ctes_nf_cancelada||[];
+    const ncData=state.empresa?ncAll.filter(c=>c.empresa_nf===state.empresa):ncAll;
     document.getElementById('nc_k_qtd').textContent=N(ncData.length);
     document.getElementById('nc_k_frete').textContent=BRL(ncData.reduce((s,c)=>s+c.valor_frete,0));
     document.getElementById('nc_k_transp').textContent=N(new Set(ncData.map(c=>c.transportadora).filter(Boolean)).size);
-    if(!ncData.length) return;
-    document.getElementById('nc_card').style.display='';
+    const ncCard=document.getElementById('nc_card');
+    if(!ncData.length){if(ncCard)ncCard.style.display='none';return;}
+    if(ncCard)ncCard.style.display='';
     window._ncData=ncData;
     document.getElementById('nc_tbody').innerHTML=ncData.map((c,i)=>{
       const nfChips=(c.nfe_refs||[]).slice(0,3).map(ch=>'<span style="font-family:monospace;font-size:9px;color:var(--text3)" title="'+ch+'">'+parseInt(ch.slice(25,34))+'</span>').join(' ');
@@ -2987,12 +2994,15 @@ function initApp(){
         +'<td>'+nfChips+'</td>'
         +'</tr>';
     }).join('');
-  })();
+  }
+  _renderNC();
+  window._renderNC=_renderNC;
 
-  // CTe cancelados
-  (function(){
-    const cancelData=DATA.cancelados_data||[];
-    const chaves=DATA.cte_cancelados_chaves||[];
+  // CTe cancelados — função reativa (chamada pelo _renderNV e ao init)
+  function _renderCancel(){
+    const cancelAll=DATA.cancelados_data||[];
+    const cancelData=state.empresa?cancelAll.filter(c=>c.empresa===state.empresa):cancelAll;
+    const chaves=cancelData.map(c=>c.cte_chave);
     document.getElementById('cancel_k_qtd').textContent=N(cancelData.length);
     document.getElementById('cancel_k_frete').textContent=BRL(cancelData.reduce((s,c)=>s+c.valor_frete,0));
     document.getElementById('cancel_k_transp').textContent=N(new Set(cancelData.map(c=>c.transportadora).filter(Boolean)).size);
@@ -3000,6 +3010,7 @@ function initApp(){
     const wrap=document.getElementById('cancel_list_wrap');
     const empty=document.getElementById('cancel_empty');
     if(!chaves.length){wrap.style.display='none';empty.style.display='block';return;}
+    wrap.style.display='';empty.style.display='none';
     window._cancelData=cancelData;
     tbody.innerHTML=cancelData.map((c,i)=>{
       const dcRaw=c.data_cancelamento||'';
@@ -3028,7 +3039,9 @@ function initApp(){
         +'</td>'
         +'</tr>';
     }).join('');
-  })();
+  }
+  _renderCancel();
+  window._renderCancel=_renderCancel;
 
   // ABA COMPRAS
   let compPage=0;
@@ -3101,8 +3114,8 @@ function initApp(){
       const platOk=!dmSelPlat.value||d.mkt_type===dmSelPlat.value;
       const empOk=(!dmSelEmp.value||d.empresa_dest===dmSelEmp.value)
                  &&(!state.empresas.length||state.empresas.includes(d.empresa_dest));
-      const anoOk=!state.ano||(d.data_emissao||'').slice(0,4)===state.ano;
-      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(5,7));
+      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
       const q=(dmInp.value||'').toLowerCase();
       const qOk=!q||(d.rem_nome||'').toLowerCase().includes(q)
         ||(d.origem_cidade||'').toLowerCase().includes(q)
