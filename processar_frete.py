@@ -269,17 +269,23 @@ def parse_ctes_from_db(db_path):
                    COALESCE(cc.valor_total_prestacao, 0)  AS valor,
                    COALESCE(cc.nome_emitente, '')          AS transp,
                    COALESCE(ccan.data_cancelamento, '')    AS data_cancelamento,
-                   COALESCE(ccan.justificativa, '')        AS justificativa
+                   COALESCE(ccan.justificativa, '')        AS justificativa,
+                   GROUP_CONCAT(cn.chave_nfe, '||')        AS nfe_refs_raw
             FROM cte_campos cc
             JOIN cte_cancelamento ccan ON cc.chave = ccan.chave_cte
+            LEFT JOIN cte_nf cn ON cc.chave = cn.chave_cte
+            GROUP BY cc.chave, ccan.data_cancelamento, ccan.justificativa
         """)
         for row in cur.fetchall():
+            nfe_raw = row["nfe_refs_raw"] or ""
+            nfe_refs = [n for n in nfe_raw.split("||") if n] if nfe_raw else []
             cancelados_lista.append({
                 "cte_chave":          row["chave"],
                 "valor_frete":        round(float(row["valor"] or 0), 2),
                 "transportadora":     row["transp"] or "",
                 "data_cancelamento":  row["data_cancelamento"] or "",
                 "justificativa":      row["justificativa"] or "",
+                "nfe_refs":           nfe_refs,
             })
     except Exception as e:
         print(f"   [AVISO] Nao foi possivel ler cancelamentos: {e}")

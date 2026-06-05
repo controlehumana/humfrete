@@ -868,7 +868,7 @@ html.ocean .cat-pill.active{background:rgba(94,106,210,.1);color:#3730A3}
     <div class="card-title" style="color:var(--red2)"><i class="fa-solid fa-ban"></i> CTe Cancelados</div>
     <p style="color:var(--text2);font-size:12px;margin:-6px 0 14px">Comprovantes de frete anulados. Excluidos de todos os calculos do dashboard.</p>
     <div id="cancel_empty" style="display:none;color:var(--text3);font-size:12px;padding:10px 0"><i class="fa-solid fa-circle-check" style="color:var(--green2)"></i> Nenhum CTe cancelado encontrado.</div>
-    <div id="cancel_list_wrap" class="tw" style="max-height:400px;overflow-y:auto"><table><thead><tr><th>Chave CTe (44 digitos)</th><th>Transportadora</th><th>Data Canc.</th><th>Justificativa</th><th>Valor Frete</th><th style="text-align:center">Acao</th></tr></thead><tbody id="cancel_tbody"></tbody></table></div>
+    <div id="cancel_list_wrap" class="tw" style="max-height:400px;overflow-y:auto"><table><thead><tr><th>Chave CTe (44 digitos)</th><th>Transportadora</th><th>Data Canc.</th><th>Justificativa</th><th>NF(s) Ref.</th><th>Valor Frete</th><th style="text-align:center">Acao</th></tr></thead><tbody id="cancel_tbody"></tbody></table></div>
   </div>
 </div>
 
@@ -2955,11 +2955,18 @@ function initApp(){
       const dcRaw=c.data_cancelamento||'';
       const dcFmt=dcRaw.length>=10?dcRaw.slice(8,10)+'/'+dcRaw.slice(5,7)+'/'+dcRaw.slice(0,4):'—';
       const just=c.justificativa||'';
+      const refs=c.nfe_refs||[];
+      const nfNums=refs.map(ch=>parseInt(ch.slice(25,34)));
+      const nfCell=nfNums.length
+        ?nfNums.slice(0,3).map(n=>'<span style="font-family:monospace;font-size:9px;color:var(--text3)">'+n+'</span>').join(' ')
+          +(nfNums.length>3?'<span style="font-size:9px;color:var(--text3)"> +'+( nfNums.length-3)+'</span>':'')
+        :'<span style="color:var(--text3)">—</span>';
       return '<tr>'
         +'<td style="font-family:monospace;font-size:10px;color:var(--text)">'+c.cte_chave+'</td>'
         +'<td style="font-size:10px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(c.transportadora||'')+'">'+esc(trName(c.transportadora||'-'))+'</td>'
         +'<td style="font-size:10px;color:var(--red2);white-space:nowrap">'+dcFmt+'</td>'
         +'<td style="font-size:10px;color:var(--text2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(just)+'">'+esc(just||'—')+'</td>'
+        +'<td style="white-space:nowrap">'+nfCell+'</td>'
         +'<td style="color:var(--red2);font-weight:600;white-space:nowrap">'+BRL(c.valor_frete)+'</td>'
         +'<td style="text-align:center;display:flex;gap:4px;justify-content:center">'
         +'<button onclick="if(window._nvShowEspelho&&window._cancelData)window._nvShowEspelho(window._cancelData['+i+'])" title="Ver Espelho CT-e" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--red2);border-radius:4px;padding:2px 7px;font-size:9px;cursor:pointer"><i class="fa-solid fa-file-lines"></i></button>'
