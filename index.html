@@ -3751,7 +3751,7 @@ function renderNatOp(){
     const pctC=r.pct>=80?'var(--green)':r.pct>=50?'var(--yellow)':'var(--red)';
     const barW=Math.min(r.pct,100).toFixed(1);
     const pctFrC=r.pctFr>8?'var(--red)':r.pctFr>5?'var(--yellow)':'var(--green)';
-    return '<tr>'
+    return '<tr style="cursor:pointer" onclick="natopDrillDown('+i+')" title="Ver NF-e desta natureza no modulo Operacional">'
       +'<td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td>'
       +'<td style="color:var(--text);font-weight:500">'+esc(r.nat)+'</td>'
       +'<td style="text-align:right;color:var(--green2);font-weight:600">'+N(r.com)+'</td>'
@@ -3786,6 +3786,23 @@ function natopExportXLSX(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nat. Operacao');
   const ts=new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb,'nat_operacao_'+ts+'.xlsx');
+}
+
+function natopDrillDown(i){
+  const r=_natopRows[i];if(!r) return;
+  const nat=r.nat;
+  // aplica filtro de nat. operação
+  state.natop=[nat];
+  document.querySelectorAll('#ms_natop_drop input').forEach(c=>{c.checked=(c.value===nat);});
+  const btn=document.getElementById('ms_natop_btn');
+  if(btn) btn.innerHTML=(nat.length>18?nat.slice(0,16)+'…':nat)+' <span class="ms-arrow">v</span>';
+  // troca para aba Operacional
+  document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-tab="operacional"]').forEach(b=>b.classList.add('active'));
+  const opPanel=document.getElementById('tab-operacional');if(opPanel) opPanel.classList.add('active');
+  const bc=document.getElementById('tb-bc-page');if(bc) bc.textContent=_TAB_NAMES['operacional']||'Operacional';
+  renderAll();
 }
 
 function renderRotas(){
