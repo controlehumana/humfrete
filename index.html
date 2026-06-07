@@ -583,6 +583,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <button class="tab-btn tab-highlight active" data-tab="visao-geral"><i data-lucide="bar-chart-2"></i><span class="sb-label">Visao Geral</span><span class="tab-badge" id="tb_vinc">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span class="sb-label">Marketplace</span><span class="tab-badge" id="tb_mkt">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="compras"><i data-lucide="package"></i><span class="sb-label">Frete Compras</span><span class="tab-badge" id="tb_comp">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="delivery"><i data-lucide="truck"></i><span class="sb-label">Delivery</span><span class="tab-badge" id="tb_dlv">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Dev. Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
     <div class="sb-section">Analise</div>
     <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
@@ -1041,6 +1042,48 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
 </div>
 
+<!-- TAB DELIVERY -->
+<div id="tab-delivery" class="tab-panel">
+  <div class="sdiv">Delivery - NFS-e dos Entregadores</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de notas fiscais de servico (NFS-e) emitidas pelos entregadores parceiros para o grupo Humana no periodo. Cada nota representa um fechamento de servico de entrega, sem referencia direta as NF-e transportadas.</div><div class="kpi-val" id="dlv_qtd">-</div><div class="kpi-lbl">NFS-e Recebidas</div><div class="kpi-sub">notas de servico emitidas</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Soma dos valores de servico cobrados pelos entregadores no periodo. Representa o custo com entregadores parceiros (servico de entrega), separado do frete pago a transportadoras via CT-e.</div><div class="kpi-val" id="dlv_total">-</div><div class="kpi-lbl">Valor Total</div><div class="kpi-sub">pago aos entregadores</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por NFS-e emitida pelos entregadores no periodo. Util para acompanhar a evolucao do ticket medio de cada fechamento de servico.</div><div class="kpi-val" id="dlv_medio">-</div><div class="kpi-lbl">Valor Medio</div><div class="kpi-sub">por NFS-e</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de entregadores parceiros distintos que emitiram NFS-e para o grupo no periodo selecionado, conforme cadastro de referencia.</div><div class="kpi-val" id="dlv_qtd_entreg">-</div><div class="kpi-lbl">Entregadores Ativos</div><div class="kpi-sub">com notas no periodo</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Evolucao Mensal do Custo com Entregadores<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Soma dos valores das NFS-e emitidas pelos entregadores, agrupados por mes/ano. Permite acompanhar a evolucao do custo com o servico de entrega ao longo do tempo.</span></span></div>
+    <div class="ch-wrap"><canvas id="ch_dlv_mensal"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Mapa de Desempenho por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo do custo com entregadores entre as filiais do grupo no periodo selecionado: quantidade de notas recebidas, valor total pago, ticket medio por nota e qual entregador mais fatura para cada empresa.</span></span></div>
+    <div class="tw"><table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Qtd. NFS-e</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Total</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Medio</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador Principal</th></tr></thead>
+      <tbody id="dlv_emp_tbody"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Ranking - Valor Medio Cobrado por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Ticket medio (valor medio por NFS-e) cobrado por cada entregador parceiro no periodo selecionado, do maior para o menor. Ajuda a identificar quais entregadores cobram mais por entrega e comparar custos entre parceiros.</span></span></div>
+    <div class="tw dtbl" style="max-height:50vh;overflow-y:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">#</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Qtd. NFS-e</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Total</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Medio</th></tr></thead>
+      <tbody id="dlv_rank_tbody"></tbody>
+    </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Detalhamento por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem das NFS-e emitidas por cada entregador parceiro, com numero, competencia, data de emissao, empresa do grupo atendida e valor do servico.</span></span></div>
+    <div class="sr"><input type="text" id="dlv_search" placeholder="Buscar entregador, numero da nota..."><select id="dlv_sel_emp"><option value="">Todas as empresas</option></select></div>
+    <div class="tw dtbl" id="dlv_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
+      <table id="dlv_table" style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data Emissao</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Competencia</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Numero NFS-e</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor do Servico</th></tr></thead>
+        <tbody id="dlv_tbody"></tbody>
+      </table>
+    </div>
+    <div id="dlv_pager" style="margin-top:10px"></div>
+  </div>
+</div>
+
 <!-- TAB DEVOLUCAO MARKETPLACE -->
 <div id="tab-dev-mkt" class="tab-panel">
   <div class="sdiv">Devolucao Marketplace</div>
@@ -1254,6 +1297,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <button class="mob-nav-btn active" data-tab="visao-geral"><i data-lucide="bar-chart-2"></i><span>Geral</span></button>
   <button class="mob-nav-btn" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span>Mkt</span></button>
   <button class="mob-nav-btn" data-tab="compras"><i data-lucide="package"></i><span>Compras</span></button>
+  <button class="mob-nav-btn" data-tab="delivery"><i data-lucide="truck"></i><span>Delivery</span></button>
   <button class="mob-nav-btn" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span>Dev.Mkt</span></button>
   <button class="mob-nav-btn" data-tab="empresa"><i data-lucide="building-2"></i><span>Empresa</span></button>
   <button class="mob-nav-btn" data-tab="operacional"><i data-lucide="list"></i><span>Operat.</span></button>
@@ -1369,6 +1413,7 @@ function _mergeData(datas) {
     cte_cancelados_chaves: [...new Set(datas.flatMap(d=>d.cte_cancelados_chaves||[]))],
     compras: datas.flatMap(d=>d.compras||[]),
     devolucoes_mkt: datas.flatMap(d=>d.devolucoes_mkt||[]),
+    delivery: datas.flatMap(d=>d.delivery||[]),
     transf_sem_cte: datas.flatMap(d=>d.transf_sem_cte||[]),
     transf_fat: Object.assign({}, ...datas.map(d=>d.transf_fat||{})),
     resumo: {
@@ -2123,7 +2168,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difTot,prev.difTot,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras')renderCompras();else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras')renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -3297,6 +3342,101 @@ function initApp(){
   compInp.addEventListener('input',compFilter);
   compSelEmp.addEventListener('change',compFilter);
 
+  // ABA DELIVERY
+  let dlvPage=0;
+  const dlvInp=document.getElementById('dlv_search');
+  const dlvSelEmp=document.getElementById('dlv_sel_emp');
+  (()=>{
+    const emps=[...new Set((DATA.delivery||[]).map(d=>d.empresa).filter(Boolean))].sort();
+    emps.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;dlvSelEmp.appendChild(o);});
+  })();
+  function dlvFilter(){dlvPage=0;renderDelivery();}
+  function renderDelivery(){
+    const rows=(DATA.delivery||[]).filter(d=>{
+      const empOk=(!dlvSelEmp.value||d.empresa===dlvSelEmp.value)
+                 &&(!state.empresas.length||state.empresas.includes(d.empresa));
+      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const q=(dlvInp.value||'').toLowerCase();
+      const qOk=!q||(d.entregador_nome||'').toLowerCase().includes(q)
+        ||(d.numero||'').toLowerCase().includes(q);
+      return empOk&&anoOk&&mesOk&&qOk;
+    });
+    const totVal=rows.reduce((s,d)=>s+(d.valor_servico||0),0);
+    document.getElementById('dlv_qtd').textContent=N(rows.length);
+    document.getElementById('dlv_total').textContent=BRL(totVal);
+    document.getElementById('dlv_medio').textContent=rows.length?BRL(totVal/rows.length):'R$ 0';
+    document.getElementById('dlv_qtd_entreg').textContent=N([...new Set(rows.map(d=>d.entregador_cnpj).filter(Boolean))].length);
+    // Evolucao mensal (AAAA-MM -> total)
+    const porMes={};
+    rows.forEach(d=>{
+      const dt=d.data_emissao||'';
+      if(dt.length<10) return;
+      const key=dt.slice(6,10)+'-'+dt.slice(3,5);
+      porMes[key]=(porMes[key]||0)+(d.valor_servico||0);
+    });
+    const meses=Object.keys(porMes).sort();
+    const lbls=meses.map(m=>m.slice(5,7)+'/'+m.slice(0,4));
+    mkBar('ch_dlv_mensal',lbls,meses.map(m=>porMes[m]),'#69AFFA','Custo Entregadores');
+    // Mapa de Desempenho por Empresa
+    const porEmp={};
+    rows.forEach(d=>{
+      const emp=d.empresa||'?';
+      if(!porEmp[emp]) porEmp[emp]={qtd:0,total:0,porEntreg:{}};
+      porEmp[emp].qtd++;
+      porEmp[emp].total+=(d.valor_servico||0);
+      const ent=d.entregador_nome||'-';
+      porEmp[emp].porEntreg[ent]=(porEmp[emp].porEntreg[ent]||0)+(d.valor_servico||0);
+    });
+    document.getElementById('dlv_emp_tbody').innerHTML=Object.keys(porEmp).sort((a,b)=>porEmp[b].total-porEmp[a].total).map(emp=>{
+      const e=porEmp[emp];
+      const top=Object.entries(e.porEntreg).sort((a,b)=>b[1]-a[1])[0];
+      return '<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(emp)+'</span></td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(e.qtd)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(e.total)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+BRL(e.total/e.qtd)+'</td>'
+        +'<td style="padding:7px 10px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="'+esc(top?top[0]:'')+'">'+esc(top?top[0]:'-')+'</td>'
+        +'</tr>';
+    }).join('') || '<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--text3)">Sem dados no periodo selecionado</td></tr>';
+    // Ranking - Valor medio cobrado por entregador
+    const porEntreg={};
+    rows.forEach(d=>{
+      const key=(d.entregador_cnpj||'')+'||'+(d.entregador_nome||'');
+      if(!porEntreg[key]) porEntreg[key]={nome:d.entregador_nome||'-',empresas:new Set(),qtd:0,total:0};
+      porEntreg[key].empresas.add(d.empresa||'?');
+      porEntreg[key].qtd++;
+      porEntreg[key].total+=(d.valor_servico||0);
+    });
+    const rank=Object.values(porEntreg).map(e=>({...e,medio:e.total/e.qtd})).sort((a,b)=>b.medio-a.medio);
+    document.getElementById('dlv_rank_tbody').innerHTML=rank.map((e,i)=>{
+      const emps=[...e.empresas].sort().join(', ');
+      return '<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:7px 10px;color:var(--text3)">'+(i+1)+'</td>'
+        +'<td style="padding:7px 10px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(e.nome)+'">'+esc(e.nome)+'</td>'
+        +'<td style="padding:7px 10px;color:var(--text2);font-size:10px">'+esc(emps)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(e.qtd)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+BRL(e.total)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(e.medio)+'</td>'
+        +'</tr>';
+    }).join('') || '<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--text3)">Sem dados no periodo selecionado</td></tr>';
+    const slice=rows.slice(dlvPage*PAGE,(dlvPage+1)*PAGE);
+    document.getElementById('dlv_tbody').innerHTML=slice.map(d=>{
+      return '<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+(fmtDate(d.data_emissao)||'--')+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+(fmtDate(d.competencia)||'--')+'</td>'
+        +'<td style="padding:7px 10px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(d.entregador_nome||'')+'">'+esc(d.entregador_nome||'-')+'</td>'
+        +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa||'?')+'</span></td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2);font-size:10px">'+esc(d.numero||'--')+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_servico||0)+'</td>'
+        +'</tr>';
+    }).join('');
+    mkPager(rows.length,dlvPage,PAGE,'dlv_pager',pg=>{dlvPage=pg;renderDelivery();});
+  }
+  dlvInp.addEventListener('input',dlvFilter);
+  dlvSelEmp.addEventListener('change',dlvFilter);
+  window._renderDelivery=renderDelivery;
+
   // ABA DEVOLUCAO MARKETPLACE
   let dmPage=0;
   const dmInp=document.getElementById('dm_search');
@@ -3395,13 +3535,14 @@ function initApp(){
     document.getElementById('tb_naov').textContent=N(nvBase.length);
     document.getElementById('tb_emp').textContent=N([...new Set(DATA.detalhes.map(d=>d.empresa).filter(Boolean))].length);
     document.getElementById('tb_comp').textContent=N((DATA.compras||[]).length);
+    document.getElementById('tb_dlv').textContent=N((DATA.delivery||[]).length);
     document.getElementById('tb_devmkt').textContent=N((DATA.devolucoes_mkt||[]).length);
     renderAll();
   }catch(err){console.error('[FRETE] Erro na inicializacao:',err);}
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','natop':'Nat. Operacao','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','natop':'Nat. Operacao','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -3417,6 +3558,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     else if(tab==='marketplace') renderMarketplace();
     else if(tab==='clientes') renderClientes();
     else if(tab==='compras'&&window._renderCompras) window._renderCompras();
+    else if(tab==='delivery'&&window._renderDelivery) window._renderDelivery();
     else if(tab==='dev-mkt'&&window._renderDevMkt) window._renderDevMkt();
     else if(tab==='nao-vinculados'&&window._renderNV) window._renderNV();
     else if(tab==='operacional') renderTable();
@@ -3463,6 +3605,7 @@ const ALL_TABS_INFO=[
   {id:'visao-geral',label:'Visão Geral'},
   {id:'marketplace',label:'Marketplace'},
   {id:'compras',label:'Frete Compras'},
+  {id:'delivery',label:'Delivery'},
   {id:'dev-mkt',label:'Dev. Marketplace'},
   {id:'empresa',label:'Por Empresa'},
   {id:'operacional',label:'Operacional'},

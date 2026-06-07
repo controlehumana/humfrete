@@ -608,6 +608,46 @@ def _carregar_nf_entrada():
         return {}
 
 
+def _carregar_nfse_entregadores():
+    """Carrega do banco SQLite as NFS-e (notas de serviço) emitidas pelos
+    entregadores cadastrados para o grupo Humana. Retorna lista de dicts
+    prontos para o payload da aba Delivery."""
+    if not os.path.exists(QUIVE_DB):
+        return []
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nfse_entregadores'")
+        if not cur.fetchone():
+            conn.close(); return []
+        rows = cur.execute("""
+            SELECT n.id, n.empresa, n.emit_cnpj, n.emit_nome, n.numero,
+                   n.competencia, n.dt_emissao, n.valor_servico, n.status,
+                   e.nome_entregador
+            FROM nfse_entregadores n
+            LEFT JOIN entregadores e
+                   ON e.cnpj_entregador = n.emit_cnpj AND e.cnpj_empresa = n.taker_cnpj
+            WHERE n.status = 'Authorized'
+        """).fetchall()
+        conn.close()
+        resultado = [{
+            "id":              r["id"],
+            "empresa":         r["empresa"],
+            "entregador_cnpj": r["emit_cnpj"],
+            "entregador_nome": r["nome_entregador"] or r["emit_nome"] or "",
+            "numero":          r["numero"] or "",
+            "competencia":     fmt_date(r["competencia"]),
+            "data_emissao":    fmt_date(r["dt_emissao"]),
+            "valor_servico":   round(r["valor_servico"] or 0, 2),
+        } for r in rows]
+        print(f"   NFS-e Entregadores: {len(resultado)} notas carregadas")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar nfse_entregadores: {e}")
+        return []
+
+
 def cruzar(nfe_map, cte_list, nfe_to_cte):
     print("\n[OK] Cruzando dados...")
     # Marketplace detectado pelo nome da transportadora OU pelo canal de venda
@@ -694,6 +734,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     # Carrega CTe vinculados a NF de entrada (compras)
     nf_entrada_map = _carregar_nf_entrada()          # cte_chave -> [nf_data, ...]
     nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
+    delivery = _carregar_nfse_entregadores()         # NFS-e dos entregadores (módulo Delivery)
     def _motivo_sem_vinculo(cte):
         if not cte["nfe_chaves"]:
             return "CTe não informou nota fiscal de origem"
@@ -955,6 +996,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "por_nat_op":make_list(por_nat_op),"nat_op_sem_cte":nat_op_sem_cte,"detalhes":detalhes,"ctes_nao_vinculados":ctes_nao_vinculados,
         "ctes_nf_cancelada":ctes_nf_cancelada,
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
+        "delivery":delivery,
     }
 
 
@@ -3821,6 +3863,7 @@ def split_by_empresa(dados):
             "detalhes": det,
             "compras": [d for d in dados.get("compras",[]) if d.get("empresa_dest")==emp],
             "devolucoes_mkt": [d for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest")==emp],
+            "delivery": [d for d in dados.get("delivery",[]) if d.get("empresa")==emp],
             "transf_sem_cte": [d for d in dados.get("transf_sem_cte",[]) if d.get("empresa")==emp],
             "transf_fat": {k:v for k,v in dados.get("transf_fat",{}).items() if k.startswith(emp+"||")},
             "resumo": {
