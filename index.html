@@ -676,7 +676,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-tooltip">Notas fiscais de venda para as quais encontramos o comprovante de frete correspondente. Cada nota vinculada tem seu custo de entrega identificado e incluido nos calculos do dashboard.</div><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">De cada 100 vendas do período, quantas têm um comprovante de frete identificado. Valores abaixo de 50% são normais quando uma parte dos clientes retira a mercadoria diretamente no depósito — nesses casos não existe frete para registrar.</div><div class="kpi-lbl">Vendas com Frete Rastreado</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub" id="k_cobertura_sub">das vendas com entrega</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Percentual dos CTe recebidos que foi possivel vincular a uma nota fiscal (venda, compra ou devolucao). Proximo de 100% indica que a conciliacao esta completa e confiavel. Os nao conciliados sao CTe em que a transportadora nao informou a nota fiscal de origem.</div><div class="kpi-lbl">CTe Conciliados</div><div class="kpi-val" id="k_cte_conc">-</div><div class="kpi-sub" id="k_cte_conc_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual dos CTe recebidos que foi possivel vincular a uma nota fiscal (venda, compra ou devolucao). Proximo de 100% indica que a conciliacao esta completa e confiavel. Os nao conciliados sao CTe em que a transportadora nao informou a nota fiscal de origem. <strong>Métrica global de qualidade de dados — não muda com os filtros de empresa/ano/mês.</strong></div><div class="kpi-lbl">CTe Conciliados</div><div class="kpi-val" id="k_cte_conc">-</div><div class="kpi-sub" id="k_cte_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantas empresas de transporte diferentes realizaram ao menos uma entrega rastreada no periodo selecionado.</div><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quanto do total gasto com frete vai para a transportadora principal. Acima de 40% indica dependencia elevada: um problema com esse parceiro pode impactar grande parte das entregas da empresa.</div><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Entregas em que a empresa nao cobrou nada de frete do cliente. O custo de transporte foi absorvido internamente. Monitorar esse numero ajuda a identificar politicas de frete gratis e seu impacto no resultado.</div><div class="kpi-lbl">Frete Gratis (Entregas)</div><div class="kpi-val" id="k_gratis">-</div><div class="kpi-sub" id="k_gratis_sub">-</div></div>
@@ -1426,6 +1426,7 @@ function _mergeData(datas) {
   const nfePorEmp    = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_empresa||{}));
   const nfePorAno    = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_ano||{}));
   const nfePorEmpAno = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano||{}));
+  const nfePorEmpAnoMes = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano_mes||{}));
   const cteConcPorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_empresa||{}));
   const nfeSemCtePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_sem_cte_por_empresa||{}));
   // nfe_fat_periodo global: soma explícita dos valores por empresa
@@ -1459,6 +1460,7 @@ function _mergeData(datas) {
       nfe_fat_por_empresa: nfePorEmp,
       nfe_fat_por_ano: nfePorAno,
       nfe_fat_por_emp_ano: nfePorEmpAno,
+      nfe_fat_por_emp_ano_mes: nfePorEmpAnoMes,
       cte_conc_por_empresa: cteConcPorEmp,
       nfe_sem_cte_por_empresa: nfeSemCtePorEmp,
     }
@@ -1995,11 +1997,21 @@ function renderAlerts(agg){
   el.innerHTML=al.map(a=>'<div class="alert '+a.t+'"><span class="alert-icon">'+a.i+'</span><span class="alert-text">'+a.m+'</span></div>').join('');
 }
 function _effDen(){
-  const emp=state.empresa,ano=state.ano,r2=DATA?.resumo||{};
-  if(emp&&ano) return r2.nfe_fat_por_emp_ano?.[emp]?.[ano]||0;
-  if(emp)      return r2.nfe_fat_por_empresa?.[emp]||0;
-  if(ano)      return r2.nfe_fat_por_ano?.[ano]||0;
-  return r2.nfe_fat_periodo||r2.total_nfe_fat||0;
+  const r2=DATA?.resumo||{};
+  const ano=state.ano;
+  const emps=(state.empresas&&state.empresas.length)?state.empresas:null;
+  const meses=(state.meses&&state.meses.length)?state.meses:null;
+  if(!ano&&!emps&&!meses) return r2.nfe_fat_periodo||r2.total_nfe_fat||0;
+  const map=r2.nfe_fat_por_emp_ano_mes||{};
+  let total=0;
+  for(const k in map){
+    const [e,a,m]=k.split('|');
+    if(ano&&a!==ano) continue;
+    if(emps&&!emps.includes(e)) continue;
+    if(meses&&!meses.includes(m)) continue;
+    total+=map[k];
+  }
+  return total;
 }
 function renderInsights(agg){
   const el=document.getElementById('insights-grid');if(!el||!agg.qtd) return;
@@ -2107,10 +2119,14 @@ function renderAll(){
   document.getElementById('h_pct_rec_sub').innerHTML=agg.fretePctFat<=5?'<span class="chip chip-green"><i class="fa-solid fa-check"></i> Abaixo do benchmark</span>':agg.fretePctFat<=8?'<span class="chip chip-amber"><i class="fa-solid fa-triangle-exclamation"></i>Atencao &mdash; meta &lt;5%</span>':'<span class="chip chip-red"><i class="fa-solid fa-xmark"></i> Acima do benchmark</span>';
   document.getElementById('h_ticket').textContent=BRL(agg.media);
   document.getElementById('h_ticket_sub').textContent=N(agg.qtd)+' entregas vinculadas';
-  // denominador: cobre todos os filtros (empresa, ano, empresa+ano)
+  // denominador: cobre todos os filtros (empresas[], ano, meses[]) via nfe_fat_por_emp_ano_mes
   const _denCob=_effDen();
   const _numCob=agg.qtd;
-  const _periodoLabel=state.empresa&&state.ano?(' em '+state.ano+' — '+state.empresa):state.empresa?' — '+state.empresa:state.ano?' em '+state.ano:'';
+  const _lblParts=[];
+  if(state.ano) _lblParts.push(state.ano);
+  if(state.meses&&state.meses.length) _lblParts.push(state.meses.map(m=>MESES[+m]||m).join('/'));
+  if(state.empresas&&state.empresas.length) _lblParts.push(state.empresas.length===1?state.empresas[0]:state.empresas.length+' empresas');
+  const _periodoLabel=_lblParts.length?(' — '+_lblParts.join(' · ')):'';
   const _subCobTxt=N(_numCob)+' de '+N(_denCob)+'  vendas'+_periodoLabel;
   document.getElementById('k_vinc').textContent=N(_numCob);
   document.getElementById('k_vinc_sub').textContent='de '+N(_denCob)+' vendas com entrega'+_periodoLabel;
@@ -2124,7 +2140,7 @@ function renderAll(){
   const _concEl=document.getElementById('k_cte_conc');
   if(_concEl){_concEl.textContent=_pctConcG.toFixed(1)+'%';_concEl.style.color=_pctConcG>=98?'var(--green)':_pctConcG>=90?'var(--yellow)':'var(--red)';}
   const _concSub=document.getElementById('k_cte_conc_sub');
-  if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe';
+  if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe — global, sem filtro';
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
   document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trDisp(agg.topTransp.label):'';
   const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';
