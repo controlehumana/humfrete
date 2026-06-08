@@ -1296,6 +1296,11 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 
   <div class="card">
     <div class="card-title">Log de Importacoes<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Historico das execucoes dos scripts que alimentam o banco: importacao de arquivos do ERP (Faturamento, Entregadores) e buscas via API Arquivei/Qive (CTe, NF Entrada, NFS-e). Mostra data/hora, origem, quantidade de registros processados/novos e se houve erro.</span></span></div>
+    <div class="sr" style="margin-bottom:8px">
+      <label style="font-size:11px;color:var(--text2);display:flex;gap:5px;align-items:center">De: <input type="date" id="admin-log-data-de" onchange="adminFilterImportLog()" style="font-size:11px;padding:4px 6px"></label>
+      <label style="font-size:11px;color:var(--text2);display:flex;gap:5px;align-items:center">Até: <input type="date" id="admin-log-data-ate" onchange="adminFilterImportLog()" style="font-size:11px;padding:4px 6px"></label>
+      <button type="button" class="admin-btn secondary" style="padding:4px 10px;font-size:11px" onclick="adminClearLogFilter()">Limpar filtro</button>
+    </div>
     <div class="tw dtbl" style="max-height:50vh;overflow-y:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr><th>Data/Hora</th><th>Script</th><th>Origem</th><th>Arquivo / Periodo</th><th>Registros</th><th>Novos</th><th>Erros</th><th>Status</th><th>Tam. Banco</th><th>Detalhes</th></tr></thead>
@@ -3726,6 +3731,36 @@ const ALL_TABS_INFO=[
 ];
 let _adminUsers=[];
 let _editingUid=null;
+let _adminImportLogsRaw=[];
+
+function _fmtDataHora(dh){
+  if(!dh) return '-';
+  const m=String(dh).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2}:\d{2})/);
+  return m?(m[3]+'/'+m[2]+'/'+m[1]+' '+m[4]):dh;
+}
+
+function adminFilterImportLog(){
+  const de=document.getElementById('admin-log-data-de')?.value||'';
+  const ate=document.getElementById('admin-log-data-ate')?.value||'';
+  let logs=_adminImportLogsRaw;
+  if(de||ate){
+    logs=logs.filter(l=>{
+      const d=String(l.data_hora||'').slice(0,10); // YYYY-MM-DD
+      if(de && d<de) return false;
+      if(ate && d>ate) return false;
+      return true;
+    });
+  }
+  renderAdminImportLog(logs);
+}
+
+function adminClearLogFilter(){
+  const de=document.getElementById('admin-log-data-de');
+  const ate=document.getElementById('admin-log-data-ate');
+  if(de) de.value='';
+  if(ate) ate.value='';
+  adminFilterImportLog();
+}
 
 async function loadAdminData(){
   try{
@@ -3748,10 +3783,12 @@ async function loadAdminData(){
       const meta=metaDoc.exists?metaDoc.data():{};
       const el=document.getElementById('admin-meta-info');
       if(el) el.innerHTML='<strong>Último upload:</strong> '+(meta.gerado_em||meta.timestamp||'—')+'<br><strong>Empresas:</strong> '+(meta.empresas||[]).join(', ');
-      renderAdminImportLog(meta.import_log||[]);
+      _adminImportLogsRaw=meta.import_log||[];
+      adminFilterImportLog();
     }catch(e){
       const el=document.getElementById('admin-meta-info');if(el)el.textContent='Metadata não disponível.';
-      renderAdminImportLog([]);
+      _adminImportLogsRaw=[];
+      adminFilterImportLog();
     }
   }catch(e){console.error('loadAdminData:',e);}
 }
@@ -3775,7 +3812,7 @@ function renderAdminImportLog(logs){
   };
   tb.innerHTML=logs.map(l=>{
     return '<tr>'
-      +'<td>'+esc(l.data_hora||'-')+'</td>'
+      +'<td>'+esc(_fmtDataHora(l.data_hora))+'</td>'
       +'<td>'+esc(l.script||'-')+'</td>'
       +'<td>'+(ORIGEM_LBL[l.origem]||esc(l.origem||'-'))+'</td>'
       +'<td>'+esc(l.fonte||'-')+'</td>'
@@ -3796,7 +3833,7 @@ function renderAdminUsers(){
   c.innerHTML=_adminUsers.map(u=>{
     const ini=(u.displayName||u.email||'?').slice(0,2).toUpperCase();
     const emps=(u.empresas||[]).join(', ')||'nenhuma';
-    const tabs=u.isAdmin?'todas':(u.tabs||[]).length+' abas';
+    const tabs=u.isAdmin?'Todas':((u.tabs||[]).map(id=>{const t=ALL_TABS_INFO.find(x=>x.id===id);return t?t.label:id;}).join(', ')||'nenhuma');
     const safeEmail=(u.email||'').replace(/'/g,"\\'");
     return`<div class="user-card">
       <div class="user-avatar">${ini}</div>
