@@ -114,7 +114,7 @@ CTe total (~58k)
   ├── Frete de Compra (NF Entrada) → vw_cte_nf_entrada → 'compras'
   ├── Frete de Compra (dest CNPJ_MAP) → dest_cnpj Humana → 'compras'
   ├── Frete de Compra (tomador Humana) → rem_cnpj Humana + NF externa → 'compras'
-  ├── Dev. Marketplace         → transportadora Shopee/ML → 'devolucoes_mkt'
+  ├── Dev. Marketplace         → transportadora Shopee/ML/TikTok Shop → 'devolucoes_mkt'
   ├── CTe c/ NF Cancelada      → NF de CNPJ Humana ausente do fat → 'ctes_nf_cancelada'
   └── Sem Vínculo (~340)       → resto → 'ctes_nao_vinculados'
 ```
@@ -216,10 +216,10 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | id | Label | Descrição |
 |---|---|---|
 | `visao-geral` | Visão Geral | KPIs, gráficos temporais, geo, eficiência por peso |
-| `marketplace` | Marketplace | Shopee + Mercado Livre separados |
+| `marketplace` | Marketplace | Shopee + Mercado Livre + TikTok Shop separados |
 | `compras` | Frete Compras | Frete de entrada (NF fornecedores) |
 | `delivery` | Delivery | Custo com NFS-e de entregadores autônomos |
-| `dev-mkt` | Dev. Marketplace | Devoluções via Shopee/ML |
+| `dev-mkt` | Dev. Marketplace | Devoluções via Shopee/ML/TikTok Shop |
 | `empresa` | Por Empresa | Análise por filial |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
 | `natop` | Nat. Operação | Cobertura de frete por natureza de operação — drill-down para Operacional |
@@ -262,8 +262,38 @@ Tendência exibida em dois lugares:
 ### Tooltip do mapa (_geoHover)
 - Cores via variáveis tema-aware: `tipText`, `tipLabel`, `tipBorder`, `tipSep`, `tipAccent`, `tipGold`
 - Label do campo `total_nf`: **"Valor das Notas com Frete"** (não "de Venda")
-- **Shopee e Mercado Livre excluídos** do ranking — pertencem à aba Marketplace
-- `isMarketplace()` filtra SHPS TECNOLOGIA e EBAZARCOMBR
+- **Shopee, Mercado Livre e TikTok Shop excluídos** do ranking — pertencem à aba Marketplace
+- `isMarketplace()` filtra SHPS TECNOLOGIA, EBAZARCOMBR e TIKTOK LOGISTICS
+
+## Módulo Marketplace — `marketplace` (index.html)
+
+Mostra o frete das **vendas de saída** (não devoluções — essas ficam na aba Dev. Marketplace) realizadas via marketplaces que usam logística própria/dedicada e emitem CT-e identificável.
+
+### Canais reconhecidos
+| Canal | `marketplace_type` | Transportadora / `canal` (NF) |
+|---|---|---|
+| Shopee | `shopee` | `SHPS TECNOLOGIA E SERVI[Ç/C]O LTDA` ou `canal` ∈ `{SHOPPE, SHOPEE}` |
+| Mercado Livre | `ml` | `EBAZARCOMBR LTDA` / `MERCADO LIVRE` ou `canal = MERCADO LIVRE` |
+| TikTok Shop | `tiktok` | `TIKTOK LOGISTICS BRAZIL LTDA` (nome contém `TIKTOK`) ou `canal` ∈ `{TIKTOSHOP, TIKTOKSHOP, TIKTOK SHOP}` |
+
+### Classificação (processar_frete.py)
+- `_marketplace_type(tr, canal)` em `cruzar()` retorna `'shopee'|'ml'|'tiktok'|None` — popula `is_marketplace` e `marketplace_type` em cada item de `detalhes`
+- `_mkt_type_tr(tr)` (lógica equivalente, só por nome da transportadora) é usada para classificar `devolucoes_mkt`
+- **Atenção:** os dois helpers fazem a mesma classificação por motivos históricos — qualquer novo canal de marketplace deve ser adicionado em **ambos**
+
+### `renderMarketplace()` (index.html)
+- `mktRows = filterRows(DATA.detalhes, {excMkt:false, onlyMkt:true})` — só linhas com `is_marketplace:true`
+- Filtra por `d.marketplace_type` (`'shopee'|'ml'|'tiktok'`) para separar os 3 canais
+- KPIs por canal: Total Frete e Frete Médio (`mkt_<canal>_frete/qtd/med`)
+- Botões `setMktFilter('SHOPEE'|'MERCADO LIVRE'|'TIKTOK SHOP')` filtram a tabela de detalhes (`mkt_f_shopee/ml/tiktok`)
+- Gráfico `ch_mkt_timeline` — 3 linhas (Shopee laranja `#FF6900`, Mercado Livre amarelo `#FFE600`, TikTok Shop rosa `#FF0050`) com evolução mensal do frete
+- Alertas automáticos comparam mês atual vs anterior por canal (`['shopee'|'ml'|'tiktok', cor, label]`)
+
+### Pitfall — TikTok Shop não aparece em Dev. Marketplace
+Os ~61 CT-e da `TIKTOK LOGISTICS BRAZIL LTDA` encontrados no banco (mar–abr/2026) são **todos entregas de saída** (Humana → cliente final/CPF), não devoluções — não há nenhum CT-e com `cnpj_destinatario` em `CNPJ_MAP` (que indicaria retorno para a Humana), diferente de Shopee/ML que têm logística reversa documentada via CT-e. Por isso o card "TikTok Shop" na aba Dev. Marketplace aparece zerado — **comportamento correto**, não é bug. Caso a TikTok passe a gerar CT-e de devolução, `_mkt_type_tr()` já está pronto para classificá-los automaticamente.
+
+### `HTML_TEMPLATE` em processar_frete.py
+O script mantém uma cópia quase idêntica do HTML/JS do `index.html` em `HTML_TEMPLATE` (usada para gerar o `dashboard_frete.html` local standalone via `OUTPUT_HTML`). **Qualquer mudança na aba Marketplace (ou outras abas presentes no template) precisa ser replicada manualmente nos dois lugares** — não há compartilhamento de código entre o app publicado (lê do Firestore) e o dashboard standalone (dados embutidos no HTML).
 
 ## Módulo Rotas (index.html)
 
@@ -418,6 +448,13 @@ CREATE TABLE import_log (
 ### `renderAdminImportLog()` (index.html)
 - Tabela com colunas: Data/Hora, Script, Origem (chip azul=API/cinza=Arquivo), Arquivo/Período, Registros, Novos, Erros (vermelho se >0), Status (chip verde=Sucesso/vermelho=Erro/amarelo=Parcial), Tam. Banco, Detalhes
 - `fmtTamanho(mb)` — formata em MB ou GB e aplica cor de alerta progressiva: cinza (<1GB), amarelo (≥1GB), vermelho (≥2GB) — sinaliza quando considerar migração
+- `_fmtDataHora(dh)` — converte `data_hora` de `YYYY-MM-DD HH:MM:SS` (formato salvo no banco) para exibição `DD/MM/YYYY HH:MM:SS`. **Não alterar o formato salvo no banco** — só a exibição
+- **Filtro por intervalo de datas:** inputs `admin-log-data-de`/`admin-log-data-ate` (`type="date"`, `onchange="adminFilterImportLog()"`) acima da tabela + botão "Limpar filtro" (`adminClearLogFilter()`). `_adminImportLogsRaw` guarda o array bruto vindo do Firestore; `adminFilterImportLog()` filtra por `data_hora.slice(0,10)` comparando strings `YYYY-MM-DD` (mesmo formato do `<input type="date">`) e chama `renderAdminImportLog()` com o resultado
+
+## Usuários Cadastrados — Painel Admin (index.html)
+
+- `renderAdminUsers()` lista cada usuário com avatar, nome/email, badge ADMIN (se aplicável) e meta-info `Empresas: ... · Abas: ...`
+- **Abas exibidas pelo nome do módulo** (não pela contagem): mapeia `u.tabs` (array de IDs) para os `label` correspondentes em `ALL_TABS_INFO` — ex. `"Visão Geral, Delivery, Operacional"`. Admin mostra `"Todas"`. Isso dá visibilidade imediata de quais módulos cada usuário pode acessar, sem precisar abrir o formulário de edição
 
 ## Regras obrigatórias no index.html
 
@@ -600,6 +637,7 @@ index.html                         ← aba Delivery (tab-delivery)
 
 ## Pitfalls conhecidos
 
+- **`HTML_TEMPLATE` duplicado em `processar_frete.py`** — gera o `dashboard_frete.html` standalone com HTML/JS quase idêntico ao `index.html`. Mudanças de UI/JS em qualquer aba presente no template (ex.: Marketplace) precisam ser replicadas manualmente nos dois arquivos — ver seção "Módulo Marketplace"
 - **SDK Firebase v8** — usar v8.10.1 compat. v10 causa falha no WebChannel
 - **Encoding Python** — sempre `$env:PYTHONIOENCODING = "utf-8"` antes de rodar scripts
 - **Faturamento período** — NF de Nov/Dez 2024 e Jan 2025 ainda ausentes; exportar do ERP
