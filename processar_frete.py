@@ -1597,9 +1597,9 @@ header{
       <div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div>
     </div>
     <div class="hero-card c-dynamic">
-      <div class="kpi-tooltip">Diferença entre o que a empresa cobrou de frete do cliente na nota fiscal e o que efetivamente pagou a transportadora. Positivo = cliente cobriu o custo. Negativo = empresa arcou com parte do frete (reduz margem).</div>
+      <div class="kpi-tooltip">Diferença entre o que a empresa cobrou de frete do cliente na nota fiscal e o que efetivamente pagou a transportadora. Quando a empresa cobra mais do que paga, exibimos como Repasse de Frete ao Cliente (a empresa cobre o custo). Quando a empresa paga mais do que cobra, exibimos a diferença como valor positivo rotulado "Diferença de Frete ao Cliente — Deixamos de Cobrar", representando quanto deixou de ser repassado ao cliente.</div>
       <div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div>
-      <div class="hero-lbl">Repasse de Frete ao Cliente</div>
+      <div class="hero-lbl" id="h_saldo_lbl">Repasse de Frete ao Cliente</div>
       <div class="hero-val" id="h_saldo">-</div>
       <div class="hero-sub" id="h_saldo_sub">-</div>
       <div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div>
@@ -1772,6 +1772,15 @@ header{
   <div class="sdiv">Detalhamento Analítico por NF-e</div>
   <div class="card">
     <div class="card-title">Detalhes por NF-e <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:8px;text-transform:none;letter-spacing:0">Visão operacional completa — auditoria e análise aprofundada</span></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text3);font-weight:600;flex-shrink:0">Saldo (Cobrado − Pago):</span>
+      <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
+        <button class="cat-btn active" id="op_f_all" onclick="setOpSaldoFilter('')">Todos</button>
+        <button class="cat-btn" id="op_f_pos" onclick="setOpSaldoFilter('POS')" title="Empresa cobrou mais frete do cliente do que pagou a transportadora"><i class="fa-solid fa-arrow-up" style="color:var(--green);font-size:9px"></i> Saldo Positivo</button>
+        <button class="cat-btn" id="op_f_neg" onclick="setOpSaldoFilter('NEG')" title="Empresa pagou mais frete a transportadora do que cobrou do cliente"><i class="fa-solid fa-arrow-down" style="color:var(--red);font-size:9px"></i> Saldo Negativo</button>
+        <button class="cat-btn" id="op_f_zero" onclick="setOpSaldoFilter('ZERO')" title="Entregas em que nao houve cobranca de frete do cliente (frete gratis)"><i class="fa-solid fa-ban" style="color:var(--text3);font-size:9px"></i> Sem Cobranca</button>
+      </div>
+    </div>
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
       <table>
         <thead><tr>
@@ -2824,11 +2833,18 @@ function renderAll(){
   chipEl.textContent=pctStr;
   chipEl.className='chip '+(agg.fretePctFat>8?'chip-red':agg.fretePctFat>5?'chip-amber':'chip-green');
   const saldoEl=document.getElementById('h_saldo');
-  saldoEl.textContent=BRL(agg.difTot);
-  saldoEl.style.color=agg.difTot>=0?'var(--green)':'var(--red)';
-  document.getElementById('h_saldo_sub').innerHTML=agg.difTot>=0
-    ?'<span class="chip chip-green"><i class="fa-solid fa-arrow-up"></i> Cobrado &gt; Pago</span>&nbsp;empresa cobre o custo'
-    :'<span class="chip chip-red"><i class="fa-solid fa-arrow-down"></i> Pago &gt; Cobrado</span>&nbsp;prejuizo no frete';
+  const saldoLblEl=document.getElementById('h_saldo_lbl');
+  if(agg.difTot>=0){
+    saldoLblEl.textContent='Repasse de Frete ao Cliente';
+    saldoEl.textContent=BRL(agg.difTot);
+    saldoEl.style.color='var(--green)';
+    document.getElementById('h_saldo_sub').innerHTML='<span class="chip chip-green"><i class="fa-solid fa-arrow-up"></i> Cobrado &gt; Pago</span>&nbsp;empresa cobre o custo';
+  }else{
+    saldoLblEl.textContent='Diferença de Frete ao Cliente';
+    saldoEl.textContent=BRL(Math.abs(agg.difTot));
+    saldoEl.style.color='var(--red)';
+    document.getElementById('h_saldo_sub').innerHTML='<span class="chip chip-red"><i class="fa-solid fa-arrow-down"></i> Deixamos de Cobrar</span>&nbsp;pago &gt; cobrado do cliente';
+  }
   const pctRecEl=document.getElementById('h_pct_rec');
   pctRecEl.textContent=pctStr;
   pctRecEl.style.color=agg.fretePctFat>8?'var(--red)':agg.fretePctFat>5?'var(--yellow)':'var(--green)';
@@ -3092,7 +3108,7 @@ function mkDetailRow(d,rowId){
     +'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'
     +'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'
     +'<td style="color:var(--blue2);font-weight:600;white-space:nowrap">'+BRL(d.valor_frete)+rateioBtn+'</td>'
-    +'<td>'+pctBarInline(d.valor_frete,d.total_nf)+'</td>'
+    +'<td>'+pctBarInline(d.valor_frete,d.total_nf,d.nat_operacao)+'</td>'
     +'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'
     +'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'
     +'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'
@@ -3104,8 +3120,8 @@ function mkDetailRow(d,rowId){
     +'<td style="text-align:right">'+(d.peso_kg||0)+'</td>'
     +'</tr>';
 }
-function pctBarInline(fr,nf){
-  if(!nf) return '<span style="color:var(--text3)">-</span>';
+function pctBarInline(fr,nf,nat){
+  if(!nf) return '<span style="color:var(--text3);cursor:help" title="Total NF = R$ 0,00 — Natureza da Operação: '+esc(nat||'N/A')+'">- <i class="fa-solid fa-circle-info" style="font-size:9px"></i></span>';
   const p=fr/nf*100;
   const cls=p<5?'tg':p<10?'ty':'tr';
   const barClr=p<5?'var(--green)':p<10?'var(--amber)':'var(--red)';
@@ -3130,11 +3146,33 @@ function mkPager(total,page,perPage,pagerId,onPage){
   for(let i=lo;i<=hi;i++) addBtn(i+1,i,i===page);
   addBtn('>',page+1,false,page===pages-1);addBtn('>>',pages-1,false,page===pages-1);
 }
+let opSaldoFilter='';
+function setOpSaldoFilter(val){
+  opSaldoFilter=val;
+  document.getElementById('op_f_all').classList.toggle('active',val==='');
+  document.getElementById('op_f_pos').classList.toggle('active',val==='POS');
+  document.getElementById('op_f_neg').classList.toggle('active',val==='NEG');
+  document.getElementById('op_f_zero').classList.toggle('active',val==='ZERO');
+  tablePage=0;renderTable();
+}
+function opSaldoFilteredRows(){
+  if(!opSaldoFilter) return tableRows;
+  return tableRows.filter(d=>{
+    const cob=d.frete_cobrado||0;
+    if(opSaldoFilter==='ZERO') return cob<=0;
+    if(cob<=0) return false;
+    const dif=d.diferenca_frete||0;
+    if(opSaldoFilter==='POS') return dif>0;
+    if(opSaldoFilter==='NEG') return dif<0;
+    return true;
+  });
+}
 function renderTable(){
   const tbody=document.getElementById('tbody');
-  const slice=tableRows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
+  const rows=opSaldoFilteredRows();
+  const slice=rows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
   tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'dr'+(tablePage*PAGE+i))).join('');
-  mkPager(tableRows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
+  mkPager(rows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
 }
 
 // EVENTS

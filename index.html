@@ -669,7 +669,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <div id="tab-visao-geral" class="tab-panel active">
   <div class="hero-grid">
     <div class="hero-card c-blue"><div class="kpi-tooltip">Tudo que a empresa pagou as transportadoras no periodo selecionado. Considera apenas entregas com comprovante de frete confirmado e associado a uma venda registrada no sistema.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
-    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora. Valor positivo: a empresa lucrou no frete. Valor negativo: a empresa bancou parte do custo de entrega.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora. Quando a empresa cobra mais do que paga, exibimos como Repasse de Frete ao Cliente (a empresa cobre o custo). Quando a empresa paga mais do que cobra, exibimos a diferenca como valor positivo rotulado "Diferenca de Frete ao Cliente — Deixamos de Cobrar", representando quanto deixou de ser repassado ao cliente.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl" id="h_saldo_lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 faturados em NF-e de saida com frete rastreado, quanto foi gasto com transporte. Abaixo de 2% e excelente. Entre 2% e 5% e adequado para a maioria dos segmentos. Acima de 5% vale revisar contratos e rotas de entrega.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div style="display:flex;gap:3px;align-items:center;margin-top:6px" title="Benchmark do setor alimenticio"><div style="height:4px;width:20%;background:var(--green);border-radius:2px 0 0 2px;opacity:.7"></div><div style="height:4px;width:30%;background:var(--green2);opacity:.5"></div><div style="height:4px;width:30%;background:var(--yellow);opacity:.6"></div><div style="height:4px;width:20%;background:var(--red);border-radius:0 2px 2px 0;opacity:.7"></div></div><div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3);margin-top:2px"><span>0%</span><span style="color:var(--green2)">ótimo &lt;3%</span><span style="color:var(--yellow)">meta &lt;5%</span><span style="color:var(--red)">alerta &gt;8%</span></div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-amber"><div class="kpi-tooltip">Custo total de frete dividido pelo numero de entregas realizadas no periodo. Se este valor esta subindo, pode indicar entregas mais caras, rotas mais longas ou reajuste de tarifas pelas transportadoras.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
   </div>
@@ -764,6 +764,15 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>Detalhes por NF-e<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem completa de todas as vendas com frete rastreado. Total NF = valor da venda; Valor Frete = o que a empresa pagou ao transportador; Fr. Cobrado = o que o cliente pagou de frete na nota; Saldo = diferenca entre os dois.</span></span></span>
       <button onclick="opExportXLSX()" title="Exportar tabela filtrada para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text3);font-weight:600;flex-shrink:0">Saldo (Cobrado − Pago):</span>
+      <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
+        <button class="cat-btn active" id="op_f_all" onclick="setOpSaldoFilter('')">Todos</button>
+        <button class="cat-btn" id="op_f_pos" onclick="setOpSaldoFilter('POS')" title="Empresa cobrou mais frete do cliente do que pagou a transportadora"><i class="fa-solid fa-arrow-up" style="color:var(--green);font-size:9px"></i> Saldo Positivo</button>
+        <button class="cat-btn" id="op_f_neg" onclick="setOpSaldoFilter('NEG')" title="Empresa pagou mais frete a transportadora do que cobrou do cliente"><i class="fa-solid fa-arrow-down" style="color:var(--red);font-size:9px"></i> Saldo Negativo</button>
+        <button class="cat-btn" id="op_f_zero" onclick="setOpSaldoFilter('ZERO')" title="Entregas em que nao houve cobranca de frete do cliente (frete gratis)"><i class="fa-solid fa-ban" style="color:var(--text3);font-size:9px"></i> Sem Cobranca</button>
+      </div>
     </div>
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
       <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')">Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
@@ -2084,8 +2093,16 @@ function renderAll(){
   document.getElementById('h_total').textContent=BRL(agg.tot);
   const pctStr=agg.fretePctFat.toFixed(1)+'%';
   const chipEl=document.getElementById('h_pct_fat_chip');chipEl.textContent=pctStr;chipEl.className='chip '+(agg.fretePctFat>8?'chip-red':agg.fretePctFat>5?'chip-amber':'chip-green');
-  const saldoEl=document.getElementById('h_saldo');saldoEl.textContent=BRL(agg.difTot);saldoEl.style.color=agg.difTot>=0?'var(--green)':'var(--red)';
-  document.getElementById('h_saldo_sub').innerHTML=agg.difTot>=0?'<span class="chip chip-green"><i class="fa-solid fa-arrow-up"></i> Cobrado &gt; Pago</span>&nbsp;empresa cobre o custo':'<span class="chip chip-red"><i class="fa-solid fa-arrow-down"></i> Pago &gt; Cobrado</span>&nbsp;prejuizo no frete';
+  const saldoEl=document.getElementById('h_saldo');const saldoLblEl=document.getElementById('h_saldo_lbl');
+  if(agg.difTot>=0){
+    saldoLblEl.textContent='Repasse de Frete ao Cliente';
+    saldoEl.textContent=BRL(agg.difTot);saldoEl.style.color='var(--green)';
+    document.getElementById('h_saldo_sub').innerHTML='<span class="chip chip-green"><i class="fa-solid fa-arrow-up"></i> Cobrado &gt; Pago</span>&nbsp;empresa cobre o custo';
+  }else{
+    saldoLblEl.textContent='Diferenca de Frete ao Cliente';
+    saldoEl.textContent=BRL(Math.abs(agg.difTot));saldoEl.style.color='var(--red)';
+    document.getElementById('h_saldo_sub').innerHTML='<span class="chip chip-red"><i class="fa-solid fa-arrow-down"></i> Deixamos de Cobrar</span>&nbsp;pago &gt; cobrado do cliente';
+  }
   const pctRecEl=document.getElementById('h_pct_rec');pctRecEl.textContent=pctStr;pctRecEl.style.color=agg.fretePctFat>8?'var(--red)':agg.fretePctFat>5?'var(--yellow)':'var(--green)';
   document.getElementById('h_pct_rec_sub').innerHTML=agg.fretePctFat<=5?'<span class="chip chip-green"><i class="fa-solid fa-check"></i> Abaixo do benchmark</span>':agg.fretePctFat<=8?'<span class="chip chip-amber"><i class="fa-solid fa-triangle-exclamation"></i>Atencao &mdash; meta &lt;5%</span>':'<span class="chip chip-red"><i class="fa-solid fa-xmark"></i> Acima do benchmark</span>';
   document.getElementById('h_ticket').textContent=BRL(agg.media);
@@ -2271,7 +2288,7 @@ function renderAll(){
     }).join('');
   })();
 }
-function pctBarInline(fr,nf){if(!nf) return '<span style="color:var(--text3)">-</span>';const p=fr/nf*100;const cls=p<5?'tg':p<10?'ty':'tr';const barClr=p<5?'var(--green)':p<10?'var(--amber)':'var(--red)';return '<div class="pct-bar-wrap"><span class="tag '+cls+'">'+p.toFixed(1)+'%</span><div class="pct-bar-bg"><div class="pct-bar-fill" style="width:'+Math.min(p*5,100)+'%;background:'+barClr+'"></div></div></div>';}
+function pctBarInline(fr,nf,nat){if(!nf) return '<span style="color:var(--text3);cursor:help" title="Total NF = R$ 0,00 — Natureza da Operação: '+esc(nat||'N/A')+'">- <i class="fa-solid fa-circle-info" style="font-size:9px"></i></span>';const p=fr/nf*100;const cls=p<5?'tg':p<10?'ty':'tr';const barClr=p<5?'var(--green)':p<10?'var(--amber)':'var(--red)';return '<div class="pct-bar-wrap"><span class="tag '+cls+'">'+p.toFixed(1)+'%</span><div class="pct-bar-bg"><div class="pct-bar-fill" style="width:'+Math.min(p*5,100)+'%;background:'+barClr+'"></div></div></div>';}
 function applySortToRows(rows){if(!tableSort.col) return rows;return [...rows].sort((a,b)=>{let va,vb;if(tableSort.col==='pct'){va=a.total_nf?a.valor_frete/a.total_nf:0;vb=b.total_nf?b.valor_frete/b.total_nf:0;}else if(tableSort.col==='total_nf'){va=a.total_nf||0;vb=b.total_nf||0;}else if(tableSort.col==='valor_frete'){va=a.valor_frete||0;vb=b.valor_frete||0;}else if(tableSort.col==='diferenca'){va=a.diferenca_frete||0;vb=b.diferenca_frete||0;}return tableSort.dir==='desc'?vb-va:va-vb;});}
 function sortBy(col){if(tableSort.col===col)tableSort.dir=tableSort.dir==='desc'?'asc':'desc';else{tableSort.col=col;tableSort.dir='desc';}tableRows=applySortToRows(filteredRows);tablePage=0;renderTable();updateSortHeaders();}
 function updateSortHeaders(){['total_nf','valor_frete','diferenca','pct'].forEach(c=>{const th=document.getElementById('th_'+c);if(!th) return;th.classList.remove('sort-asc','sort-desc');if(tableSort.col===c)th.classList.add('sort-'+tableSort.dir);});}
@@ -2295,7 +2312,7 @@ function mkDetailRow(d,rowId){
   const rid=rowId||'x';
   const rateioBtn=d.is_rateio?'<button id="rb-'+rid+'" onclick="event.stopPropagation();toggleRateioDetail(\''+rid+'\',\''+d.cte_chave+'\',\''+d.chave_nfe+'\')" style="margin-left:6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.45);color:var(--yellow);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer;font-family:inherit" title="Frete proporcional — clique para ver o rateio entre as NF-e do mesmo CTe"><i class="fa-solid fa-divide"></i> Rateio</button>':'';
   const freteCellStyle=d.is_rateio?'color:var(--blue2);font-weight:600;white-space:nowrap;background:rgba(245,158,11,.05)':'color:var(--blue2);font-weight:600;white-space:nowrap';
-  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="'+freteCellStyle+'">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td></tr>';
+  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="'+freteCellStyle+'">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf,d.nat_operacao)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td></tr>';
 }
 function mkPager(total,page,perPage,pagerId,onPage){
   const pages=Math.ceil(total/perPage);const pager=document.getElementById(pagerId);pager.innerHTML='';
@@ -2306,15 +2323,37 @@ function mkPager(total,page,perPage,pagerId,onPage){
   const lo=Math.max(0,page-2),hi=Math.min(pages-1,page+2);for(let i=lo;i<=hi;i++) addBtn(i+1,i,i===page);
   addBtn('>',page+1,false,page===pages-1);addBtn('>>',pages-1,false,page===pages-1);
 }
+let opSaldoFilter='';
+function setOpSaldoFilter(val){
+  opSaldoFilter=val;
+  document.getElementById('op_f_all').classList.toggle('active',val==='');
+  document.getElementById('op_f_pos').classList.toggle('active',val==='POS');
+  document.getElementById('op_f_neg').classList.toggle('active',val==='NEG');
+  document.getElementById('op_f_zero').classList.toggle('active',val==='ZERO');
+  tablePage=0;renderTable();
+}
+function opSaldoFilteredRows(){
+  if(!opSaldoFilter) return tableRows;
+  return tableRows.filter(d=>{
+    const cob=d.frete_cobrado||0;
+    if(opSaldoFilter==='ZERO') return cob<=0;
+    if(cob<=0) return false;
+    const dif=d.diferenca_frete||0;
+    if(opSaldoFilter==='POS') return dif>0;
+    if(opSaldoFilter==='NEG') return dif<0;
+    return true;
+  });
+}
 function renderTable(){
-  const tbody=document.getElementById('tbody');const slice=tableRows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
+  const tbody=document.getElementById('tbody');const rows=opSaldoFilteredRows();const slice=rows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
   tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'dr'+(tablePage*PAGE+i))).join('');
-  mkPager(tableRows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
+  mkPager(rows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
 }
 function opExportXLSX(){
   if(typeof XLSX==='undefined'){alert('Biblioteca de exportação ainda carregando. Aguarde alguns segundos e tente novamente.');return;}
-  if(!tableRows.length){alert('Nenhum registro para exportar com os filtros atuais.');return;}
-  const rows=tableRows.map(d=>{
+  const rows0=opSaldoFilteredRows();
+  if(!rows0.length){alert('Nenhum registro para exportar com os filtros atuais.');return;}
+  const rows=rows0.map(d=>{
     const pct=d.total_nf?d.valor_frete/d.total_nf*100:0;
     const cob=d.frete_cobrado||0;
     return{
