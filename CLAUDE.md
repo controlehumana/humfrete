@@ -45,7 +45,10 @@ ClaudeCode/
   QUIVE/
     buscar_cte.py               # Baixa CTe da API Qive → cte.db
     criar_view.py               # Parseia XMLs → tabelas cte_campos, cte_nf
-    cte.db                      # SQLite: CTe + faturamento + NF entrada
+    importar_entregadores.py    # Importa XLSX de referência → tabela entregadores
+    buscar_nfse_entregadores.py # Busca NFS-e dos entregadores via API Arquivei → nfse_entregadores
+    import_log.py               # Helper compartilhado: registra execuções na tabela import_log
+    cte.db                      # SQLite: CTe + faturamento + NF entrada + delivery + log
   Frete/
     processar_frete.py          # ETL: cte.db → cruzamento → Firestore
     index.html                  # Web app GitHub Pages (arquivo único)
@@ -67,6 +70,9 @@ ClaudeCode/
 | `nf_saida_items` | Faturamento de saída — 1 linha por item, acumulativo. Colunas: `canal` (L), `nicho` (J) |
 | `nf_entrada` | NF de entrada (compras) — 1 linha por NF |
 | `cnpj_nomes` | Cache CNPJ→Razão Social consultado via API. Chave: 14 dígitos sem formatação |
+| `entregadores` | Referência cadastral de entregadores autônomos (nome, CNPJ, empresa do grupo) |
+| `nfse_entregadores` | NFS-e de serviço emitidas pelos entregadores (módulo Delivery) |
+| `import_log` | Histórico de execuções dos scripts de importação/busca — exibido no Painel Admin |
 
 ### Views principais
 | View | O que agrega |
@@ -212,6 +218,7 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | `visao-geral` | Visão Geral | KPIs, gráficos temporais, geo, eficiência por peso |
 | `marketplace` | Marketplace | Shopee + Mercado Livre separados |
 | `compras` | Frete Compras | Frete de entrada (NF fornecedores) |
+| `delivery` | Delivery | Custo com NFS-e de entregadores autônomos |
 | `dev-mkt` | Dev. Marketplace | Devoluções via Shopee/ML |
 | `empresa` | Por Empresa | Análise por filial |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
@@ -367,6 +374,51 @@ Etapa 2/4 — criar_view.py            (parseia XMLs, atualiza views)
 Etapa 3/4 — processar_frete.py       (cruza dados, sobe para Firestore)
 ```
 
+## Log de Importações — Painel Admin (index.html)
+
+Histórico das execuções de scripts que alimentam o `cte.db`, exibido na aba Admin para acompanhar volume, erros e crescimento do banco (apoia decisão de migração futura, ex.: para Supabase).
+
+### Arquitetura
+```
+QUIVE/import_log.py            ← helper compartilhado: registrar(conn, script, origem, fonte, registros, novos, erros, status, detalhes)
+  ├── importar_faturamento.py        (origem='arquivo')
+  ├── importar_nf_entrada.py / buscar_nf_entrada.py  (origem='api')
+  ├── importar_entregadores.py       (origem='arquivo')
+  ├── buscar_cte.py                  (origem='api')
+  └── buscar_nfse_entregadores.py    (origem='api')
+processar_frete.py             ← _carregar_import_log() → campo "import_log" no payload (meta, não por empresa)
+index.html                     ← card "Log de Importacoes" na aba Admin, renderAdminImportLog()
+```
+
+### Tabela `import_log` (cte.db)
+```sql
+CREATE TABLE import_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_hora TEXT, script TEXT, origem TEXT, fonte TEXT,
+    registros INTEGER, novos INTEGER, erros INTEGER,
+    status TEXT, detalhes TEXT, tamanho_mb REAL
+)
+```
+- `origem` — `'arquivo'` ou `'api'`
+- `status` — `'sucesso'`, `'parcial'` (terminou mas com erros) ou `'erro'` (falha fatal)
+- `tamanho_mb` — tamanho do `cte.db` em disco no momento do registro (ver abaixo)
+- Coluna `tamanho_mb` adicionada via `ALTER TABLE ... ADD COLUMN` dentro de `registrar()` (try/except idempotente) — registros antigos ficam com `NULL`
+
+### `import_log.py` — helper compartilhado
+- `registrar(conn, script, origem, fonte, registros, novos, erros, status, detalhes)` — cria a tabela se não existir, insere o log e faz commit
+- `_tamanho_banco_mb(conn)` — descobre o caminho do `.db` via `PRAGMA database_list` e mede com `os.path.getsize()`; retorna `None` se não conseguir
+- Importado via `sys.path.insert(0, str(BASE / "QUIVE"))` nos scripts fora da pasta QUIVE (ex.: `importar_faturamento.py`)
+- Cada script chama `registrar()` ao final do `main()` (sucesso) e dentro do `except` (erro fatal, preservando `raise` para não perder o traceback)
+
+### `_carregar_import_log()` (processar_frete.py)
+- Lê os últimos 60 registros de `import_log` ordenados por `id DESC`
+- Detecta dinamicamente a existência da coluna `tamanho_mb` via `PRAGMA table_info` — compatibilidade com bancos onde a tabela já existia antes da coluna
+- Incluído no dict `meta` (não em `split_by_empresa` — é dado global, igual para todos os usuários admin)
+
+### `renderAdminImportLog()` (index.html)
+- Tabela com colunas: Data/Hora, Script, Origem (chip azul=API/cinza=Arquivo), Arquivo/Período, Registros, Novos, Erros (vermelho se >0), Status (chip verde=Sucesso/vermelho=Erro/amarelo=Parcial), Tam. Banco, Detalhes
+- `fmtTamanho(mb)` — formata em MB ou GB e aplica cor de alerta progressiva: cinza (<1GB), amarelo (≥1GB), vermelho (≥2GB) — sinaliza quando considerar migração
+
 ## Regras obrigatórias no index.html
 
 1. **Tooltips em todos os cards** — `<div class="kpi-tooltip">` em todo card numérico
@@ -511,23 +563,38 @@ Campo `cnpj_emitente` do CTe exportado como `transp_cnpj` em cada item de `detal
 - `trCnpjMap[nomeRaw] = Set<cnpj>` — todos os CNPJs por nome bruto
 - `trGroupMap[base8] = nomeCanônico` — nome mais frequente por CNPJ base
 
-## Módulo Delivery (pendente)
+## Módulo Delivery — `delivery` (index.html)
 
-Aguardando tabela de referência de entregadores (nome + CPF + empresa do grupo) do usuário.
+Mede o custo com entregadores autônomos (NFS-e de serviço de transporte emitidas para o grupo Humana), não o frete por CTe. Abandonou a abordagem inicial via romaneio do ERP — implementado via busca de NFS-e na API Arquivei.
 
-**O que já está validado:**
-- Arquivo romaneio: HTML-XLS do ERP, colunas Empresa / Nr. NFe / Data / Cliente / Cidade / UF / Transportadora (=entregador) / R$ Frete / R$ Total
-- Vínculo por `numero_nfe + empresa` confirmado no banco — 100% de aproveitamento
-- Gap de cobertura ~46% é causado por **entregas próprias** (frota da empresa, sem CTe) — não retiradas no depósito
-
-**Pipeline planejado (quando dados chegarem):**
+### Pipeline de dados
 ```
-ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
-  importar_romaneio.py ← parseia HTML, cruza com vw_nf_saida, salva tabela romaneio
-  tabela romaneio      ← empresa, numero_nfe, data, entregador, frete, chave_nfe
-  processar_frete.py   ← lê romaneio → dataset delivery → Firestore
-  index.html           ← nova aba Delivery
+QUIVE/importar_entregadores.py     ← importa XLSX de referência (nome+CPF/CNPJ+empresa) → tabela entregadores
+QUIVE/buscar_nfse_entregadores.py  ← busca NFS-e via API Arquivei (POST /v1/dfe/nfse, emitterCnpj=entregadores, takerCnpj=grupo) → tabela nfse_entregadores
+Frete/processar_frete.py           ← _carregar_nfse_entregadores() → campo "delivery" no payload
+index.html                         ← aba Delivery (tab-delivery)
 ```
+
+### Tabelas SQLite (cte.db)
+| Tabela | Conteúdo |
+|---|---|
+| `entregadores` | Referência cadastral: `cnpj_entregador`, `nome_entregador`, `cnpj_empresa` (recriada a cada import) |
+| `nfse_entregadores` | NFS-e emitidas pelos entregadores: `id` (PK), `empresa`, `emit_cnpj`, `emit_nome`, `numero`, `competencia`, `dt_emissao`, `valor_servico`, `status` |
+
+### `_carregar_nfse_entregadores()` (processar_frete.py)
+- Filtra `status = 'Authorized'` (ignora NFS-e canceladas/rejeitadas)
+- `LEFT JOIN entregadores` por `(cnpj_entregador, cnpj_empresa)` — usa `nome_entregador` cadastrado, com fallback para `emit_nome` da própria NFS-e
+- Campos do payload: `id, empresa, entregador_cnpj, entregador_nome, numero, competencia, data_emissao, valor_servico`
+- Datas convertidas via `fmt_date()` para `DD/MM/YYYY`
+
+### `renderDelivery()` (index.html)
+- Filtros: empresa (select + `state.empresas`), ano/mês (`state.ano`/`state.meses` sobre `data_emissao.slice(6,10)`/`slice(3,5)`), busca por nome/número
+- KPIs: `dlv_qtd`, `dlv_total`, `dlv_medio`, `dlv_qtd_entreg` (entregadores únicos por CNPJ)
+- Gráfico `ch_dlv_mensal` — evolução mensal do custo total (`mkBar`)
+- Tabela "Mapa de Desempenho por Empresa" — qtd, total, ticket médio, entregador top por empresa
+- Ranking "Valor médio cobrado por entregador" — ordenado por ticket médio decrescente
+- Tabela detalhada paginada (`dlv_tbody` / `mkPager`)
+- Exposta via `window._renderDelivery` — chamada pelo tab switching quando aba `delivery` ativa
 
 ## Pitfalls conhecidos
 
@@ -547,3 +614,5 @@ ClaudeCode/Romaneio/   ← arquivos HTML-XLS do ERP
 - **Chart.js guard** — `if(typeof Chart!=='undefined')` obrigatório antes de qualquer config de Chart.js; falha de CDN derruba o script inteiro por TDZ em cascata
 - **`nat_op_sem_cte` e `cnpj_nomes` devem estar em `split_by_empresa`** — campos globais copiados inteiros para cada documento de empresa. Se omitidos, chegam como `{}` no frontend. Regra geral: qualquer campo global novo no payload de `processar_frete.py` precisa ser adicionado explicitamente em `split_by_empresa`.
 - **`sqlite3.Row` não tem `.get()`** — ao ler campos de `vw_nf_saida` ou qualquer query SQLite com `row_factory = sqlite3.Row`, usar sempre `r["campo"]` (KeyError se ausente) ou `dict(r).get("campo","")` para acesso seguro. Nunca `r.get("campo")` — isso causa `AttributeError` silenciado pelo fallback de CSV, zerando todo o faturamento e gerando payload de 11MB no Firestore.
+- **Crescimento do `cte.db`** — está em ~684 MB (jun/2026) e cresce continuamente (CTe + faturamento + NF entrada + NFS-e entregadores). Acompanhar via coluna `tamanho_mb` no Log de Importações (Admin); thresholds visuais: amarelo ≥1GB, vermelho ≥2GB. Se ficar grande demais para a máquina local, considerar migração para outro local ou Supabase (plano gratuito)
+- **Novo script de importação/busca deve registrar no log** — todo script que grava em `cte.db` deve chamar `import_log.registrar(conn, script, origem, fonte, registros, novos, erros, status, detalhes)` ao final do `main()` (sucesso) e no `except` (erro fatal, com `raise` simples para preservar o traceback). Ver seção "Log de Importações — Painel Admin" para o padrão completo

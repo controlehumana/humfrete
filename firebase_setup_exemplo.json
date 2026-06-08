@@ -1,0 +1,10 @@
+{
+  "_comentario": "Renomeie este arquivo para firebase_config.json e preencha com os dados do seu projeto Firebase",
+  "_instrucoes": "Firebase Console > Configuracoes do projeto > Geral > Apps Web > Configuracao do Firebase SDK",
+  "apiKey": "COLE_AQUI",
+  "authDomain": "SEU_PROJETO.firebaseapp.com",
+  "projectId": "SEU_PROJETO",
+  "storageBucket": "SEU_PROJETO.appspot.com",
+  "messagingSenderId": "SEU_SENDER_ID",
+  "appId": "SEU_APP_ID"
+}

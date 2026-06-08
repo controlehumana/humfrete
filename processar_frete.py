@@ -648,6 +648,44 @@ def _carregar_nfse_entregadores():
         return []
 
 
+def _carregar_import_log(limite=60):
+    """Carrega do banco SQLite o histórico recente de execuções dos scripts de
+    importação/busca (tabela import_log), para exibir no Painel Admin."""
+    if not os.path.exists(QUIVE_DB):
+        return []
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='import_log'")
+        if not cur.fetchone():
+            conn.close(); return []
+        cols = [c[1] for c in cur.execute("PRAGMA table_info(import_log)").fetchall()]
+        tem_tamanho = "tamanho_mb" in cols
+        campos = "data_hora, script, origem, fonte, registros, novos, erros, status, detalhes"
+        if tem_tamanho:
+            campos += ", tamanho_mb"
+        rows = cur.execute(f"SELECT {campos} FROM import_log ORDER BY id DESC LIMIT ?", (limite,)).fetchall()
+        conn.close()
+        resultado = [{
+            "data_hora":  r["data_hora"] or "",
+            "script":     r["script"] or "",
+            "origem":     r["origem"] or "",
+            "fonte":      r["fonte"] or "",
+            "registros":  r["registros"] or 0,
+            "novos":      r["novos"] or 0,
+            "erros":      r["erros"] or 0,
+            "status":     r["status"] or "",
+            "detalhes":   r["detalhes"] or "",
+            "tamanho_mb": (r["tamanho_mb"] if tem_tamanho else None) or 0,
+        } for r in rows]
+        print(f"   Log de Importacoes: {len(resultado)} registros carregados")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar import_log: {e}")
+        return []
+
+
 def cruzar(nfe_map, cte_list, nfe_to_cte):
     print("\n[OK] Cruzando dados...")
     # Marketplace detectado pelo nome da transportadora OU pelo canal de venda
@@ -3937,6 +3975,7 @@ def upload_to_firestore(empresa_data, dados_completos):
             "gerado_em": dados_completos.get("gerado_em", ""),
             "empresas": sorted(empresa_data.keys()),
             "timestamp": datetime.now().isoformat(),
+            "import_log": _carregar_import_log(),
         }
         db.collection("dados").document("_meta").set(meta)
         print("   OK  dados/_meta")
