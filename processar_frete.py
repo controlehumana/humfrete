@@ -2739,7 +2739,7 @@ function updateTags(){
 // AGGREGATE
 function aggregate(rows){
   const byEst={},byTr={},byCn={},byEmp={},byNat={};
-  let tot=0,flh=0,fhu=0,nlh=0,nhu=0,cobTot=0,difTot=0,totalFat=0,margem=0,nCom=0,nSem=0;
+  let tot=0,flh=0,fhu=0,nlh=0,nhu=0,cobTot=0,difTot=0,difCom=0,totalFat=0,margem=0,nCom=0,nSem=0;
   const inc=(obj,k,fr,nf,fl,fh)=>{
     if(!obj[k]) obj[k]={qtd:0,frete:0,nf:0,frete_lh:0,frete_hu:0};
     obj[k].qtd++;obj[k].frete+=fr;obj[k].nf+=nf;obj[k].frete_lh+=fl;obj[k].frete_hu+=fh;
@@ -2753,11 +2753,11 @@ function aggregate(rows){
     byNat[nat].qtd++;byNat[nat].frete+=fr;byNat[nat].nf+=nf;byNat[nat].cobrado+=cob;byNat[nat].diferenca+=dif;
     tot+=fr;flh+=fl;fhu+=fh;nlh+=(d.linhahum_total||0);nhu+=(d.humana_total||0);
     cobTot+=cob;difTot+=dif;totalFat+=nf;margem+=(d.margem_bruta||0);
-    if(cob>0) nCom++; else nSem++;
+    if(cob>0){nCom++;difCom+=dif;} else nSem++;
   });
   const toList=(obj,k)=>Object.entries(obj).map(([l,v])=>({label:l,...v})).sort((a,b)=>b[k||'frete']-a[k||'frete']);
   const trList=toList(byTr);
-  return{qtd:rows.length,tot,flh,fhu,nlh,nhu,cobTot,difTot,totalFat,margem,
+  return{qtd:rows.length,tot,flh,fhu,nlh,nhu,cobTot,difTot,difCom,totalFat,margem,
     media:rows.length?tot/rows.length:0,fretePctFat:totalFat?tot/totalFat*100:0,
     nCom,nSem,numTransp:trList.length,topTransp:trList[0]||null,
     concTop1:trList.length&&tot?trList[0].frete/tot*100:0,
@@ -2769,8 +2769,8 @@ function renderAlerts(agg){
   const el=document.getElementById('alerts-row');const al=[];
   if(agg.concTop1>70){const tr=agg.topTransp?trName(agg.topTransp.label):'?';
     al.push({t:'a-red',i:'<i class="fa-solid fa-triangle-exclamation"></i>',m:'<strong>Risco de Concentração:</strong> '+tr+' representa '+agg.concTop1.toFixed(1)+'% do frete. Alta dependência de um único parceiro logístico.'});}
-  if(agg.difTot<-5000)
-    al.push({t:'a-red',i:'<i class="fa-solid fa-arrow-trend-down"></i>',m:'<strong>Saldo Negativo:</strong> Empresa paga '+BRL(Math.abs(agg.difTot))+' a mais do que cobra. Revisar política de repasse de frete.'});
+  if(agg.difCom<-5000)
+    al.push({t:'a-red',i:'<i class="fa-solid fa-arrow-trend-down"></i>',m:'<strong>Saldo Negativo:</strong> Nas entregas com cobrança de frete, a empresa paga '+BRL(Math.abs(agg.difCom))+' a mais do que cobra do cliente. Revisar política de repasse de frete.'});
   if(agg.fretePctFat>8)
     al.push({t:'a-yellow',i:'<i class="fa-solid fa-lightbulb"></i>',m:'<strong>Custo de Frete Elevado:</strong> '+agg.fretePctFat.toFixed(1)+'% do faturamento &mdash; acima do benchmark (&lt;5%). Oportunidade de negociação e otimização de rotas.'});
   else if(agg.fretePctFat>5)
@@ -2799,9 +2799,9 @@ function renderInsights(agg){
     b:'Frete = <strong><span class="'+(pct>8?'bad':pct>5?'hi':'ok')+'">'+pct.toFixed(2)+'%</span></strong> do faturamento vinculado. Benchmark: <strong>3-5%</strong>. '
       +(pct<=5?'<span class="ok">Dentro do padrão</span>.':pct<=8?'<span class="hi">Atenção</span>: margem de melhoria via negociação.':'<span class="bad">Acima do limite</span>: revisão urgente.')});
   ins.push({i:'<i class="fa-solid fa-scale-balanced"></i>',t:'Resultado Financeiro do Frete',
-    b:'Saldo cobrado vs pago: <strong><span class="'+(agg.difTot>=0?'ok':'bad')+'">'+BRL(agg.difTot)+'</span></strong>. '
-      +(agg.difTot>=0?'Empresa recupera <span class="ok">'+( Math.abs(agg.difTot)/agg.tot*100).toFixed(1)+'%</span> via repasse. Posicao favoravel.'
-        :'<span class="bad">'+N(agg.nSem)+'</span> entregas sem frete cobrado elevam o custo operacional liquido.')});
+    b:'Saldo cobrado vs pago (apenas entregas com cobrança de frete): <strong><span class="'+(agg.difCom>=0?'ok':'bad')+'">'+BRL(agg.difCom)+'</span></strong>. '
+      +(agg.difCom>=0?'Empresa recupera <span class="ok">'+( Math.abs(agg.difCom)/agg.tot*100).toFixed(1)+'%</span> via repasse. Posicao favoravel.'
+        :'<span class="bad">'+BRL(Math.abs(agg.difCom))+'</span> deixaram de ser repassados ao cliente nessas entregas. '+N(agg.nSem)+' entregas adicionais tiveram frete grátis.')});
   if(agg.byEst.length){const top=agg.byEst[0];const pctE=(top.frete/agg.tot*100).toFixed(1);const med=top.qtd?top.frete/top.qtd:0;const d=((med-agg.media)/agg.media*100).toFixed(0);
     ins.push({i:'<i class="fa-solid fa-location-dot"></i>',t:'Estado de Maior Impacto',
       b:'<strong>'+top.label+'</strong> responde por <strong>'+pctE+'%</strong> do frete ('+BRL(top.frete)+'). Ticket médio: '+BRL(med)+' &mdash; '
@@ -2978,7 +2978,7 @@ function renderAll(){
   const prevLbl=prevData?MESES[prevData.mes]+(prevData.ano?' '+prevData.ano.slice(2):''):'';
   const vsNote=prev?(' <span style="color:var(--text3);font-size:9px">vs '+prevLbl+'</span>'):'';
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';
-  document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difTot,prev.difTot,false)+vsNote:'';
+  document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';
   document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';
   document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
 

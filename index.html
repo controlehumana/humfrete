@@ -669,7 +669,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <div id="tab-visao-geral" class="tab-panel active">
   <div class="hero-grid">
     <div class="hero-card c-blue"><div class="kpi-tooltip">Tudo que a empresa pagou as transportadoras no periodo selecionado. Considera apenas entregas com comprovante de frete confirmado e associado a uma venda registrada no sistema.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
-    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora. Quando a empresa cobra mais do que paga, exibimos como Repasse de Frete ao Cliente (a empresa cobre o custo). Quando a empresa paga mais do que cobra, exibimos a diferenca como valor positivo rotulado "Diferenca de Frete ao Cliente — Deixamos de Cobrar", representando quanto deixou de ser repassado ao cliente.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl" id="h_saldo_lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora — considerando apenas as entregas em que houve cobranca de frete do cliente (entregas com frete gratis ficam de fora desta conta e aparecem no KPI "Frete Gratis"). Quando a empresa cobra mais do que paga, exibimos como Repasse de Frete ao Cliente (a empresa cobre o custo). Quando a empresa paga mais do que cobra, exibimos a diferenca como valor positivo rotulado "Diferenca de Frete ao Cliente — Deixamos de Cobrar", representando quanto deixou de ser repassado ao cliente nessas entregas.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl" id="h_saldo_lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 faturados em NF-e de saida com frete rastreado, quanto foi gasto com transporte. Abaixo de 2% e excelente. Entre 2% e 5% e adequado para a maioria dos segmentos. Acima de 5% vale revisar contratos e rotas de entrega.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div style="display:flex;gap:3px;align-items:center;margin-top:6px" title="Benchmark do setor alimenticio"><div style="height:4px;width:20%;background:var(--green);border-radius:2px 0 0 2px;opacity:.7"></div><div style="height:4px;width:30%;background:var(--green2);opacity:.5"></div><div style="height:4px;width:30%;background:var(--yellow);opacity:.6"></div><div style="height:4px;width:20%;background:var(--red);border-radius:0 2px 2px 0;opacity:.7"></div></div><div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3);margin-top:2px"><span>0%</span><span style="color:var(--green2)">ótimo &lt;3%</span><span style="color:var(--yellow)">meta &lt;5%</span><span style="color:var(--red)">alerta &gt;8%</span></div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-amber"><div class="kpi-tooltip">Custo total de frete dividido pelo numero de entregas realizadas no periodo. Se este valor esta subindo, pode indicar entregas mais caras, rotas mais longas ou reajuste de tarifas pelas transportadoras.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
   </div>
@@ -1967,7 +1967,7 @@ function updateTags(){
 }
 function aggregate(rows){
   const byEst={},byTr={},byCn={},byEmp={},byNat={};
-  let tot=0,flh=0,fhu=0,nlh=0,nhu=0,cobTot=0,difTot=0,totalFat=0,margem=0,nCom=0,nSem=0;
+  let tot=0,flh=0,fhu=0,nlh=0,nhu=0,cobTot=0,difTot=0,difCom=0,totalFat=0,margem=0,nCom=0,nSem=0;
   const inc=(obj,k,fr,nf,fl,fh)=>{if(!obj[k])obj[k]={qtd:0,frete:0,nf:0,frete_lh:0,frete_hu:0};obj[k].qtd++;obj[k].frete+=fr;obj[k].nf+=nf;obj[k].frete_lh+=fl;obj[k].frete_hu+=fh;};
   rows.forEach(d=>{
     const fr=d.valor_frete,nf=d.total_nf,fl=d.frete_linhahum||0,fh=d.frete_humana||0;
@@ -1978,16 +1978,16 @@ function aggregate(rows){
     byNat[nat].qtd++;byNat[nat].frete+=fr;byNat[nat].nf+=nf;byNat[nat].cobrado+=cob;byNat[nat].diferenca+=dif;
     tot+=fr;flh+=fl;fhu+=fh;nlh+=(d.linhahum_total||0);nhu+=(d.humana_total||0);
     cobTot+=cob;difTot+=dif;totalFat+=nf;margem+=(d.margem_bruta||0);
-    if(cob>0)nCom++;else nSem++;
+    if(cob>0){nCom++;difCom+=dif;}else nSem++;
   });
   const toList=(obj,k)=>Object.entries(obj).map(([l,v])=>({label:l,...v})).sort((a,b)=>b[k||'frete']-a[k||'frete']);
   const trList=toList(byTr);
-  return{qtd:rows.length,tot,flh,fhu,nlh,nhu,cobTot,difTot,totalFat,margem,media:rows.length?tot/rows.length:0,fretePctFat:totalFat?tot/totalFat*100:0,nCom,nSem,numTransp:trList.length,topTransp:trList[0]||null,concTop1:trList.length&&tot?trList[0].frete/tot*100:0,byEst:toList(byEst),byTr:trList,byCn:toList(byCn),byEmp:toList(byEmp),byNat:toList(byNat)};
+  return{qtd:rows.length,tot,flh,fhu,nlh,nhu,cobTot,difTot,difCom,totalFat,margem,media:rows.length?tot/rows.length:0,fretePctFat:totalFat?tot/totalFat*100:0,nCom,nSem,numTransp:trList.length,topTransp:trList[0]||null,concTop1:trList.length&&tot?trList[0].frete/tot*100:0,byEst:toList(byEst),byTr:trList,byCn:toList(byCn),byEmp:toList(byEmp),byNat:toList(byNat)};
 }
 function renderAlerts(agg){
   const el=document.getElementById('alerts-row');if(!el) return;const al=[];
   if(agg.concTop1>70){const tr=agg.topTransp?trDisp(agg.topTransp.label):'?';al.push({t:'a-red',i:'<i class="fa-solid fa-triangle-exclamation"></i>',m:'<strong>Risco de Concentracao:</strong> '+tr+' representa '+agg.concTop1.toFixed(1)+'% do frete.'});}
-  if(agg.difTot<-5000)al.push({t:'a-red',i:'<i class="fa-solid fa-arrow-trend-down"></i>',m:'<strong>Saldo Negativo:</strong> Empresa paga '+BRL(Math.abs(agg.difTot))+' a mais do que cobra.'});
+  if(agg.difCom<-5000)al.push({t:'a-red',i:'<i class="fa-solid fa-arrow-trend-down"></i>',m:'<strong>Saldo Negativo:</strong> Nas entregas com cobranca de frete, a empresa paga '+BRL(Math.abs(agg.difCom))+' a mais do que cobra do cliente.'});
   if(agg.fretePctFat>8)al.push({t:'a-yellow',i:'<i class="fa-solid fa-lightbulb"></i>',m:'<strong>Custo de Frete Elevado:</strong> '+agg.fretePctFat.toFixed(1)+'% do faturamento &mdash; acima do benchmark (&lt;5%).'});
   else if(agg.fretePctFat>5)al.push({t:'a-yellow',i:'<i class="fa-solid fa-chart-bar"></i>',m:'<strong>Frete na Zona de Atencao:</strong> '+agg.fretePctFat.toFixed(1)+'% do faturamento.'});
   if(agg.qtd>0&&agg.nSem/agg.qtd>0.3)al.push({t:'a-yellow',i:'<i class="fa-solid fa-gift"></i>',m:'<strong>Alto Indice de Frete Gratis:</strong> '+(agg.nSem/agg.qtd*100).toFixed(1)+'% das entregas sem repasse.'});
@@ -2028,11 +2028,11 @@ function renderInsights(agg){
     b:'Frete = <span class="'+clsFr+'">'+pctFr.toFixed(2)+'%</span> do faturamento vinculado '+_scope+'. De cada R$ 100 vendidos, R$ '+pctFr.toFixed(2)+' foi gasto com transporte. '+acaoFr});
 
   // 3. Resultado Financeiro do Frete
-  const saldo=agg.difTot;
+  const saldo=agg.difCom;
   const pctSld=agg.cobTot>0?(Math.abs(saldo)/agg.cobTot*100).toFixed(1):'0';
   const txtSld=saldo>=0
-    ?'A empresa arrecadou <span class="ok">'+BRL(saldo)+'</span> a mais em frete do que pagou às transportadoras — o repasse ao cliente está cobrindo o custo logístico.'
-    :'A empresa subsidiou <span class="bad">'+BRL(Math.abs(saldo))+'</span> em frete ('+pctSld+'% do total cobrado). Revise a política de frete grátis ou atualize as tabelas de cobrança ao cliente.';
+    ?'Considerando apenas as entregas em que houve cobranca de frete do cliente, a empresa arrecadou <span class="ok">'+BRL(saldo)+'</span> a mais do que pagou às transportadoras — o repasse ao cliente está cobrindo o custo logístico.'
+    :'Considerando apenas as entregas em que houve cobranca de frete do cliente, a empresa deixou de repassar <span class="bad">'+BRL(Math.abs(saldo))+'</span> ('+pctSld+'% do total cobrado nessas entregas). Revise as tabelas de cobranca ao cliente nessas operacoes.';
   ins.push({i:'<i class="fa-solid fa-scale-balanced"></i>',t:'Resultado Financeiro do Frete',b:txtSld});
 
   // 4. Estado de Maior Impacto
@@ -2094,13 +2094,13 @@ function renderAll(){
   const pctStr=agg.fretePctFat.toFixed(1)+'%';
   const chipEl=document.getElementById('h_pct_fat_chip');chipEl.textContent=pctStr;chipEl.className='chip '+(agg.fretePctFat>8?'chip-red':agg.fretePctFat>5?'chip-amber':'chip-green');
   const saldoEl=document.getElementById('h_saldo');const saldoLblEl=document.getElementById('h_saldo_lbl');
-  if(agg.difTot>=0){
+  if(agg.difCom>=0){
     saldoLblEl.textContent='Repasse de Frete ao Cliente';
-    saldoEl.textContent=BRL(agg.difTot);saldoEl.style.color='var(--green)';
+    saldoEl.textContent=BRL(agg.difCom);saldoEl.style.color='var(--green)';
     document.getElementById('h_saldo_sub').innerHTML='<span class="chip chip-green"><i class="fa-solid fa-arrow-up"></i> Cobrado &gt; Pago</span>&nbsp;empresa cobre o custo';
   }else{
     saldoLblEl.textContent='Diferenca de Frete ao Cliente';
-    saldoEl.textContent=BRL(Math.abs(agg.difTot));saldoEl.style.color='var(--red)';
+    saldoEl.textContent=BRL(Math.abs(agg.difCom));saldoEl.style.color='var(--red)';
     document.getElementById('h_saldo_sub').innerHTML='<span class="chip chip-red"><i class="fa-solid fa-arrow-down"></i> Deixamos de Cobrar</span>&nbsp;pago &gt; cobrado do cliente';
   }
   const pctRecEl=document.getElementById('h_pct_rec');pctRecEl.textContent=pctStr;pctRecEl.style.color=agg.fretePctFat>8?'var(--red)':agg.fretePctFat>5?'var(--yellow)':'var(--green)';
@@ -2204,7 +2204,7 @@ function renderAll(){
   document.getElementById('tb_vinc').textContent=N(agg.qtd);document.getElementById('tb_op').textContent=N(agg.qtd);
   document.getElementById('footer_info').textContent=N(agg.qtd)+' NF-e vinculadas  |  '+BRL(agg.tot)+'  |  '+DATA.gerado_em;
   const prevData=prevMonthAgg();const prev=prevData?prevData.agg:null;const prevLbl=prevData?MESES[prevData.mes]+(prevData.ano?' '+prevData.ano.slice(2):''):'';const vsNote=prev?(' <span style="color:var(--text3);font-size:9px">vs '+prevLbl+'</span>'):'';
-  document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difTot,prev.difTot,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
+  document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
   if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras')renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
