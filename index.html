@@ -1428,6 +1428,7 @@ function _mergeData(datas) {
   const nfePorEmpAno = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano||{}));
   const nfePorEmpAnoMes = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano_mes||{}));
   const cteConcPorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_empresa||{}));
+  const cteConcPorEmpAnoMes = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_emp_ano_mes||{}));
   const nfeSemCtePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_sem_cte_por_empresa||{}));
   // nfe_fat_periodo global: soma explícita dos valores por empresa
   const totNfePeriodo = Object.values(nfePorEmp).reduce((s,v)=>s+v,0)
@@ -1462,6 +1463,7 @@ function _mergeData(datas) {
       nfe_fat_por_emp_ano: nfePorEmpAno,
       nfe_fat_por_emp_ano_mes: nfePorEmpAnoMes,
       cte_conc_por_empresa: cteConcPorEmp,
+      cte_conc_por_emp_ano_mes: cteConcPorEmpAnoMes,
       nfe_sem_cte_por_empresa: nfeSemCtePorEmp,
     }
   };
@@ -2013,6 +2015,25 @@ function _effDen(){
   }
   return total;
 }
+function _filtCteConc(){
+  const r2=DATA?.resumo||{};
+  const ano=state.ano;
+  const emps=(state.empresas&&state.empresas.length)?state.empresas:null;
+  const meses=(state.meses&&state.meses.length)?state.meses:null;
+  if(!ano&&!emps&&!meses) return null;
+  const map=r2.cte_conc_por_emp_ano_mes||{};
+  let total=0,naoVinc=0;
+  for(const k in map){
+    const [e,a,m]=k.split('|');
+    if(ano&&a!==ano) continue;
+    if(emps&&!emps.includes(e)) continue;
+    if(meses&&!meses.includes(m)) continue;
+    total+=(map[k].total||0);
+    naoVinc+=(map[k].nao_vinculados||0);
+  }
+  if(!total) return null;
+  return {total,naoVinc,vinc:total-naoVinc,pct:(total-naoVinc)/total*100};
+}
 function renderInsights(agg){
   const el=document.getElementById('insights-grid');if(!el||!agg.qtd) return;
   const ins=[];
@@ -2133,14 +2154,19 @@ function renderAll(){
   const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent=_subCobTxt;
   const taxa=_denCob?(_numCob/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
-  const _cteConcEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||{total:0,nao_vinculados:0}):null;
-  const _totCteG=_cteConcEmp?_cteConcEmp.total:(r.total_cte||0);
-  const _svG=_cteConcEmp?_cteConcEmp.nao_vinculados:(r.ctes_nao_vinculados_count||0);
+  const _totCteG=r.total_cte||0;
+  const _svG=r.ctes_nao_vinculados_count||0;
   const _pctConcG=_totCteG>0?((_totCteG-_svG)/_totCteG*100):0;
+  const _concFilt=_filtCteConc();
   const _concEl=document.getElementById('k_cte_conc');
-  if(_concEl){_concEl.textContent=_pctConcG.toFixed(1)+'%';_concEl.style.color=_pctConcG>=98?'var(--green)':_pctConcG>=90?'var(--yellow)':'var(--red)';}
   const _concSub=document.getElementById('k_cte_conc_sub');
-  if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe — global, sem filtro';
+  if(_concFilt){
+    if(_concEl){_concEl.textContent=_concFilt.pct.toFixed(1)+'%';_concEl.style.color=_concFilt.pct>=98?'var(--green)':_concFilt.pct>=90?'var(--yellow)':'var(--red)';}
+    if(_concSub) _concSub.textContent=N(_concFilt.vinc)+' de '+N(_concFilt.total)+' CTe no filtro  |  global: '+_pctConcG.toFixed(1)+'%';
+  }else{
+    if(_concEl){_concEl.textContent=_pctConcG.toFixed(1)+'%';_concEl.style.color=_pctConcG>=98?'var(--green)':_pctConcG>=90?'var(--yellow)':'var(--red)';}
+    if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe — global';
+  }
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
   document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trDisp(agg.topTransp.label):'';
   const concEl=document.getElementById('k_conc');concEl.textContent=agg.concTop1.toFixed(1)+'%';concEl.style.color=agg.concTop1>70?'var(--red)':agg.concTop1>50?'var(--yellow)':'var(--green)';

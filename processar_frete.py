@@ -1023,6 +1023,31 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         emp: {"total": _cte_tot_emp[emp], "nao_vinculados": _cte_nv_emp.get(emp, 0)}
         for emp in _cte_tot_emp if emp
     }
+    # CTe Conciliados por empresa+ano+mes: chave "emp|ano|mes" -> {total, nao_vinculados}
+    _cte_tot_eam = {}
+    for cte in cte_list:
+        emp = cte.get("empresa") or ""
+        if not emp: continue
+        data = cte.get("data_emissao") or ""
+        ano = data[-4:] if len(data) >= 4 else ""
+        mes = data[3:5] if len(data) >= 5 else ""
+        if not ano or not mes: continue
+        chave = f"{emp}|{ano}|{mes}"
+        _cte_tot_eam[chave] = _cte_tot_eam.get(chave, 0) + 1
+    _cte_nv_eam = {}
+    for nv in ctes_nao_vinculados:
+        emp = _emp_from_nv(nv) or ""
+        if not emp: continue
+        data = nv.get("data_emissao") or ""
+        ano = data[-4:] if len(data) >= 4 else ""
+        mes = data[3:5] if len(data) >= 5 else ""
+        if not ano or not mes: continue
+        chave = f"{emp}|{ano}|{mes}"
+        _cte_nv_eam[chave] = _cte_nv_eam.get(chave, 0) + 1
+    cte_conc_por_emp_ano_mes = {
+        k: {"total": _cte_tot_eam[k], "nao_vinculados": _cte_nv_eam.get(k, 0)}
+        for k in _cte_tot_eam
+    }
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
@@ -1032,6 +1057,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "nfe_fat_por_emp_ano":nfe_fat_por_emp_ano,
             "nfe_fat_por_emp_ano_mes":nfe_fat_por_emp_ano_mes,
             "cte_conc_por_empresa":cte_conc_por_empresa,
+            "cte_conc_por_emp_ano_mes":cte_conc_por_emp_ano_mes,
             "nfe_sem_cte":len(nfe_sem_cte),"nfe_sem_cte_por_empresa":nfe_sem_cte_por_empresa,"cte_sem_fat":cte_sem_fat,
             "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
