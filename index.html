@@ -1063,7 +1063,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </table></div>
   </div>
   <div class="card">
-    <div class="card-title">Ranking - Valor Medio Cobrado por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Ticket medio (valor medio por NFS-e) e custo medio por dia trabalhado (valor total dividido pelo numero de competencias distintas) cobrados por cada entregador parceiro no periodo selecionado, do maior para o menor. Ajuda a identificar quais entregadores cobram mais e comparar custos entre parceiros.</span></span></div>
+    <div class="card-title">Ranking - Valor Medio Cobrado por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Ticket medio (valor medio por NFS-e) e custo medio por dia (valor total dividido pelo numero de dias corridos entre a primeira e a ultima competencia no periodo) cobrados por cada entregador parceiro no periodo selecionado, do maior para o menor. Ajuda a identificar quais entregadores cobram mais e comparar custos entre parceiros.</span></span></div>
     <div class="tw dtbl" style="max-height:50vh;overflow-y:auto">
     <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">#</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Qtd. NFS-e</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Total</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Medio/NFS-e</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Medio/Dia</th></tr></thead>
@@ -3410,16 +3410,29 @@ function initApp(){
         +'</tr>';
     }).join('') || '<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--text3)">Sem dados no periodo selecionado</td></tr>';
     // Ranking - Valor medio cobrado por entregador
+    const _dlvDt=s=>{ // 'DD/MM/YYYY' -> timestamp UTC (null se invalido)
+      if(!s||s.length<10) return null;
+      const t=Date.UTC(+s.slice(6,10),+s.slice(3,5)-1,+s.slice(0,2));
+      return isNaN(t)?null:t;
+    };
     const porEntreg={};
     rows.forEach(d=>{
       const key=(d.entregador_cnpj||'')+'||'+(d.entregador_nome||'');
-      if(!porEntreg[key]) porEntreg[key]={nome:d.entregador_nome||'-',empresas:new Set(),qtd:0,total:0,dias:new Set()};
-      porEntreg[key].empresas.add(d.empresa||'?');
-      porEntreg[key].qtd++;
-      porEntreg[key].total+=(d.valor_servico||0);
-      if(d.competencia) porEntreg[key].dias.add(d.competencia);
+      if(!porEntreg[key]) porEntreg[key]={nome:d.entregador_nome||'-',empresas:new Set(),qtd:0,total:0,minDt:null,maxDt:null};
+      const e=porEntreg[key];
+      e.empresas.add(d.empresa||'?');
+      e.qtd++;
+      e.total+=(d.valor_servico||0);
+      const dt=_dlvDt(d.competencia);
+      if(dt!==null){
+        if(e.minDt===null||dt<e.minDt) e.minDt=dt;
+        if(e.maxDt===null||dt>e.maxDt) e.maxDt=dt;
+      }
     });
-    const rank=Object.values(porEntreg).map(e=>({...e,medio:e.total/e.qtd,medioDia:e.total/(e.dias.size||1)})).sort((a,b)=>b.medio-a.medio);
+    const rank=Object.values(porEntreg).map(e=>{
+      const dias=(e.minDt!==null)?Math.round((e.maxDt-e.minDt)/86400000)+1:1;
+      return {...e,medio:e.total/e.qtd,medioDia:e.total/dias};
+    }).sort((a,b)=>b.medio-a.medio);
     document.getElementById('dlv_rank_tbody').innerHTML=rank.map((e,i)=>{
       const emps=[...e.empresas].sort().join(', ');
       return '<tr style="border-bottom:1px solid var(--row-border)">'
