@@ -589,11 +589,13 @@ index.html                         ← aba Delivery (tab-delivery)
 
 ### `renderDelivery()` (index.html)
 - Filtros: empresa (select + `state.empresas`), ano/mês (`state.ano`/`state.meses` sobre `data_emissao.slice(6,10)`/`slice(3,5)`), busca por nome/número
-- KPIs: `dlv_qtd`, `dlv_total`, `dlv_medio`, `dlv_qtd_entreg` (entregadores únicos por CNPJ)
+- KPIs: `dlv_qtd`, `dlv_total`, `dlv_medio`, `dlv_qtd_entreg` (entregadores únicos por CNPJ) — `dlv_total`/`dlv_medio` têm chip de tendência (`dlv_total_trend`/`dlv_medio_trend`)
+- Card **"Delivery vs. Frete Tradicional"** (`dlv_vs_cte`) — compara custo com entregadores autônomos × frete CT-e (`filteredRows`) no mesmo período/empresas filtrados: barra dupla + "a cada R$100 gastos com logística de saída, R$X fica com entregadores e R$Y com transportadoras". Usa `dlvGlobalRows` (filtrado só pelos filtros globais, sem os locais da aba) para comparação justa com `filteredRows`
 - Gráfico `ch_dlv_mensal` — evolução mensal do custo total (`mkBar`)
 - Tabela "Mapa de Desempenho por Empresa" — qtd, total, ticket médio, entregador top por empresa
-- Ranking "Valor médio cobrado por entregador" — ordenado por ticket médio decrescente
+- Ranking "Valor médio cobrado por entregador" — ordenado por ticket médio (`Valor Médio/NFS-e` = total ÷ qtd) decrescente. Coluna adicional **`Valor Médio/Dia`** = total ÷ dias corridos entre a primeira e a última `competencia` do entregador no período filtrado (helper `_dlvDt` parseia `DD/MM/YYYY` → timestamp UTC). **Atenção:** não usar "nº de competências distintas" como divisor — coincide quase sempre com a qtd de NFS-e (cada nota tende a ter `competencia` própria) e zera a diferença com o ticket médio
 - Tabela detalhada paginada (`dlv_tbody` / `mkPager`)
+- `_dlvPrevRows()` — espelha `_geoPrevRows()` do módulo Geográfico para achar o período de comparação (mês anterior se 1 mês selecionado, ano anterior se só ano selecionado, filtrando `DATA.delivery` por `data_emissao`)
 - Exposta via `window._renderDelivery` — chamada pelo tab switching quando aba `delivery` ativa
 
 ## Pitfalls conhecidos
