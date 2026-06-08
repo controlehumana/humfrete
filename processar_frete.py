@@ -1808,6 +1808,12 @@ header{
       <div class="mkt-val" id="mkt_ml_frete">-</div>
       <div class="mkt-sub" id="mkt_ml_qtd">-</div>
     </div>
+    <div class="mkt-card" style="border-top:3px solid #FF0050">
+      <div class="kpi-tooltip">Valor total pago a TikTok Logistics para entrega de pedidos da TikTok Shop no período. Frete operado pela logística da plataforma e debitado via CTe.</div>
+      <div class="mkt-lbl">Total Frete TikTok Shop</div>
+      <div class="mkt-val" id="mkt_tiktok_frete">-</div>
+      <div class="mkt-sub" id="mkt_tiktok_qtd">-</div>
+    </div>
     <div class="mkt-card" style="border-top:3px solid var(--blue2)">
       <div class="kpi-tooltip">Custo médio por pedido entregue via Shopee. Calculado dividindo o frete total pelo número de CTe. Valores crescentes podem indicar revisão na tabela contratada com a plataforma.</div>
       <div class="mkt-lbl">Frete Médio Shopee</div>
@@ -1820,9 +1826,15 @@ header{
       <div class="mkt-val" id="mkt_ml_med">-</div>
       <div class="mkt-sub">por entrega</div>
     </div>
+    <div class="mkt-card" style="border-top:3px solid var(--blue2)">
+      <div class="kpi-tooltip">Custo médio por pedido entregue via TikTok Shop. Comparar com as demais plataformas para avaliar qual canal tem menor custo logístico relativo.</div>
+      <div class="mkt-lbl">Frete Médio TikTok Shop</div>
+      <div class="mkt-val" id="mkt_tiktok_med">-</div>
+      <div class="mkt-sub">por entrega</div>
+    </div>
   </div>
   <div class="card">
-    <div class="card-title">Shopee vs Mercado Livre - Frete Mensal</div>
+    <div class="card-title">Shopee vs Mercado Livre vs TikTok Shop - Frete Mensal</div>
     <div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div>
   </div>
   <div class="card">
@@ -1833,6 +1845,7 @@ header{
         <button class="cat-btn active" id="mkt_f_all" onclick="setMktFilter('')">Todos</button>
         <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')"><i class="fa-solid fa-store"></i> Shopee</button>
         <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')"><i class="fa-solid fa-tag"></i> Mercado Livre</button>
+        <button class="cat-btn" id="mkt_f_tiktok" onclick="setMktFilter('TIKTOK SHOP')"><i class="fa-solid fa-music"></i> TikTok Shop</button>
       </div>
     </div>
     <div class="tw dtbl" id="mkt_wrap">
@@ -3141,12 +3154,14 @@ function setMktFilter(val){
   document.getElementById('mkt_f_all').classList.toggle('active',val==='');
   document.getElementById('mkt_f_shopee').classList.toggle('active',val==='SHOPEE');
   document.getElementById('mkt_f_ml').classList.toggle('active',val==='MERCADO LIVRE');
+  document.getElementById('mkt_f_tiktok').classList.toggle('active',val==='TIKTOK SHOP');
   mktPage=0;renderMktTable();
 }
 function renderMarketplace(){
   mktRows=filterRows(DATA.detalhes,{excMkt:false,onlyMkt:true});
   const shopee=mktRows.filter(d=>d.marketplace_type==='shopee');
   const ml=mktRows.filter(d=>d.marketplace_type==='ml');
+  const tiktok=mktRows.filter(d=>d.marketplace_type==='tiktok');
   const sumF=arr=>arr.reduce((s,d)=>s+d.valor_frete,0);
   document.getElementById('mkt_shopee_frete').textContent=BRL(sumF(shopee));
   document.getElementById('mkt_shopee_qtd').textContent=N(shopee.length)+' CTe';
@@ -3154,23 +3169,28 @@ function renderMarketplace(){
   document.getElementById('mkt_ml_frete').textContent=BRL(sumF(ml));
   document.getElementById('mkt_ml_qtd').textContent=N(ml.length)+' CTe';
   document.getElementById('mkt_ml_med').textContent=ml.length?BRL(sumF(ml)/ml.length):'-';
+  document.getElementById('mkt_tiktok_frete').textContent=BRL(sumF(tiktok));
+  document.getElementById('mkt_tiktok_qtd').textContent=N(tiktok.length)+' CTe';
+  document.getElementById('mkt_tiktok_med').textContent=tiktok.length?BRL(sumF(tiktok)/tiktok.length):'-';
   document.getElementById('tb_mkt').textContent=N(mktRows.length);
 
-  // Timeline Shopee vs ML
+  // Timeline Shopee vs ML vs TikTok Shop
   const allPers=[...new Set(DATA.detalhes.map(d=>per(d.data)).filter(Boolean))].sort();
-  const byPerSh={},byPerMl={};
+  const byPerSh={},byPerMl={},byPerTk={};
   shopee.forEach(d=>{const p=per(d.data);if(p) byPerSh[p]=(byPerSh[p]||0)+d.valor_frete;});
   ml.forEach(d=>{const p=per(d.data);if(p) byPerMl[p]=(byPerMl[p]||0)+d.valor_frete;});
+  tiktok.forEach(d=>{const p=per(d.data);if(p) byPerTk[p]=(byPerTk[p]||0)+d.valor_frete;});
   mkLine('ch_mkt_timeline',allPers.map(p=>perL(p)),[
     {label:'Shopee',data:allPers.map(p=>byPerSh[p]||0),borderColor:'#FF6900',backgroundColor:'#FF690022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FF6900',pointBorderColor:'#fff',pointBorderWidth:2},
     {label:'Mercado Livre',data:allPers.map(p=>byPerMl[p]||0),borderColor:'#FFE600',backgroundColor:'#FFE60022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FFE600',pointBorderColor:'#fff',pointBorderWidth:2},
+    {label:'TikTok Shop',data:allPers.map(p=>byPerTk[p]||0),borderColor:'#FF0050',backgroundColor:'#FF005022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FF0050',pointBorderColor:'#fff',pointBorderWidth:2},
   ]);
 
   mktPage=0;renderMktTable();
 }
 function renderMktTable(){
   const tbody=document.getElementById('mkt_tbody');
-  const filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktRows;
+  const filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktFilterVal==='TIKTOK SHOP'?mktRows.filter(d=>d.marketplace_type==='tiktok'):mktRows;
   const slice=filtered.slice(mktPage*PAGE,mktPage*PAGE+PAGE);
   tbody.innerHTML=slice.map(d=>mkDetailRow(d)).join('');
   mkPager(filtered.length,mktPage,PAGE,'mkt_pager',pg=>{mktPage=pg;renderMktTable();});
