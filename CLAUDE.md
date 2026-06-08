@@ -147,13 +147,9 @@ CTe total (~58k)
 ### Vendas com Frete Rastreado + NF-e Vinculadas
 - **Cards:** `k_cobertura` / `k_cobertura_sub` e `k_vinc` / `k_vinc_sub`
 - **Numerador:** `agg.qtd` — NF-e vinculadas a CTe, já filtradas por todos os filtros ativos
-- **Denominador:** função `_effDen()` (escopo global) — cobre todos os filtros:
-  - empresa + ano → `nfe_fat_por_emp_ano[emp][ano]`
-  - só empresa   → `nfe_fat_por_empresa[emp]`
-  - só ano       → `nfe_fat_por_ano[ano]`
-  - nenhum       → `nfe_fat_periodo` (global 2025+)
+- **Denominador:** `_effDen()` — itera `nfe_fat_por_emp_ano_mes` cobrindo simultaneamente `state.empresas[]`, `state.ano` e `state.meses[]`. Sem filtro: retorna `nfe_fat_periodo` global.
 - **Nat. ops excluídas do denominador:** devoluções, entradas, perdas/roubo, saldo ICMS, imobilizado, NF consumidor, simples remessa, retorno de locação — TRANSFERÊNCIA SAÍDA mantida
-- **Subtítulo:** mostra `"X de Y vendas em AAAA — Empresa"` com o período ativo explícito
+- **`_periodoLabel`:** label descritivo montado a partir de `state.ano`, `state.meses[]` (formatados via `MESES[+m]`) e `state.empresas[]` — ex.: `" — 2026 · Jun · BRU1"`. **Não usar `state.empresa`** (morto).
 - Threshold: verde ≥80%, amarelo ≥65%, vermelho <65%
 - **ATENÇÃO:** `_effDen()` deve ser definida no escopo global (antes de `renderInsights` e `renderAll`) — se definida dentro de `renderAll`, causa `ReferenceError` em `renderInsights`
 
@@ -164,15 +160,43 @@ Todos calculados com a mesma lógica de exclusão de nat. ops sem frete:
 | `nfe_fat_periodo` | `int` | denominador global (todos os anos/empresas) |
 | `nfe_fat_por_empresa` | `{emp: int}` | denominador por empresa |
 | `nfe_fat_por_ano` | `{ano: int}` | denominador por ano |
-| `nfe_fat_por_emp_ano` | `{emp: {ano: int}}` | denominador empresa×ano (combinação) |
+| `nfe_fat_por_emp_ano` | `{emp: {ano: int}}` | denominador empresa×ano |
+| `nfe_fat_por_emp_ano_mes` | `{"emp\|ano\|mes": int}` | denominador empresa×ano×mês — chave flat com `\|` como separador |
 | `cte_conc_por_empresa` | `{emp: {total, nao_vinculados}}` | CTe Conciliados por empresa |
+| `cte_conc_por_emp_ano_mes` | `{"emp\|ano\|mes": {total, nao_vinculados}}` | CTe Conciliados empresa×ano×mês — mesmo padrão de chave flat |
 | `nfe_sem_cte_por_empresa` | `{emp: int}` | warning NF sem CTe por empresa |
-Em `_mergeData` esses dicts são mesclados via `Object.assign` (mesmo objeto em todos os docs de empresa).
 
-### CTe Conciliados
-- **Fórmula:** `(total - nao_vinculados) / total` — **respeita filtro de empresa** via `cte_conc_por_empresa[state.empresa]`
-- Quando empresa não filtrada: usa `r.total_cte` e `r.ctes_nao_vinculados_count` globais
-- Fallback seguro: `{total:0, nao_vinculados:0}` — nunca cai nos valores globais indevidamente
+Em `_mergeData` os dicts de chave flat (`nfe_fat_por_emp_ano_mes`, `cte_conc_por_emp_ano_mes`) são mesclados via `Object.assign` sem conflito — cada empresa emite só suas próprias chaves.
+
+### `_effDen()` — denominador de NF-e Vinculadas / Vendas com Frete Rastreado
+Função global (definida antes de `renderInsights` e `renderAll`). Itera `nfe_fat_por_emp_ano_mes` filtrando pelas dimensões ativas:
+```javascript
+function _effDen(){
+  const r2=DATA?.resumo||{};
+  const ano=state.ano;
+  const emps=(state.empresas&&state.empresas.length)?state.empresas:null;
+  const meses=(state.meses&&state.meses.length)?state.meses:null;
+  if(!ano&&!emps&&!meses) return r2.nfe_fat_periodo||r2.total_nfe_fat||0;
+  const map=r2.nfe_fat_por_emp_ano_mes||{};
+  let total=0;
+  for(const k in map){
+    const [e,a,m]=k.split('|');
+    if(ano&&a!==ano) continue;
+    if(emps&&!emps.includes(e)) continue;
+    if(meses&&!meses.includes(m)) continue;
+    total+=map[k];
+  }
+  return total;
+}
+```
+**Atenção:** `state.meses` armazena strings zero-padded `"06"` (extraído de `(d.data||'').slice(3,5)` pelo multiselect) — a comparação com `m` (também `"06"` das chaves do dict) é sempre consistente.
+
+### `_filtCteConc()` — CTe Conciliados com filtro
+Mesma lógica de iteração que `_effDen()`, mas sobre `cte_conc_por_emp_ano_mes`. Retorna `{total, naoVinc, vinc, pct}` ou `null` quando não há filtro ativo (neste caso o card usa os valores globais `r.total_cte`/`r.ctes_nao_vinculados_count`).
+
+### CTe Conciliados (card Visão Geral)
+- **Sem filtro:** exibe % global (`r.total_cte` e `r.ctes_nao_vinculados_count`) + sub-texto "X de Y CTe — global"
+- **Com filtro ativo (empresa/ano/mês):** exibe % filtrado (via `_filtCteConc()`) como valor principal + global como comparativo no sub-texto: `"X de Y CTe no filtro  |  global: Z%"`
 - Threshold: verde ≥98%, amarelo ≥90%, vermelho <90%
 
 ### Integridade da Análise (aba Consolidação Frete)
@@ -180,6 +204,19 @@ Em `_mergeData` esses dicts são mesclados via `Object.assign` (mesmo objeto em 
 - `pctConc` = CTe Conciliados — **respeita empresa** via `cte_conc_por_empresa` (igual ao card Visão Geral)
 - `cobDados` = % CTes com cliente, data e destino preenchidos — filtrado via `filterRows()`
 - Threshold: verde ≥95%, amarelo ≥85%, vermelho <85%
+
+### `state.empresa` — código morto (não usar)
+`state.empresa` (singular) **nunca é atribuído** — o filtro real de empresa é `state.empresas` (array multi-select). Ainda aparece em ~8 lugares no código (`_cteConcEmp`, `wShow`, `_ccEmp`, `ncData`/`cancelData`, `geo_filtro_lbl`, `_filtParts`) mas é sempre `undefined`/falsy, então cai nos branches `else` que usam valores globais — comportamento correto por acidente. **Não adicionar mais referências a `state.empresa`; usar sempre `state.empresas`.**
+
+### Repasse/Diferença de Frete ao Cliente (card Visão Geral)
+- Usa `agg.difCom` — soma de `diferenca_frete` **apenas** nas entregas com `frete_cobrado > 0`
+- **Não usar `agg.difTot`** — ele soma todas as linhas incluindo frete grátis (`cob=0` → `dif=-valor_frete`), inflando artificialmente o negativo
+- Quando `difCom >= 0`: card label "Repasse de Frete ao Cliente" (verde)
+- Quando `difCom < 0`: card label "Diferença de Frete ao Cliente — Deixamos de Cobrar" (vermelho), exibe `Math.abs(difCom)`
+- Para validar manualmente: exportar aba Operacional com filtro **"Todos"** (não "Saldo Negativo") e somar a coluna Saldo — resultado deve bater com o card. Se exportado com `opSaldoFilter='NEG'`, o total da planilha excluirá as linhas de saldo positivo e não baterá com o card (que é posição líquida).
+
+### Filtro de Saldo na aba Operacional
+Botões Todos / Saldo Positivo / Saldo Negativo / Sem Cobrança acima da tabela. Controlado por `opSaldoFilter` (global) via `setOpSaldoFilter(val)`. Tanto `renderTable()` quanto `opExportXLSX()` usam `opSaldoFilteredRows()` em vez de `tableRows` diretamente — **o export reflete o filtro de saldo ativo no momento**.
 
 ### % Frete / Faturamento — Mapa de Transportadoras
 - **Denominador:** faturamento das NF-e **transportadas por aquela carrier** (não o total da empresa)
