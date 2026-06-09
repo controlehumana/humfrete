@@ -1783,7 +1783,6 @@ function toggleGrupoEc(){
   groupByEconGroup=!groupByEconGroup;
   localStorage.setItem('groupCarriers',groupByEconGroup?'1':'0');
   state.transp=''; // limpa filtro de transportadora (chave mudou de tipo)
-  _populateTranspSelect();
   const btn=document.getElementById('btn_grupo_ec');
   if(btn){btn.style.background=groupByEconGroup?'rgba(94,106,210,.18)':'rgba(255,255,255,.05)';btn.style.color=groupByEconGroup?'var(--blue2)':'var(--text3)';}
   renderAll();
@@ -2196,6 +2195,9 @@ function renderAll(){
   });
   trGroupMap={};
   Object.entries(_bc).forEach(([b,c])=>{trGroupMap[b]=Object.entries(c).sort((a,v)=>v[1]-a[1])[0][0];});
+  // Reconstrói o select de transportadora agora que trGroupMap tem os nomes
+  _populateTranspSelect();
+  const _stSel=document.getElementById('filter_transp');if(_stSel&&state.transp)_stSel.value=state.transp;
   // Atualiza visual do botão de grupo econômico
   const _btnGe=document.getElementById('btn_grupo_ec');
   if(_btnGe){_btnGe.style.background=groupByEconGroup?'rgba(94,106,210,.18)':'rgba(255,255,255,.05)';_btnGe.style.color=groupByEconGroup?'var(--blue2)':'var(--text3)';}
