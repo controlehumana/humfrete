@@ -216,8 +216,14 @@ Mesma lógica de iteração que `_effDen()`, mas sobre `cte_conc_por_emp_ano_mes
 - `cobDados` = % CTes com cliente, data e destino preenchidos — filtrado via `filterRows()`
 - Threshold: verde ≥95%, amarelo ≥85%, vermelho <85%
 
-### `state.empresa` — código morto (não usar)
-`state.empresa` (singular) **nunca é atribuído** — o filtro real de empresa é `state.empresas` (array multi-select). Ainda aparece em ~8 lugares no código (`_cteConcEmp`, `wShow`, `_ccEmp`, `ncData`/`cancelData`, `geo_filtro_lbl`, `_filtParts`) mas é sempre `undefined`/falsy, então cai nos branches `else` que usam valores globais — comportamento correto por acidente. **Não adicionar mais referências a `state.empresa`; usar sempre `state.empresas`.**
+### `state.empresa` — removido (jun/2026)
+`state.empresa` (singular) foi **removido do código** — todas as 6 ocorrências foram substituídas por `state.empresas` (array multi-select). **Nunca adicionar referências a `state.empresa`; usar sempre `state.empresas`.**
+
+Efeitos do cleanup:
+- `_renderNC` e `_renderCancel` agora filtram por empresa quando `state.empresas` está ativo
+- `geo_filtro_lbl` e `_filtParts` (Rotas) agora exibem empresa quando exatamente 1 empresa selecionada
+- `_nfeSemCteVal` usa `nfe_sem_cte_por_empresa` para 1 empresa, soma para múltiplas, global para nenhuma
+- `_ccEmp` (renderClientes) usa `cte_conc_por_empresa[empresas[0]]` quando exatamente 1 empresa selecionada
 
 ### Repasse/Diferença de Frete ao Cliente (card Visão Geral)
 - Usa `agg.difCom` — soma de `diferenca_frete` **apenas** nas entregas com `frete_cobrado > 0`
@@ -388,11 +394,15 @@ O script mantém uma cópia quase idêntica do HTML/JS do `index.html` em `HTML_
 
 Botões com classe CSS `btn-xlsx` (verde, tema-aware via `html.ocean .btn-xlsx`):
 
-| Função | Escopo | Aba |
-|---|---|---|
-| `nvExportXLSX()` | local `initApp()` + `window.nvExportXLSX` | CT-e sem Identificação — exporta `nvRows` (filtros locais + globais) |
-| `opExportXLSX()` | global | Operacional — exporta `tableRows` (filtros + ordenação ativos) |
-| `cliExportXLSX()` | global + `window.cliExportXLSX` | Por Cliente — exporta **todos** os grupos de `cliData` (ignora busca); aba única "Consolidacoes", 1 linha por NF-e; colunas: Cliente, Empresa, Semana, Qtd Entregas no Grupo, Mesmo Destino, Economia Potencial do Grupo, Data NF, Numero NF, Valor Nota, Frete Rateado, % Frete/Nota, Transportadora, Origem, Destino, Canal, Chave NF-e, Chave CT-e |
+| Função | Escopo | Aba | Respeita busca/filtros? |
+|---|---|---|---|
+| `nvExportXLSX()` | local `initApp()` + `window.nvExportXLSX` | CT-e sem Identificação | ✅ filtros locais + globais |
+| `opExportXLSX()` | global | Operacional | ✅ filtros + ordenação ativos |
+| `natopExportXLSX()` | global | Por Tipo de Venda | ✅ `_natopRows` já filtrado |
+| `cliExportXLSX()` | global + `window.cliExportXLSX` | Por Cliente | ❌ ignora busca — exporta todos `cliData`; aba única "Consolidacoes", 1 linha por NF-e |
+| `compExportXLSX()` | local `initApp()` + `window.compExportXLSX` | Frete Compras | ✅ empresa, ano, mês, busca |
+| `dlvExportXLSX()` | local `initApp()` + `window.dlvExportXLSX` | Delivery | ✅ empresa, ano, mês, busca |
+| `dmExportXLSX()` | local `initApp()` + `window.dmExportXLSX` | Devoluções Marketplace | ✅ plataforma, empresa, ano, mês, busca |
 
 - Guard obrigatório: `if(typeof XLSX==='undefined')` antes de usar SheetJS
 - Funções dentro de `initApp()` **devem** ser expostas via `window.fn = fn` para o `onclick` do HTML alcançar — mesmo padrão de `window._renderNV`, `window._nvShowEspelho`
@@ -572,7 +582,7 @@ Três botões no topo do módulo: **Nat. Operação | Canal | Nicho**. Controlad
 `natopDrillDown(i)` usa índice de `_natopRows` (evita escape de aspas no onclick gerado). Comportamento por visão:
 - `natop` → aplica `state.natop=[nat]`, atualiza checkboxes e label do multiselect
 - `canal` → aplica `state.canal=val`, atualiza `#filter_canal`
-- `nicho` → navega para Operacional mas sem filtro (nicho não tem filtro global ainda)
+- `nicho` → aplica `state.nicho=val`; chip "Nicho: X ×" aparece na barra de filtros via `updateTags`; `filterRows` filtra `d.nicho` quando `state.nicho` preenchido
 
 ## Módulo Cobertura de Dados — `nao-vinculados` (index.html)
 
@@ -614,7 +624,7 @@ Três botões no topo do módulo: **Nat. Operação | Canal | Nicho**. Controlad
 - `renderAll()` chama `window._renderNV()` quando aba NV está ativa → dispara NV + NC + Cancelados
 - Tab click handler chama `window._renderNV()` ao entrar na aba
 - Filtros aplicados: `state.ano`, `state.meses`, `state.empresa`, `state.empresas`
-- Filtros NÃO aplicados ao NV: `state.transp`, `state.linha`, `state.natop`, `state.canal`
+- Filtros NÃO aplicados ao NV: `state.transp`, `state.linha`, `state.natop`, `state.canal`, `state.nicho`
 
 ### Modal Espelho CT-e
 - Abre com `window._nvShowEspelho(cte_chave)`
@@ -625,6 +635,12 @@ Três botões no topo do módulo: **Nat. Operação | Canal | Nicho**. Controlad
 ## Comportamento de inicialização
 
 - **Ano padrão:** ao carregar, `initApp()` pré-seleciona o ano mais recente disponível nos dados (`anos[anos.length-1]` após `.sort()`). Avança automaticamente quando chegar 2027+.
+
+### `state` — objeto global de filtros
+```javascript
+const state={ano:'',meses:[],empresas:[],linha:'',natop:[],estado:'',transp:'',canal:'',nicho:'',q:'',categoria:''};
+```
+`nicho` (string) — preenchido pelo drill-down da visão Nicho em `natopDrillDown()`; limpo via chip `×` em `updateTags()`; aplicado em `filterRows()` como `d.nicho !== state.nicho`.
 
 ## Globals críticos (ordem importa)
 
@@ -697,7 +713,7 @@ index.html                         ← aba Delivery (tab-delivery)
 - **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
 - **`_effDen()` deve ser global** — definir ANTES de `renderInsights` e `renderAll`. Se definida dentro de `renderAll`, causa `ReferenceError` silencioso que impede renderização de todos os blocos posteriores (gráficos, heatmap, etc.)
 - **Dev.Mkt data format** — `devolucoes_mkt.data_emissao` está em `DD/MM/YYYY` (igual a `compras`). Slice correto: ano=`slice(6,10)`, mês=`slice(3,5)`. Não usar `slice(0,4)`/`slice(5,7)` (formato YYYY-MM-DD)
-- **Filtros respeitam empresa em todos os módulos** — `_renderNC` filtra por `empresa_nf`, `_renderCancel` por `empresa`, cards Visão Geral usam `_effDen()`, Integridade usa `cte_conc_por_empresa`. Qualquer novo KPI deve ser auditado para não usar valor global quando empresa filtrada
+- **Filtros respeitam empresa em todos os módulos** — `_renderNC` filtra por `empresa_nf` (via `state.empresas`), `_renderCancel` por `empresa` (via `state.empresas`), cards Visão Geral usam `_effDen()`, Integridade usa `cte_conc_por_empresa`. Qualquer novo KPI deve ser auditado para não usar valor global quando empresa filtrada. **Não usar `state.empresa` (removido) — usar sempre `state.empresas`**
 - **Conflito de push git** — uploads via interface web do GitHub divergem do local; usar `git fetch && git reset --soft origin/main`
 - **Duplicatas nos filtros** — `initApp()` usa `_initAppDone` para não re-adicionar opções; selects limpos com `clr()` antes de popular; select de transportadora populado via `_populateTranspSelect()` (não `addOpt` direto)
 - **Destinatário em transferências** — `CNPJ_EMPRESA[cnpjRaw]` onde `cnpjRaw = d.part_cnpj.replace(/\D/g,'')` normaliza formatação antes do lookup; empresas do grupo exibidas em laranja com CNPJ formatado abaixo
