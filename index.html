@@ -2776,43 +2776,23 @@ function toggleCliDetails(key){
 }
 function cliExportXLSX(){
   if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada. Recarregue a página.');
-  const q=(document.getElementById('cli_search')||{value:''}).value.trim().toLowerCase();
-  const display=q?cliData.filter(g=>
-    (g.cliente||'').toLowerCase().includes(q)||
-    g.ctes.some(d=>(d.numero||'').toLowerCase().includes(q))
-  ):cliData;
-  if(!display.length) return alert('Nenhum grupo para exportar.');
-  // Sheet 1: Resumo (1 linha por grupo)
-  const resumo=display.map(g=>{
-    const tot=g.ctes.reduce((s,d)=>s+d.valor_frete,0);
+  if(!cliData.length) return alert('Nenhum dado carregado para exportar.');
+  // Exporta TODOS os grupos (ignora busca — use filtro do Excel)
+  const rows=[];
+  cliData.forEach(g=>{
     const fretes=g.ctes.map(d=>d.valor_frete).sort((a,b)=>a-b);
-    const eco=fretes.slice(0,fretes.length-1).reduce((s,v)=>s+v,0);
+    const eco=+fretes.slice(0,fretes.length-1).reduce((s,v)=>s+v,0).toFixed(2);
     const destList=Object.keys(g.destinos);
-    return {
-      'Cliente': g.cliente||'',
-      'Empresa': g.empresa||'',
-      'Semana': fmtSemana(g.semana),
-      'Qtd Entregas': g.ctes.length,
-      'Total Frete (R$)': +tot.toFixed(2),
-      'Qtd Destinos': destList.length,
-      'Mesmo Destino': destList.length===1?'Sim':'Não',
-      'Economia Potencial (R$)': +eco.toFixed(2),
-    };
-  });
-  // Sheet 2: Detalhes (1 linha por NF-e)
-  const detalhes=[];
-  display.forEach(g=>{
-    const fretes=g.ctes.map(d=>d.valor_frete).sort((a,b)=>a-b);
-    const eco=fretes.slice(0,fretes.length-1).reduce((s,v)=>s+v,0);
-    const destList=Object.keys(g.destinos);
+    const mesmoDest=destList.length===1?'Sim':'Não';
     g.ctes.forEach(d=>{
       const pct=d.total_nf?(d.valor_frete/d.total_nf*100):0;
-      detalhes.push({
+      rows.push({
         'Cliente': d.cliente||g.cliente||'',
         'Empresa': d.empresa||g.empresa||'',
         'Semana': fmtSemana(g.semana),
-        'Economia do Grupo (R$)': +eco.toFixed(2),
-        'Mesmo Destino': destList.length===1?'Sim':'Não',
+        'Qtd Entregas no Grupo': g.ctes.length,
+        'Mesmo Destino': mesmoDest,
+        'Economia Potencial do Grupo (R$)': eco,
         'Data NF': d.data||'',
         'Numero NF': d.numero||'',
         'Valor Nota (R$)': +(d.total_nf||0).toFixed(2),
@@ -2827,25 +2807,20 @@ function cliExportXLSX(){
       });
     });
   });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  // Formatar colunas monetárias
+  const monet=['Economia Potencial do Grupo (R$)','Valor Nota (R$)','Frete Rateado (R$)'];
+  const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+  monet.forEach(col=>{
+    const ci=hdr.indexOf(col);
+    if(ci<0) return;
+    for(let ri=1;ri<=rows.length;ri++){
+      const addr=XLSX.utils.encode_cell({r:ri,c:ci});
+      if(ws[addr]) ws[addr].z='"R$"#,##0.00';
+    }
+  });
   const wb=XLSX.utils.book_new();
-  const ws1=XLSX.utils.json_to_sheet(resumo);
-  const ws2=XLSX.utils.json_to_sheet(detalhes);
-  // Formatação de colunas monetárias
-  const fmtMoney=(ws,rows,cols)=>{
-    const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
-    cols.forEach(col=>{
-      const ci=hdr.indexOf(col);
-      if(ci<0) return;
-      for(let ri=1;ri<=rows.length;ri++){
-        const addr=XLSX.utils.encode_cell({r:ri,c:ci});
-        if(ws[addr]) ws[addr].z='"R$"#,##0.00';
-      }
-    });
-  };
-  fmtMoney(ws1,resumo,['Total Frete (R$)','Economia Potencial (R$)']);
-  fmtMoney(ws2,detalhes,['Economia do Grupo (R$)','Valor Nota (R$)','Frete Rateado (R$)']);
-  XLSX.utils.book_append_sheet(wb,ws1,'Resumo por Grupo');
-  XLSX.utils.book_append_sheet(wb,ws2,'Detalhes por NF-e');
+  XLSX.utils.book_append_sheet(wb,ws,'Consolidacoes');
   const dt=new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb,'consolidacao_frete_'+dt+'.xlsx');
 }
