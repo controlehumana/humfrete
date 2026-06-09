@@ -715,7 +715,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-tooltip">NF-e de saída (vendas, bonificações, transferências) que possuem ao menos um CT-e de frete vinculado — são as notas para as quais o custo de entrega foi identificado. <br><br>Este card considera apenas o faturamento de saída. Os demais tipos de frete ficam em abas dedicadas: compras de fornecedores → aba Frete Compras; devoluções de marketplace → aba Dev. Marketplace; entregadores autônomos → aba Delivery.</div><div class="kpi-lbl">NF-e Vinculadas</div><div class="kpi-val" id="k_vinc">-</div><div class="kpi-sub" id="k_vinc_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">De cada 100 vendas do período, quantas têm um comprovante de frete identificado. Valores abaixo de 50% são normais quando uma parte dos clientes retira a mercadoria diretamente no depósito — nesses casos não existe frete para registrar.</div><div class="kpi-lbl">Vendas com Frete Rastreado</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub" id="k_cobertura_sub">das vendas com entrega</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">De cada 100 NF-e de saída do período, quantas tiveram o frete realizado por uma transportadora com CT-e registrado. <br><br>Valores entre 20% e 50% são completamente normais neste modelo de negócio — o gap não indica falha nos dados: <br>• Parte dos clientes retira a mercadoria diretamente no depósito (sem frete) <br>• Parte das entregas é feita pela frota própria da empresa <br><br>Nenhum desses casos gera CT-e, então nunca aparecem aqui. Apenas as entregas contratadas junto a transportadoras terceiras são contabilizadas. <br><br>A linha verde abaixo confirma a qualidade dos CT-e que existem no sistema.</div><div class="kpi-lbl">Entregas via Transportadora</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub" id="k_cobertura_sub">-</div><div class="kpi-sub" id="k_cobertura_sub2" style="font-size:9px;margin-top:3px">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Qualidade da conciliação dos dados de frete. O número exibido é o total de CT-e no banco; o percentual mostra quantos foram vinculados a uma nota fiscal (venda, compra ou devolução). <br><br>Próximo de 100%: conciliação completa e confiável. Não conciliados são CT-e em que a transportadora não informou a nota fiscal de origem no documento XML — não é um erro do sistema, mas um gap nos dados da transportadora. <br><br><strong>Métrica global de qualidade de dados — não muda com os filtros de empresa/ano/mês.</strong></div><div class="kpi-lbl">CTe Conciliados</div><div class="kpi-val" id="k_cte_conc">-</div><div class="kpi-sub" id="k_cte_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantas empresas de transporte diferentes realizaram ao menos uma entrega rastreada no periodo selecionado.</div><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quanto do total gasto com frete vai para a transportadora principal. Acima de 40% indica dependencia elevada: um problema com esse parceiro pode impactar grande parte das entregas da empresa.</div><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
@@ -2138,7 +2138,7 @@ function renderInsights(agg){
     :taxaIns>=70
     ?'<span class="hi">'+taxaIns.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCobIns||0)+'). A diferença é normal: parte dos clientes retira a mercadoria diretamente no depósito, sem gerar frete.'
     :'<span class="bad">'+taxaIns.toFixed(1)+'%</span> das vendas têm frete identificado ('+N(agg.qtd)+' de '+N(_dCobIns||0)+'). Cobertura baixa — verifique se os arquivos de frete de todos os períodos foram importados corretamente.';
-  ins.push({i:'<i class="fa-solid fa-link"></i>',t:'Vendas com Frete Rastreado',b:txtCob});
+  ins.push({i:'<i class="fa-solid fa-link"></i>',t:'Entregas via Transportadora',b:txtCob});
 
   el.innerHTML=ins.map(i=>'<div class="insight-card"><div class="insight-icon">'+i.i+'</div><div class="insight-title">'+i.t+'</div><div class="insight-body">'+i.b+'</div></div>').join('');
 }
@@ -2200,9 +2200,9 @@ function renderAll(){
   if(state.meses&&state.meses.length) _lblParts.push(state.meses.map(m=>MESES[+m]||m).join('/'));
   if(state.empresas&&state.empresas.length) _lblParts.push(state.empresas.length===1?state.empresas[0]:state.empresas.length+' empresas');
   const _periodoLabel=_lblParts.length?(' — '+_lblParts.join(' · ')):'';
-  const _subCobTxt=N(_numCob)+' de '+N(_denCob)+'  vendas'+_periodoLabel;
+  const _subCobTxt=N(_numCob)+' de '+N(_denCob)+' NF-e de saída'+_periodoLabel;
   document.getElementById('k_vinc').textContent=N(_numCob);
-  document.getElementById('k_vinc_sub').textContent='de '+N(_denCob)+' vendas com entrega'+_periodoLabel;
+  document.getElementById('k_vinc_sub').textContent='de '+N(_denCob)+' NF-e de saída'+_periodoLabel;
   const _subCob=document.getElementById('k_cobertura_sub');if(_subCob)_subCob.textContent=_subCobTxt;
   const taxa=_denCob?(_numCob/_denCob*100):0;
   const taxaEl=document.getElementById('k_cobertura');taxaEl.textContent=taxa.toFixed(1)+'%';taxaEl.style.color=taxa>=80?'var(--green)':taxa>=65?'var(--yellow)':'var(--red)';
@@ -2218,6 +2218,13 @@ function renderAll(){
   }else{
     if(_concEl){_concEl.textContent=_pctConcG.toFixed(1)+'%';_concEl.style.color=_pctConcG>=98?'var(--green)':_pctConcG>=90?'var(--yellow)':'var(--red)';}
     if(_concSub) _concSub.textContent=N(_totCteG-_svG)+' de '+N(_totCteG)+' CTe — global';
+  }
+  // Linha de qualidade no card Entregas via Transportadora
+  const _sub2El=document.getElementById('k_cobertura_sub2');
+  if(_sub2El){
+    const _pctQ=_concFilt?_concFilt.pct:_pctConcG;
+    _sub2El.innerHTML='<i class="fa-solid fa-circle-check" style="margin-right:3px"></i>'+_pctQ.toFixed(1)+'% dos CT-e conciliados';
+    _sub2El.style.color='var(--green)';
   }
   document.getElementById('k_ntransp').textContent=N(agg.numTransp);
   document.getElementById('k_ntransp_sub').textContent=agg.topTransp?'Top: '+trDisp(agg.topTransp.label):'';
