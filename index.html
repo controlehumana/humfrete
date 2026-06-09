@@ -892,9 +892,9 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <!-- TAB CLIENTES -->
 <div id="tab-clientes" class="tab-panel">
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-tooltip">Situacoes em que o mesmo cliente recebeu duas ou mais entregas separadas na mesma semana. Cada caso e uma oportunidade de economia: juntar tudo em um unico caminhao reduz o custo total de frete.</div><div class="kpi-lbl">Grupos Consolidaveis</div><div class="kpi-val" id="cli_k_grupos">-</div><div class="kpi-sub">cliente + semana com 2+ entregas</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Quanto poderia ser economizado se todas as entregas da mesma semana para o mesmo cliente fossem feitas de uma so vez. Calculo conservador: considera o custo das entregas extras que seriam eliminadas.</div><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">se todos os grupos forem consolidados</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de viagens de entrega que poderiam ser eliminadas. Se um cliente recebeu 3 entregas na semana, 2 delas sao consolidaveis em uma unica visita, reduzindo custos e emissoes.</div><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Número de situações em que o mesmo cliente recebeu 2 ou mais entregas separadas na mesma semana, gerando múltiplos CT-e para o mesmo destino. Cada grupo é uma oportunidade concreta de reduzir custo agrupando as entregas em uma única viagem.</div><div class="kpi-lbl">Grupos Consolidaveis</div><div class="kpi-val" id="cli_k_grupos">-</div><div class="kpi-sub">cliente + semana com 2+ entregas</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Estimativa de quanto poderia ser economizado consolidando todas as entregas da mesma semana para o mesmo cliente em uma única viagem. Calculado como a soma dos fretes das viagens "extras" (todas além da primeira). Não requer alterar NF-e — basta despachar no mesmo caminhão com 1 CT-e cobrindo todas as notas.</div><div class="kpi-lbl">Economia Estimada</div><div class="kpi-val" id="cli_k_eco" style="color:var(--green)">-</div><div class="kpi-sub">eliminando viagens extras</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de CT-e que poderiam ser eliminados. Se um cliente recebeu 3 entregas na semana, 2 CT-e são consolidáveis — a viagem extra que sobra pode ser fundida na principal. Cada CT-e eliminado significa uma viagem a menos e um frete a menos.</div><div class="kpi-lbl">Viagens Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">CT-e (viagens) que podem ser eliminados</div></div>
     <div class="kpi-card" style="border-top:3px solid var(--green2)">
       <div class="kpi-tooltip">Indica o quanto confiar nos numeros desta analise. Combina duas metricas: CTe Conciliados (% dos CTe recebidos que foram vinculados a uma NF de venda, compra ou devolucao — mede a qualidade dos dados de frete) e Dados Completos (% de registros com cliente, data e destino preenchidos). Cobertura de faturamento nao entra no calculo pois reflete o comportamento do cliente (retirada no deposito), nao a qualidade dos dados.</div>
       <div class="kpi-lbl">Confiabilidade dos Dados</div>
@@ -913,10 +913,33 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="conso-banner" id="conso_banner"><div class="conso-num" id="conso_grupos">-</div><div class="conso-txt" id="conso_txt">Calculando...</div></div>
+
+  <!-- Bloco explicativo: como funciona a consolidação -->
+  <div class="card" style="padding:16px 18px;margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:12px">Como funciona a consolidação de frete <span style="font-size:10px;font-weight:400;color:var(--text3)">— leia antes de interpretar os dados</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="background:var(--s2);border-radius:10px;padding:13px 14px;border-left:3px solid var(--red2)">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--red2);margin-bottom:6px"><i class="fa-solid fa-circle-exclamation" style="margin-right:4px"></i>Situação atual</div>
+        <p style="font-size:11px;color:var(--text2);line-height:1.65;margin:0">O mesmo cliente recebeu <strong style="color:var(--text)">2 ou mais entregas separadas</strong> na mesma semana. Cada entrega gerou um CT-e independente — a transportadora foi acionada múltiplas vezes para o mesmo destino, multiplicando o custo.</p>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:13px 14px;border-left:3px solid var(--blue2)">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--blue2);margin-bottom:6px"><i class="fa-solid fa-lightbulb" style="margin-right:4px"></i>A oportunidade</div>
+        <p style="font-size:11px;color:var(--text2);line-height:1.65;margin:0">Juntar todos os pedidos da semana em <strong style="color:var(--text)">uma única viagem</strong> — um caminhão, uma visita ao cliente. Isso gera apenas <strong style="color:var(--text)">1 CT-e</strong>, cujo custo é menor do que a soma das viagens individuais.</p>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:13px 14px;border-left:3px solid var(--green)">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--green);margin-bottom:6px"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i>Como viabilizar</div>
+        <p style="font-size:11px;color:var(--text2);line-height:1.65;margin:0"><strong style="color:var(--text)">Não é preciso emitir uma única NF-e.</strong> Múltiplas NF-e podem sair no mesmo caminhão cobertas por 1 CT-e. A ação é <strong style="color:var(--text)">alinhar com comercial e logística</strong> para agrupar os pedidos antes do despacho, evitando envios parciais ao longo da semana.</p>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);background:var(--s2);border-radius:8px;padding:10px 14px;line-height:1.65;border:1px solid var(--bd)">
+      <strong style="color:var(--text)"><i class="fa-solid fa-calculator" style="margin-right:5px"></i>Como a economia é calculada:</strong> para cada grupo (cliente + semana), a economia potencial é a soma dos fretes das viagens "extras" — todas além da primeira. É um cálculo conservador: assume que pelo menos 1 viagem seria mantida. A coluna <strong style="color:var(--text)">Mesmo Destino?</strong> indica quando o endereço é idêntico entre as entregas — nesses casos a consolidação é ainda mais simples de executar e a economia é quase certa.
+    </div>
+  </div>
+
   <div class="card">
-    <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Lista as oportunidades de consolidacao ordenadas pela maior economia potencial. Cada linha e um cliente que recebeu 2 ou mais entregas na mesma semana. A coluna Econ. Potencial mostra quanto poderia ser economizado juntando tudo em uma unica viagem.</span></span></div>
+    <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Cada linha é um grupo: um cliente que recebeu 2 ou mais entregas separadas na mesma semana. <br><br>Entregas: quantidade de CT-e distintos emitidos para esse cliente na semana. <br>Econ. Potencial: soma dos fretes das viagens "extras" — o que poderia ser economizado consolidando em 1 viagem. <br>Mesmo Destino?: quando sim, a consolidação é mais fácil (mesmo endereço de entrega). <br><br>Ação sugerida: alinhar com comercial para agrupar os pedidos antes do despacho — não é necessário alterar as NF-e.</span></span></div>
     <div class="sr" style="margin-bottom:12px"><input type="text" id="cli_search" placeholder="Buscar por nome do cliente ou numero de NF-e..." style="width:100%;max-width:440px"></div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th>Entregas</th><th>Total Frete</th><th>Destino(s)</th><th>Mesmo Destino?</th><th>Econ. Potencial</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th title="Número de entregas separadas que o cliente recebeu nessa semana — cada uma gerou um CT-e e um frete independente">Entregas ⓘ</th><th>Total Frete</th><th>Destino(s)</th><th title="Indica se todas as entregas foram para o mesmo endereço — quando sim, a consolidação em uma viagem é direta">Mesmo Destino? ⓘ</th><th title="Estimativa de quanto seria economizado eliminando as viagens extras e consolidando tudo em 1 CT-e">Econ. Potencial ⓘ</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
     <div class="pager" id="cli_pager"></div>
   </div>
   <div class="sdiv" style="margin-top:8px">Politica de Frete Gratis por Cliente</div>
