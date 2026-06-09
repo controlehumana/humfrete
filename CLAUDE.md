@@ -139,6 +139,17 @@ CTe total (~58k)
 
 ## KPIs principais (index.html)
 
+### Banner "Dados no Sistema" (universo-faixa)
+Faixa compacta no topo da aba Visão Geral (antes do `.hero-grid`) mostrando o volume total de registros no sistema — contexto para novos usuários entenderem a base de dados. Populado por `renderUniverso()` a partir de `DATA.resumo`:
+
+| ID | Campo | Descrição |
+|---|---|---|
+| `univ_cte` | `r.total_cte` | CT-e baixados |
+| `univ_nfe_fat` | `r.nfe_fat_periodo` | NF-e de faturamento |
+| `univ_compras` | `DATA.compras.length` | NF de entrada (compras) |
+| `univ_devmkt` | `DATA.devolucoes_mkt.length` | Devoluções Marketplace |
+| `univ_delivery` | `DATA.delivery.length` | NFS-e de entregadores |
+
 ### Terminologia correta
 - **"% Frete / Faturamento"** — denominador é `total_nf` de todas as NF-e de saída (vendas + bonificações + transferências). Nunca chamar de "% Frete / Venda".
 - **"Frete de Saída"** — categoria no Custo Logístico Consolidado. Cobre todo CTe vinculado ao faturamento de saída, não apenas vendas.
@@ -256,12 +267,12 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | `marketplace` | Marketplace | Shopee + Mercado Livre + TikTok Shop separados |
 | `compras` | Frete Compras | Frete de entrada (NF fornecedores) |
 | `delivery` | Delivery | Custo com NFS-e de entregadores autônomos |
-| `dev-mkt` | Dev. Marketplace | Devoluções via Shopee/ML/TikTok Shop |
+| `dev-mkt` | Devoluções Marketplace | Devoluções via Shopee/ML/TikTok Shop |
 | `empresa` | Por Empresa | Análise por filial |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
-| `natop` | Nat. Operação | Cobertura de frete por natureza de operação — drill-down para Operacional |
-| `clientes` | Consolidação Frete | Oportunidades de consolidação + frete grátis por cliente |
-| `nao-vinculados` | Cobertura de Dados | CTe sem NF correspondente — respeita filtros globais; botão espelho por linha |
+| `natop` | Por Tipo de Venda | Cobertura de frete por natureza de operação — drill-down para Operacional |
+| `clientes` | Por Cliente | Oportunidades de consolidação + frete grátis por cliente |
+| `nao-vinculados` | CT-e sem Identificação | CTe sem NF correspondente — respeita filtros globais; botão espelho por linha |
 | `geo` | Geográfico | Mapa SVG do Brasil + ranking por estado |
 | `rotas` | Rotas | Análise de rotas origem→destino (excl. Marketplace) |
 | `admin` | Admin | Gestão de usuários e permissões |
@@ -375,12 +386,13 @@ O script mantém uma cópia quase idêntica do HTML/JS do `index.html` em `HTML_
 
 ## Exportação para Excel (index.html)
 
-Dois botões com classe CSS `btn-xlsx` (verde, tema-aware via `html.ocean .btn-xlsx`):
+Botões com classe CSS `btn-xlsx` (verde, tema-aware via `html.ocean .btn-xlsx`):
 
 | Função | Escopo | Aba |
 |---|---|---|
-| `nvExportXLSX()` | local `initApp()` + `window.nvExportXLSX` | Cobertura de Dados — exporta `nvRows` (filtros locais + globais) |
+| `nvExportXLSX()` | local `initApp()` + `window.nvExportXLSX` | CT-e sem Identificação — exporta `nvRows` (filtros locais + globais) |
 | `opExportXLSX()` | global | Operacional — exporta `tableRows` (filtros + ordenação ativos) |
+| `cliExportXLSX()` | global + `window.cliExportXLSX` | Por Cliente — exporta **todos** os grupos de `cliData` (ignora busca); aba única "Consolidacoes", 1 linha por NF-e; colunas: Cliente, Empresa, Semana, Qtd Entregas no Grupo, Mesmo Destino, Economia Potencial do Grupo, Data NF, Numero NF, Valor Nota, Frete Rateado, % Frete/Nota, Transportadora, Origem, Destino, Canal, Chave NF-e, Chave CT-e |
 
 - Guard obrigatório: `if(typeof XLSX==='undefined')` antes de usar SheetJS
 - Funções dentro de `initApp()` **devem** ser expostas via `window.fn = fn` para o `onclick` do HTML alcançar — mesmo padrão de `window._renderNV`, `window._nvShowEspelho`
@@ -404,7 +416,9 @@ CREATE TABLE cnpj_nomes (
     consultado_em TEXT               -- YYYY-MM-DD
 )
 ```
-Criada automaticamente em `_popular_cnpj_nomes()`. CNPJs sem resultado da API ficam com `razao_social = ''` para não re-consultar.
+Criada automaticamente em `_popular_cnpj_nomes()`. CNPJs sem resultado da API ficam com `razao_social = ''`.
+
+**Regra de re-consulta (30 dias):** um CNPJ é considerado "já consultado" (e pulado) apenas se tiver `razao_social != ''` **OU** `consultado_em >= date('now','-30 days')`. CNPJs com nome vazio e consulta mais antiga que 30 dias são re-tentados automaticamente. Isso evita o bloqueio permanente de CNPJs que falharam temporariamente na API.
 
 ### Funções Python (processar_frete.py)
 | Função | O que faz |
