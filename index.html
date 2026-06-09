@@ -938,7 +938,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 
   <div class="card">
     <div class="card-title">Oportunidades de Consolidacao por Cliente e Semana<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Cada linha é um grupo: um cliente que recebeu 2 ou mais entregas separadas na mesma semana. <br><br>Entregas: quantidade de CT-e distintos emitidos para esse cliente na semana. <br>Econ. Potencial: soma dos fretes das viagens "extras" — o que poderia ser economizado consolidando em 1 viagem. <br>Mesmo Destino?: quando sim, a consolidação é mais fácil (mesmo endereço de entrega). <br><br>Ação sugerida: alinhar com comercial para agrupar os pedidos antes do despacho — não é necessário alterar as NF-e.</span></span></div>
-    <div class="sr" style="margin-bottom:12px"><input type="text" id="cli_search" placeholder="Buscar por nome do cliente ou numero de NF-e..." style="width:100%;max-width:440px"></div>
+    <div class="sr" style="margin-bottom:12px">
+      <input type="text" id="cli_search" placeholder="Buscar por nome do cliente ou numero de NF-e..." style="width:100%;max-width:440px">
+      <button class="btn-xlsx" onclick="cliExportXLSX()" title="Exporta os grupos visíveis (respeitando a busca) com uma linha por NF-e/CT-e"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Cliente</th><th>Empresa</th><th>Semana</th><th title="Número de entregas separadas que o cliente recebeu nessa semana — cada uma gerou um CT-e e um frete independente">Entregas ⓘ</th><th>Total Frete</th><th>Destino(s)</th><th title="Indica se todas as entregas foram para o mesmo endereço — quando sim, a consolidação em uma viagem é direta">Mesmo Destino? ⓘ</th><th title="Estimativa de quanto seria economizado eliminando as viagens extras e consolidando tudo em 1 CT-e">Econ. Potencial ⓘ</th><th></th></tr></thead><tbody id="cli_tbody"></tbody></table></div>
     <div class="pager" id="cli_pager"></div>
   </div>
@@ -2771,6 +2774,82 @@ function toggleCliDetails(key){
   mkPager(display.length,cliPage,PAGE,'cli_pager',pg=>{cliPage=pg;renderCliTable();});
   _loadCnpjNames();
 }
+function cliExportXLSX(){
+  if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada. Recarregue a página.');
+  const q=(document.getElementById('cli_search')||{value:''}).value.trim().toLowerCase();
+  const display=q?cliData.filter(g=>
+    (g.cliente||'').toLowerCase().includes(q)||
+    g.ctes.some(d=>(d.numero||'').toLowerCase().includes(q))
+  ):cliData;
+  if(!display.length) return alert('Nenhum grupo para exportar.');
+  // Sheet 1: Resumo (1 linha por grupo)
+  const resumo=display.map(g=>{
+    const tot=g.ctes.reduce((s,d)=>s+d.valor_frete,0);
+    const fretes=g.ctes.map(d=>d.valor_frete).sort((a,b)=>a-b);
+    const eco=fretes.slice(0,fretes.length-1).reduce((s,v)=>s+v,0);
+    const destList=Object.keys(g.destinos);
+    return {
+      'Cliente': g.cliente||'',
+      'Empresa': g.empresa||'',
+      'Semana': fmtSemana(g.semana),
+      'Qtd Entregas': g.ctes.length,
+      'Total Frete (R$)': +tot.toFixed(2),
+      'Qtd Destinos': destList.length,
+      'Mesmo Destino': destList.length===1?'Sim':'Não',
+      'Economia Potencial (R$)': +eco.toFixed(2),
+    };
+  });
+  // Sheet 2: Detalhes (1 linha por NF-e)
+  const detalhes=[];
+  display.forEach(g=>{
+    const fretes=g.ctes.map(d=>d.valor_frete).sort((a,b)=>a-b);
+    const eco=fretes.slice(0,fretes.length-1).reduce((s,v)=>s+v,0);
+    const destList=Object.keys(g.destinos);
+    g.ctes.forEach(d=>{
+      const pct=d.total_nf?(d.valor_frete/d.total_nf*100):0;
+      detalhes.push({
+        'Cliente': d.cliente||g.cliente||'',
+        'Empresa': d.empresa||g.empresa||'',
+        'Semana': fmtSemana(g.semana),
+        'Economia do Grupo (R$)': +eco.toFixed(2),
+        'Mesmo Destino': destList.length===1?'Sim':'Não',
+        'Data NF': d.data||'',
+        'Numero NF': d.numero||'',
+        'Valor Nota (R$)': +(d.total_nf||0).toFixed(2),
+        'Frete Rateado (R$)': +(d.valor_frete||0).toFixed(2),
+        '% Frete / Nota': +pct.toFixed(2),
+        'Transportadora': d.transportadora||'',
+        'Origem': (d.origem_cidade||'')+((d.origem_uf)?'/'+d.origem_uf:''),
+        'Destino': (d.destino_cidade||'')+((d.destino_uf)?'/'+d.destino_uf:''),
+        'Canal': d.canal||'',
+        'Chave NF-e': d.chave_nfe||'',
+        'Chave CT-e': d.cte_chave||'',
+      });
+    });
+  });
+  const wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.json_to_sheet(resumo);
+  const ws2=XLSX.utils.json_to_sheet(detalhes);
+  // Formatação de colunas monetárias
+  const fmtMoney=(ws,rows,cols)=>{
+    const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+    cols.forEach(col=>{
+      const ci=hdr.indexOf(col);
+      if(ci<0) return;
+      for(let ri=1;ri<=rows.length;ri++){
+        const addr=XLSX.utils.encode_cell({r:ri,c:ci});
+        if(ws[addr]) ws[addr].z='"R$"#,##0.00';
+      }
+    });
+  };
+  fmtMoney(ws1,resumo,['Total Frete (R$)','Economia Potencial (R$)']);
+  fmtMoney(ws2,detalhes,['Economia do Grupo (R$)','Valor Nota (R$)','Frete Rateado (R$)']);
+  XLSX.utils.book_append_sheet(wb,ws1,'Resumo por Grupo');
+  XLSX.utils.book_append_sheet(wb,ws2,'Detalhes por NF-e');
+  const dt=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'consolidacao_frete_'+dt+'.xlsx');
+}
+window.cliExportXLSX=cliExportXLSX;
 // ABA EMPRESA
 const NAT_TRANSF=/TRANSFER|1-00005-0000002/i;
 const HU_CLI=/HUMANA\s*ALIMENTAR/i;
