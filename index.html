@@ -1109,7 +1109,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="card">
     <div class="card-title">Detalhamento por CTe de Compra<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada recebimento de mercadoria de fornecedor com o custo de frete de entrada. Inclui o nome do fornecedor, origem, destino, transportadora e valor pago.</span></span></div>
-    <div class="sr"><input type="text" id="comp_search" placeholder="Buscar fornecedor, origem, transportadora, NF-e..."><select id="comp_sel_emp"><option value="">Todas as empresas</option></select></div>
+    <div class="sr"><input type="text" id="comp_search" placeholder="Buscar fornecedor, origem, transportadora, NF-e..."><select id="comp_sel_emp"><option value="">Todas as empresas</option></select><button class="btn-xlsx" onclick="if(window.compExportXLSX)window.compExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button></div>
     <div class="tw dtbl" id="comp_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table id="comp_table" style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Fornecedor</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Origem</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Vol. (m3)</th></tr></thead>
@@ -1155,7 +1155,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="card">
     <div class="card-title">Detalhamento por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem das NFS-e emitidas por cada entregador parceiro, com numero, competencia, data de emissao, empresa do grupo atendida e valor do servico.</span></span></div>
-    <div class="sr"><input type="text" id="dlv_search" placeholder="Buscar entregador, numero da nota..."><select id="dlv_sel_emp"><option value="">Todas as empresas</option></select></div>
+    <div class="sr"><input type="text" id="dlv_search" placeholder="Buscar entregador, numero da nota..."><select id="dlv_sel_emp"><option value="">Todas as empresas</option></select><button class="btn-xlsx" onclick="if(window.dlvExportXLSX)window.dlvExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button></div>
     <div class="tw dtbl" id="dlv_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table id="dlv_table" style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data Emissao</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Competencia</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Numero NFS-e</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor do Servico</th></tr></thead>
@@ -1196,6 +1196,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <input type="text" id="dm_search" placeholder="Buscar remetente, origem, empresa, NF-e...">
       <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option><option value="tiktok">TikTok Shop</option></select>
       <select id="dm_sel_emp"><option value="">Todas as empresas</option></select>
+      <button class="btn-xlsx" onclick="if(window.dmExportXLSX)window.dmExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -1953,7 +1954,7 @@ function renderYoY(){
   }
 }
 
-const state={ano:'',meses:[],empresas:[],linha:'',natop:[],estado:'',transp:'',canal:'',q:'',categoria:''};
+const state={ano:'',meses:[],empresas:[],linha:'',natop:[],estado:'',transp:'',canal:'',nicho:'',q:'',categoria:''};
 const selAno =document.getElementById('filter_ano');
 const selMes =document.getElementById('filter_mes');
 const selEmpH=document.getElementById('filter_empresa_h');
@@ -2007,6 +2008,7 @@ function filterRows(rows,opts){
     if(state.natop.length&&!state.natop.includes(d.nat_operacao)) return false;
     if(state.estado&&d.estado!==state.estado) return false;if(state.transp&&trKey(d)!==state.transp) return false;
     if(state.canal&&d.canal!==state.canal) return false;
+    if(state.nicho&&d.nicho!==state.nicho) return false;
     if(state.q){const h=(d.empresa+' '+d.linha+' '+d.nat_operacao+' '+d.cliente+' '+d.estado+' '+d.transportadora+' '+d.numero).toLowerCase();if(!h.includes(state.q)) return false;}
     return true;
   });
@@ -2022,10 +2024,10 @@ function syncFilterUI(){
 function updateTags(){
   const el=document.getElementById('active-filters');
   if(!el) return;
-  const L={ano:'Ano',meses:'Mes',linha:'Linha',empresas:'Empresa',natop:'Nat.Op.',estado:'UF',transp:'Transportadora',canal:'Canal',categoria:'Categoria'};
+  const L={ano:'Ano',meses:'Mes',linha:'Linha',empresas:'Empresa',natop:'Nat.Op.',estado:'UF',transp:'Transportadora',canal:'Canal',nicho:'Nicho',categoria:'Categoria'};
   const _mesLbl=state.meses.length===1?(MESES[+state.meses[0]]||state.meses[0]):state.meses.length>1?state.meses.length+' meses':'';
   const _empLbl=state.empresas.length===1?state.empresas[0]:state.empresas.length>1?state.empresas.length+' empresas':'';
-  const D={ano:state.ano,meses:_mesLbl,linha:state.linha,empresas:_empLbl,natop:state.natop.length?state.natop.length+' sel.':'',estado:state.estado,transp:state.transp?trName(state.transp):'',canal:state.canal,categoria:state.categoria};
+  const D={ano:state.ano,meses:_mesLbl,linha:state.linha,empresas:_empLbl,natop:state.natop.length?state.natop.length+' sel.':'',estado:state.estado,transp:state.transp?trName(state.transp):'',canal:state.canal,nicho:state.nicho,categoria:state.categoria};
   el.innerHTML=Object.entries(D).filter(([,v])=>v).map(([k,v])=>'<span class="ftag">'+L[k]+': <strong>'+v+'</strong><span class="rm" data-key="'+k+'">&times;</span></span>').join('');
   el.querySelectorAll('.rm').forEach(b=>{b.onclick=()=>{const k=b.dataset.key;
     if(k==='natop'){state.natop=[];document.querySelectorAll('#ms_natop_drop input').forEach(c=>{c.checked=true;});document.getElementById('ms_natop_btn').innerHTML='Nat. Op. <span class="ms-arrow">v</span>';}
@@ -2323,8 +2325,8 @@ function renderAll(){
     const bestSubEl=document.getElementById('k_best_rkg_sub');if(bestSubEl) bestSubEl.textContent=bestRkg?'R$ '+bestRkg.rkg.toFixed(2)+'/kg':'';
     if(rkgList.length) mkBarRkg('ch_rkg',rkgList.map(v=>trName(v.tr)),rkgList.map(v=>+v.rkg.toFixed(2)));
   })();
-  const _nfeSemCteVal=state.empresa?(r.nfe_sem_cte_por_empresa?.[state.empresa]||0):(r.nfe_sem_cte||0);
-  const wShow=_nfeSemCteVal>0&&!state.ano&&!state.meses.length&&!state.empresa&&!state.empresas.length&&!state.linha;
+  const _nfeSemCteVal=state.empresas.length===1?(r.nfe_sem_cte_por_empresa?.[state.empresas[0]]||0):state.empresas.length>1?state.empresas.reduce((s,e)=>s+(r.nfe_sem_cte_por_empresa?.[e]||0),0):(r.nfe_sem_cte||0);
+  const wShow=_nfeSemCteVal>0&&!state.ano&&!state.meses.length&&!state.empresas.length&&!state.linha;
   document.getElementById('warn_box').style.display=wShow?'':'none';document.getElementById('warn_sem').textContent=N(_nfeSemCteVal);
   document.getElementById('natop_tbody').innerHTML=agg.byNat.map((n,i)=>{const saldo=n.diferenca||0;const sC=saldo>0?'color:var(--green)':saldo<0?'color:var(--red)':'color:var(--text3)';const pct=agg.tot?(n.frete/agg.tot*100):0;return '<tr><td style="color:var(--text3);font-weight:700;font-size:10px">'+(i+1)+'</td><td style="color:var(--text);font-weight:500">'+n.label+'</td><td>'+N(n.qtd)+'</td><td style="color:var(--text);font-weight:600">'+BRL(n.frete)+'</td><td>'+BRL(n.cobrado)+'</td><td style="'+sC+';font-weight:700">'+BRL(saldo)+'</td><td>'+pct.toFixed(1)+'%</td><td><div style="width:'+Math.min(pct*4,100)+'px;height:3px;background:var(--blue);border-radius:2px;opacity:.7"></div></td></tr>';}).join('');
   updateTags();syncFilterUI();
@@ -2651,7 +2653,7 @@ function renderClientes(){
   document.getElementById('cli_k_ctes').textContent=N(totalCtesConsolid);
   // KPI de integridade — respeita filtro de empresa
   const r=DATA.resumo||{};
-  const _ccEmp=state.empresa?(r.cte_conc_por_empresa?.[state.empresa]||{total:0,nao_vinculados:0}):null;
+  const _ccEmp=state.empresas.length===1?(r.cte_conc_por_empresa?.[state.empresas[0]]||{total:0,nao_vinculados:0}):null;
   const totCte=_ccEmp?_ccEmp.total:(r.total_cte||0);
   const semVincCt=_ccEmp?_ccEmp.nao_vinculados:(r.ctes_nao_vinculados_count||0);
   const pctConc=totCte>0?Math.min(100,(totCte-semVincCt)/totCte*100):0;
@@ -3460,7 +3462,7 @@ function initApp(){
   // CTe com NF Cancelada — função reativa (chamada pelo _renderNV e ao init)
   function _renderNC(){
     const ncAll=DATA.ctes_nf_cancelada||[];
-    const ncData=state.empresa?ncAll.filter(c=>c.empresa_nf===state.empresa):ncAll;
+    const ncData=state.empresas.length?ncAll.filter(c=>state.empresas.includes(c.empresa_nf)):ncAll;
     document.getElementById('nc_k_qtd').textContent=N(ncData.length);
     document.getElementById('nc_k_frete').textContent=BRL(ncData.reduce((s,c)=>s+c.valor_frete,0));
     document.getElementById('nc_k_transp').textContent=N(new Set(ncData.map(c=>c.transportadora).filter(Boolean)).size);
@@ -3490,7 +3492,7 @@ function initApp(){
   // CTe cancelados — função reativa (chamada pelo _renderNV e ao init)
   function _renderCancel(){
     const cancelAll=DATA.cancelados_data||[];
-    const cancelData=state.empresa?cancelAll.filter(c=>c.empresa===state.empresa):cancelAll;
+    const cancelData=state.empresas.length?cancelAll.filter(c=>state.empresas.includes(c.empresa)):cancelAll;
     const chaves=cancelData.map(c=>c.cte_chave);
     document.getElementById('cancel_k_qtd').textContent=N(cancelData.length);
     document.getElementById('cancel_k_frete').textContent=BRL(cancelData.reduce((s,c)=>s+c.valor_frete,0));
@@ -3854,6 +3856,69 @@ function initApp(){
   dmInp.addEventListener('input',dmFilter);
   dmSelPlat.addEventListener('change',dmFilter);
   dmSelEmp.addEventListener('change',dmFilter);
+
+  // ── Exports Excel ────────────────────────────────────────────────────────────
+  function compExportXLSX(){
+    if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+    const q=(compInp.value||'').toLowerCase();
+    const rows=(DATA.compras||[]).filter(d=>{
+      const empOk=(!compSelEmp.value||d.empresa_dest===compSelEmp.value)&&(!state.empresas.length||state.empresas.includes(d.empresa_dest));
+      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const qOk=!q||(d.rem_nome||'').toLowerCase().includes(q)||(d.origem_cidade||'').toLowerCase().includes(q)||(d.transportadora||'').toLowerCase().includes(q)||(d.cte_chave||'').includes(q)||(d.nfe_refs||[]).some(n=>n.includes(q));
+      return empOk&&anoOk&&mesOk&&qOk;
+    });
+    if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
+    const data=rows.map(d=>({'Data':fmtDate(d.data_emissao)||'','Fornecedor':d.rem_nome||'','Origem':(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:''),'Destino':(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:''),'Empresa':d.empresa_dest||'','Transportadora':d.transportadora||'','NF-e(s)':(d.nfe_refs||[]).join(', '),'Valor Frete (R$)':+(d.valor_frete||0).toFixed(2),'Peso (kg)':Math.round(d.peso_kg||0),'Volume (m3)':+(d.volume_m3||0).toFixed(3),'Chave CT-e':d.cte_chave||''}));
+    const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+    const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+    const ci=hdr.indexOf('Valor Frete (R$)');if(ci>=0)for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+    XLSX.utils.book_append_sheet(wb,ws,'Frete Compras');
+    XLSX.writeFile(wb,'frete_compras_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }
+  window.compExportXLSX=compExportXLSX;
+
+  function dlvExportXLSX(){
+    if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+    const q=(dlvInp.value||'').toLowerCase();
+    const rows=(DATA.delivery||[]).filter(d=>{
+      const empOk=(!dlvSelEmp.value||d.empresa===dlvSelEmp.value)&&(!state.empresas.length||state.empresas.includes(d.empresa));
+      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const qOk=!q||(d.entregador_nome||'').toLowerCase().includes(q)||(d.numero||'').toLowerCase().includes(q);
+      return empOk&&anoOk&&mesOk&&qOk;
+    });
+    if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
+    const data=rows.map(d=>({'Data Emissao':fmtDate(d.data_emissao)||'','Competencia':d.competencia||'','Entregador':d.entregador_nome||'','CNPJ Entregador':d.entregador_cnpj||'','Empresa':d.empresa||'','Numero NFS-e':d.numero||'','Valor Servico (R$)':+(d.valor_servico||0).toFixed(2)}));
+    const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+    const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+    const ci=hdr.indexOf('Valor Servico (R$)');if(ci>=0)for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+    XLSX.utils.book_append_sheet(wb,ws,'Delivery');
+    XLSX.writeFile(wb,'delivery_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }
+  window.dlvExportXLSX=dlvExportXLSX;
+
+  function dmExportXLSX(){
+    if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+    const platLabel={ml:'Mercado Livre',shopee:'Shopee',tiktok:'TikTok Shop'};
+    const q=(dmInp.value||'').toLowerCase();
+    const rows=(DATA.devolucoes_mkt||[]).filter(d=>{
+      const platOk=!dmSelPlat.value||d.mkt_type===dmSelPlat.value;
+      const empOk=(!dmSelEmp.value||d.empresa_dest===dmSelEmp.value)&&(!state.empresas.length||state.empresas.includes(d.empresa_dest));
+      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const qOk=!q||(d.rem_nome||'').toLowerCase().includes(q)||(d.origem_cidade||'').toLowerCase().includes(q)||(d.empresa_dest||'').toLowerCase().includes(q)||(d.nfe_refs||[]).some(n=>n.includes(q));
+      return platOk&&empOk&&anoOk&&mesOk&&qOk;
+    });
+    if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
+    const data=rows.map(d=>({'Plataforma':platLabel[d.mkt_type]||d.mkt_type||'','Data':fmtDate(d.data_emissao)||'','Remetente':d.rem_nome||'','Origem':(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:''),'Destino':(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:''),'Empresa':d.empresa_dest||'','NF-e(s)':(d.nfe_refs||[]).join(', '),'Valor Frete (R$)':+(d.valor_frete||0).toFixed(2),'Peso (kg)':Math.round(d.peso_kg||0),'Volume (m3)':+(d.volume_m3||0).toFixed(3),'Chave CT-e':d.cte_chave||''}));
+    const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+    const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+    const ci=hdr.indexOf('Valor Frete (R$)');if(ci>=0)for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+    XLSX.utils.book_append_sheet(wb,ws,'Devolucoes MKT');
+    XLSX.writeFile(wb,'devolucoes_mkt_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }
+  window.dmExportXLSX=dmExportXLSX;
 
   // Expose devmkt and compras render to tab handler
   window._renderCompras=renderCompras;
@@ -4387,8 +4452,9 @@ function natopDrillDown(i){
   } else if(natopView==='canal'){
     state.canal=val;
     const sel=document.getElementById('filter_canal');if(sel) sel.value=val;
+  } else if(natopView==='nicho'){
+    state.nicho=val;
   }
-  // nicho ainda nao tem filtro global — drill-down apenas para nat_op e canal
   document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('[data-tab="operacional"]').forEach(b=>b.classList.add('active'));
@@ -4563,7 +4629,7 @@ function _geoRender(){
   });
   // Legenda
   document.getElementById('geo_legenda').style.background='linear-gradient(to right,rgb(20,80,160),rgb(30,190,230))';
-  document.getElementById('geo_filtro_lbl').textContent=state.empresa?'— '+state.empresa:state.ano?'— '+state.ano:'';
+  document.getElementById('geo_filtro_lbl').textContent=state.empresas.length===1?'— '+state.empresas[0]:state.ano?'— '+state.ano:'';
   // Resumo e ranking
   const totFrete=Object.values(byUF).reduce((s,v)=>s+v.total,0);
   const totQtd  =Object.values(byUF).reduce((s,v)=>s+v.qtd,0);
@@ -4617,7 +4683,7 @@ function _geoHover(e){
   const _filtParts=[];
   if(state.ano) _filtParts.push(state.ano);
   if(state.meses&&state.meses.length) _filtParts.push(state.meses.map(m=>({1:'Jan',2:'Fev',3:'Mar',4:'Abr',5:'Mai',6:'Jun',7:'Jul',8:'Ago',9:'Set',10:'Out',11:'Nov',12:'Dez'}[+m]||m)).join('/'));
-  if(state.empresa) _filtParts.push(state.empresa);
+  if(state.empresas.length===1) _filtParts.push(state.empresas[0]);
   const _filtTxt=_filtParts.length?_filtParts.join(' · '):'Todo o período';
 
   const freteStatus = pctFrete>5?'#F87171':pctFrete>2?'#FCD34D':'#34D399';
