@@ -202,9 +202,12 @@ def _popular_cnpj_nomes(nfe_map):
         c = _re.sub(r'\D','', nf.get('part_cnpj') or '')
         if len(c) == 14:
             todos.add(c)
-    existentes = {r[0] for r in cur.execute("SELECT cnpj FROM cnpj_nomes").fetchall()}
+    # Considera resolvido: tem nome OU foi consultado há menos de 30 dias (evita re-tentar sempre)
+    existentes = {r[0] for r in cur.execute(
+        "SELECT cnpj FROM cnpj_nomes WHERE razao_social != '' OR consultado_em >= date('now','-30 days')"
+    ).fetchall()}
     novos = todos - existentes
-    print(f"   [CNPJ] {len(existentes)} em cache  |  {len(novos)} novos para consultar")
+    print(f"   [CNPJ] {len(existentes)} em cache  |  {len(novos)} para consultar (novos ou sem nome há >30 dias)")
     ok = 0
     for cnpj in sorted(novos):
         nome = ''
