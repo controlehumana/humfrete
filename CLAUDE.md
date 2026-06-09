@@ -384,11 +384,31 @@ O script mantém uma cópia quase idêntica do HTML/JS do `index.html` em `HTML_
 
 - **GitHub Pages:** https://controlehumana.github.io/humfrete/
 - **Firebase Auth v8.10.1 compat** (v10 causa falha no WebChannel)
-- **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks de 800 itens
+- **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks de 800 itens (`{emp}_det_000`, `{emp}_det_001`, …) + `_meta` global
 - `_mergeData()` soma corretamente: `total_cte`, `ctes_nao_vinculados_count`, `nfe_com_cte`; `nfe_fat_periodo` não é somado (vem global no spread de datas[0])
 - **CDN Chart.js:** primário cdnjs, fallback jsdelivr via `onerror`
 - **CDN Font Awesome:** primário cdnjs, fallback fontawesome.com via `onerror`
 - **CDN SheetJS (xlsx):** primário cdnjs, fallback jsdelivr via `onerror` — necessário para export Excel
+
+## Segurança e LGPD
+
+### Firestore rules (`firestore.rules`)
+**Aplicar manualmente no Firebase Console → Firestore → Rules após qualquer alteração** — o arquivo no GitHub não publica automaticamente.
+
+| Coleção | Regra |
+|---|---|
+| `dados/{docId}` | Admin lê tudo; usuário comum lê apenas docs onde `empresaDoDoc(docId) in userDoc().empresas`; `_meta` somente admin |
+| `users/{uid}` | Leitura: próprio uid ou admin; escrita: usuário não pode alterar `isAdmin`/`empresas`/`tabs`; deleção bloqueada |
+
+`empresaDoDoc(docId)` = `docId.split('_det_')[0]` → extrai `BRU1` de `BRU1_det_000`.
+
+**Antes (jun/2026):** `allow read: if request.auth != null` — qualquer autenticado lia dados de todas as empresas contornando o filtro frontend.
+
+### Dados pessoais (LGPD)
+- **`entregador_cnpj` removido do Firestore** (jun/2026) — permanece apenas no `cte.db` local. MEI/CPF dos entregadores não sobe para a nuvem.
+- Frontend conta entregadores únicos por `entregador_nome` (não mais por CNPJ).
+- Export `dlvExportXLSX` não inclui CNPJ do entregador.
+- Dados de PJ (CNPJs de clientes/fornecedores, razão social) permanecem no Firestore — acesso restrito pelas regras acima.
 
 ## Exportação para Excel (index.html)
 
@@ -688,7 +708,8 @@ index.html                         ← aba Delivery (tab-delivery)
 ### `_carregar_nfse_entregadores()` (processar_frete.py)
 - Filtra `status = 'Authorized'` (ignora NFS-e canceladas/rejeitadas)
 - `LEFT JOIN entregadores` por `(cnpj_entregador, cnpj_empresa)` — usa `nome_entregador` cadastrado, com fallback para `emit_nome` da própria NFS-e
-- Campos do payload: `id, empresa, entregador_cnpj, entregador_nome, numero, competencia, data_emissao, valor_servico`
+- Campos do payload: `id, empresa, entregador_nome, numero, competencia, data_emissao, valor_servico`
+- **`entregador_cnpj` não publicado no Firestore** (LGPD — CPF/CNPJ de pessoa física via MEI). Permanece somente no `cte.db` local.
 - Datas convertidas via `fmt_date()` para `DD/MM/YYYY`
 
 ### `renderDelivery()` (index.html)
