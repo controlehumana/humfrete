@@ -3945,6 +3945,7 @@ function initApp(){
     document.getElementById('tb_comp').textContent=N((DATA.compras||[]).length);
     document.getElementById('tb_dlv').textContent=N((DATA.delivery||[]).length);
     document.getElementById('tb_devmkt').textContent=N((DATA.devolucoes_mkt||[]).length);
+    buildCteRateioIndex();
     renderAll();
   }catch(err){console.error('[FRETE] Erro na inicializacao:',err);}
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
