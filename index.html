@@ -594,13 +594,13 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <button class="tab-btn tab-highlight" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span class="sb-label">Marketplace</span><span class="tab-badge" id="tb_mkt">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="compras"><i data-lucide="package"></i><span class="sb-label">Frete Compras</span><span class="tab-badge" id="tb_comp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="delivery"><i data-lucide="truck"></i><span class="sb-label">Delivery</span><span class="tab-badge" id="tb_dlv">-</span></button>
-    <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Dev. Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Devoluções Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
     <div class="sb-section">Analise</div>
     <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="operacional"><i data-lucide="list"></i><span class="sb-label">Operacional</span><span class="tab-badge" id="tb_op">-</span></button>
-    <button class="tab-btn tab-highlight" data-tab="natop"><i data-lucide="layers"></i><span class="sb-label">Nat. Operação</span></button>
-    <button class="tab-btn tab-highlight" data-tab="clientes"><i data-lucide="users"></i><span class="sb-label">Consolidacao Frete</span><span class="tab-badge" id="tb_cli">-</span></button>
-    <button class="tab-btn tab-highlight" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span class="sb-label">Cobertura de Dados</span><span class="tab-badge" id="tb_naov">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="natop"><i data-lucide="layers"></i><span class="sb-label">Por Tipo de Venda</span></button>
+    <button class="tab-btn tab-highlight" data-tab="clientes"><i data-lucide="users"></i><span class="sb-label">Por Cliente</span><span class="tab-badge" id="tb_cli">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span class="sb-label">CT-e sem Identificação</span><span class="tab-badge" id="tb_naov">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="geo"><i data-lucide="map"></i><span class="sb-label">Geografico</span></button>
     <button class="tab-btn tab-highlight" data-tab="rotas"><i data-lucide="route"></i><span class="sb-label">Rotas</span></button>
     <button class="tab-btn" data-tab="admin" id="tab-btn-admin" style="display:none"><i data-lucide="settings"></i><span class="sb-label">Admin</span></button>
@@ -696,9 +696,9 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <div><div class="univ-val" id="univ_compras">-</div><div class="univ-lbl">Frete Compras</div></div>
     </div>
     <div class="univ-sep"></div>
-    <div class="univ-item" title="CT-e de devoluções via marketplaces (Shopee, Mercado Livre, TikTok Shop). Esses fretes não entram nos KPIs principais — ficam na aba Dev. Marketplace.">
+    <div class="univ-item" title="CT-e de devoluções via marketplaces (Shopee, Mercado Livre, TikTok Shop). Esses fretes não entram nos KPIs principais — ficam na aba Devoluções Marketplace.">
       <span class="univ-ico"><i class="fa-solid fa-rotate-left" style="color:var(--purple)"></i></span>
-      <div><div class="univ-val" id="univ_devmkt">-</div><div class="univ-lbl">Dev. Marketplace</div></div>
+      <div><div class="univ-val" id="univ_devmkt">-</div><div class="univ-lbl">Devoluções Marketplace</div></div>
     </div>
     <div class="univ-sep"></div>
     <div class="univ-item" title="NFS-e de serviço emitidas pelos entregadores autônomos do grupo para o período disponível. Esses custos não são CT-e — são tratados separadamente na aba Delivery.">
@@ -708,7 +708,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
 
   <div class="hero-grid">
-    <div class="hero-card c-blue"><div class="kpi-tooltip">Tudo que a empresa pagou as transportadoras no periodo selecionado. Considera apenas entregas com comprovante de frete confirmado e associado a uma venda registrada no sistema.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
+    <div class="hero-card c-blue"><div class="kpi-tooltip">Total pago às transportadoras por fretes de saída (vendas, bonificações e transferências) no período selecionado — apenas os CT-e vinculados ao faturamento de saída. <br><br>Não inclui fretes de compras de fornecedores, devoluções de marketplace nem NFS-e de entregadores autônomos. Para o custo total somando todas essas categorias, veja o card <strong>Custo Logístico Consolidado</strong> no final desta página.</div><div class="hero-icon ib"><i class="fa-solid fa-coins"></i></div><div class="hero-lbl">Custo Total de Frete</div><div class="hero-val" id="h_total">-</div><div class="hero-sub"><span id="h_pct_fat_chip" class="chip chip-gray">-</span><span style="color:var(--text3)">do faturamento</span></div><div class="hero-sub" id="h_total_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-dynamic"><div class="kpi-tooltip">Diferenca entre o que o cliente pagou de frete na nota fiscal e o que a empresa pagou a transportadora — considerando apenas as entregas em que houve cobranca de frete do cliente (entregas com frete gratis ficam de fora desta conta e aparecem no KPI "Frete Gratis"). Quando a empresa cobra mais do que paga, exibimos como Repasse de Frete ao Cliente (a empresa cobre o custo). Quando a empresa paga mais do que cobra, exibimos a diferenca como valor positivo rotulado "Diferenca de Frete ao Cliente — Deixamos de Cobrar", representando quanto deixou de ser repassado ao cliente nessas entregas.</div><div class="hero-icon ip"><i class="fa-solid fa-scale-balanced"></i></div><div class="hero-lbl" id="h_saldo_lbl">Repasse de Frete ao Cliente</div><div class="hero-val" id="h_saldo">-</div><div class="hero-sub" id="h_saldo_sub">-</div><div class="hero-sub" id="h_saldo_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-green"><div class="kpi-tooltip">De cada R$ 100 faturados em NF-e de saida com frete rastreado, quanto foi gasto com transporte. Abaixo de 2% e excelente. Entre 2% e 5% e adequado para a maioria dos segmentos. Acima de 5% vale revisar contratos e rotas de entrega.</div><div class="hero-icon ig"><i class="fa-solid fa-chart-line"></i></div><div class="hero-lbl">% Frete / Receita</div><div class="hero-val" id="h_pct_rec">-</div><div class="hero-sub" id="h_pct_rec_sub">-</div><div style="display:flex;gap:3px;align-items:center;margin-top:6px" title="Benchmark do setor alimenticio"><div style="height:4px;width:20%;background:var(--green);border-radius:2px 0 0 2px;opacity:.7"></div><div style="height:4px;width:30%;background:var(--green2);opacity:.5"></div><div style="height:4px;width:30%;background:var(--yellow);opacity:.6"></div><div style="height:4px;width:20%;background:var(--red);border-radius:0 2px 2px 0;opacity:.7"></div></div><div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3);margin-top:2px"><span>0%</span><span style="color:var(--green2)">ótimo &lt;3%</span><span style="color:var(--yellow)">meta &lt;5%</span><span style="color:var(--red)">alerta &gt;8%</span></div><div class="hero-sub" id="h_pct_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
     <div class="hero-card c-amber"><div class="kpi-tooltip">Custo total de frete dividido pelo numero de entregas realizadas no periodo. Se este valor esta subindo, pode indicar entregas mais caras, rotas mais longas ou reajuste de tarifas pelas transportadoras.</div><div class="hero-icon ia"><i class="fa-solid fa-bullseye"></i></div><div class="hero-lbl">Frete Medio por Entrega</div><div class="hero-val" id="h_ticket">-</div><div class="hero-sub" id="h_ticket_sub">-</div><div class="hero-sub" id="h_ticket_vs" style="margin-top:4px;font-size:10px;min-height:18px"></div></div>
@@ -718,7 +718,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="kpi-card"><div class="kpi-tooltip">De cada 100 NF-e de saída do período, quantas tiveram o frete realizado por uma transportadora com CT-e registrado. <br><br>Valores entre 20% e 50% são completamente normais neste modelo de negócio — o gap não indica falha nos dados: <br>• Parte dos clientes retira a mercadoria diretamente no depósito (sem frete) <br>• Parte das entregas é feita pela frota própria da empresa <br><br>Nenhum desses casos gera CT-e, então nunca aparecem aqui. Apenas as entregas contratadas junto a transportadoras terceiras são contabilizadas. <br><br>A linha verde abaixo confirma a qualidade dos CT-e que existem no sistema.</div><div class="kpi-lbl">Entregas via Transportadora</div><div class="kpi-val" id="k_cobertura">-</div><div class="kpi-sub" id="k_cobertura_sub">-</div><div class="kpi-sub" id="k_cobertura_sub2" style="font-size:9px;margin-top:3px">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Qualidade da conciliação dos dados de frete. O número exibido é o total de CT-e no banco; o percentual mostra quantos foram vinculados a uma nota fiscal (venda, compra ou devolução). <br><br>Próximo de 100%: conciliação completa e confiável. Não conciliados são CT-e em que a transportadora não informou a nota fiscal de origem no documento XML — não é um erro do sistema, mas um gap nos dados da transportadora. <br><br><strong>Métrica global de qualidade de dados — não muda com os filtros de empresa/ano/mês.</strong></div><div class="kpi-lbl">CTe Conciliados</div><div class="kpi-val" id="k_cte_conc">-</div><div class="kpi-sub" id="k_cte_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantas empresas de transporte diferentes realizaram ao menos uma entrega rastreada no periodo selecionado.</div><div class="kpi-lbl">Transportadoras Ativas</div><div class="kpi-val" id="k_ntransp">-</div><div class="kpi-sub" id="k_ntransp_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Quanto do total gasto com frete vai para a transportadora principal. Acima de 40% indica dependencia elevada: um problema com esse parceiro pode impactar grande parte das entregas da empresa.</div><div class="kpi-lbl">Concentracao Top 1</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual do custo total de frete concentrado na transportadora número 1. Acima de 40% indica dependência elevada — se essa parceira aumentar tabela, atrasar entregas ou encerrar operação, o impacto na logística da empresa será imediato e difícil de substituir rapidamente.</div><div class="kpi-lbl">Dependência Top Transportadora</div><div class="kpi-val" id="k_conc">-</div><div class="kpi-sub" id="k_conc_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Entregas em que a empresa nao cobrou nada de frete do cliente. O custo de transporte foi absorvido internamente. Monitorar esse numero ajuda a identificar politicas de frete gratis e seu impacto no resultado.</div><div class="kpi-lbl">Frete Gratis (Entregas)</div><div class="kpi-val" id="k_gratis">-</div><div class="kpi-sub" id="k_gratis_sub">-</div></div>
   </div>
   <div class="card" style="padding:16px 18px"><div class="card-title">Frete por Linha de Produto</div><div class="lp-grid">
@@ -815,7 +815,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       </div>
     </div>
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
-      <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')">Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
+      <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')" title="Valor pago pela empresa à transportadora pelo frete desta entrega (CT-e)">Valor Frete ⓘ</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th title="Valor de frete cobrado do cliente na nota fiscal de saída — pode ser zero (frete grátis) ou diferente do valor pago à transportadora">Fr.Cobrado ⓘ</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')" title="Saldo = Frete Cobrado do cliente − Valor Frete pago à transportadora. Positivo: empresa repassou mais do que pagou. Negativo: empresa subsidiou parte do frete.">Saldo ⓘ</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
     </div>
     <div class="pager" id="pager"></div>
   </div>
@@ -863,9 +863,9 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <!-- TAB MARKETPLACE -->
 <div id="tab-marketplace" class="tab-panel">
   <div class="mkt-kpi-row">
-    <div class="mkt-card" style="border-top:3px solid #FF6900"><div class="kpi-tooltip">Total pago a transportadora pelas entregas realizadas via Shopee no periodo. Inclui vendas normais. Devolucoes da Shopee aparecem separadas na aba Dev. Marketplace.</div><div class="mkt-lbl">Total Frete Shopee</div><div class="mkt-val" id="mkt_shopee_frete">-</div><div class="mkt-sub" id="mkt_shopee_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid #FF6900"><div class="kpi-tooltip">Total pago a transportadora pelas entregas realizadas via Shopee no periodo. Inclui vendas normais. Devolucoes da Shopee aparecem separadas na aba Devoluções Marketplace.</div><div class="mkt-lbl">Total Frete Shopee</div><div class="mkt-val" id="mkt_shopee_frete">-</div><div class="mkt-sub" id="mkt_shopee_qtd">-</div></div>
     <div class="mkt-card" style="border-top:3px solid #FFE600"><div class="kpi-tooltip">Total pago pela logistica das entregas realizadas via Mercado Livre no periodo. O Mercado Livre utiliza sua propria rede de distribuicao para essas entregas.</div><div class="mkt-lbl">Total Frete Mercado Livre</div><div class="mkt-val" id="mkt_ml_frete">-</div><div class="mkt-sub" id="mkt_ml_qtd">-</div></div>
-    <div class="mkt-card" style="border-top:3px solid #FF0050"><div class="kpi-tooltip">Total pago a transportadora pelas entregas realizadas via TikTok Shop no periodo. Inclui vendas normais. Devolucoes da TikTok Shop aparecem separadas na aba Dev. Marketplace.</div><div class="mkt-lbl">Total Frete TikTok Shop</div><div class="mkt-val" id="mkt_tiktok_frete">-</div><div class="mkt-sub" id="mkt_tiktok_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid #FF0050"><div class="kpi-tooltip">Total pago a transportadora pelas entregas realizadas via TikTok Shop no periodo. Inclui vendas normais. Devolucoes da TikTok Shop aparecem separadas na aba Devoluções Marketplace.</div><div class="mkt-lbl">Total Frete TikTok Shop</div><div class="mkt-val" id="mkt_tiktok_frete">-</div><div class="mkt-sub" id="mkt_tiktok_qtd">-</div></div>
     <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Shopee. Se este valor estiver subindo, pode indicar que os pedidos estao indo para regioes mais distantes ou que a Shopee ajustou suas tarifas de envio.</div><div class="mkt-lbl">Frete Medio Shopee</div><div class="mkt-val" id="mkt_shopee_med">-</div><div class="mkt-sub">por entrega</div></div>
     <div class="mkt-card" style="border-top:3px solid var(--green2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Mercado Livre. Comparar este valor ao da Shopee ajuda a entender qual plataforma tem o custo logistico mais eficiente para o perfil de pedidos da empresa.</div><div class="mkt-lbl">Frete Medio Mercado Livre</div><div class="mkt-val" id="mkt_ml_med">-</div><div class="mkt-sub">por entrega</div></div>
     <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="kpi-tooltip">Custo medio por entrega realizada via TikTok Shop. Comparar este valor aos das demais plataformas ajuda a entender qual canal tem o custo logistico mais eficiente.</div><div class="mkt-lbl">Frete Medio TikTok Shop</div><div class="mkt-val" id="mkt_tiktok_med">-</div><div class="mkt-sub">por entrega</div></div>
@@ -884,7 +884,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       </div>
       <input type="text" id="mkt_search" placeholder="Buscar NF, transportadora, destino..." class="hd-filter-item" style="flex:1;min-width:160px;cursor:text">
     </div>
-    <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
+    <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th title="Valor pago pela empresa à transportadora pelo frete desta entrega (CT-e)">Valor Frete ⓘ</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th title="Valor de frete cobrado do cliente na nota fiscal de saída">Fr.Cobrado ⓘ</th><th title="Saldo = Frete Cobrado − Valor Frete. Positivo: empresa repassou mais do que pagou. Negativo: empresa subsidiou parte do frete.">Saldo ⓘ</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
     <div class="pager" id="mkt_pager"></div>
   </div>
 </div>
@@ -897,9 +897,9 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de viagens de entrega que poderiam ser eliminadas. Se um cliente recebeu 3 entregas na semana, 2 delas sao consolidaveis em uma unica visita, reduzindo custos e emissoes.</div><div class="kpi-lbl">CTe Consolidaveis</div><div class="kpi-val" id="cli_k_ctes">-</div><div class="kpi-sub">documentos de transporte</div></div>
     <div class="kpi-card" style="border-top:3px solid var(--green2)">
       <div class="kpi-tooltip">Indica o quanto confiar nos numeros desta analise. Combina duas metricas: CTe Conciliados (% dos CTe recebidos que foram vinculados a uma NF de venda, compra ou devolucao — mede a qualidade dos dados de frete) e Dados Completos (% de registros com cliente, data e destino preenchidos). Cobertura de faturamento nao entra no calculo pois reflete o comportamento do cliente (retirada no deposito), nao a qualidade dos dados.</div>
-      <div class="kpi-lbl">Integridade da Analise</div>
+      <div class="kpi-lbl">Confiabilidade dos Dados</div>
       <div class="kpi-val" id="cli_k_integ" style="color:var(--green2)">-</div>
-      <div class="kpi-sub" id="cli_k_integ_lbl">confiabilidade geral</div>
+      <div class="kpi-sub" id="cli_k_integ_lbl">score: CT-e conc. × 60% + dados completos × 40%</div>
       <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--bd);padding-top:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px">
           <span style="color:var(--text3)">CTe Conciliados</span>
@@ -984,8 +984,8 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <div class="nv-esp-wrap">
     <div id="nv-espelho-print">
       <div class="nv-esp-header">
-        <div><div class="nv-esp-title" id="esp_transp_nome">—</div><div class="nv-esp-subtitle">DACTE — Documento Auxiliar do Conhecimento de Transporte Eletrônico</div></div>
-        <div style="text-align:right;font-size:10px;opacity:.8"><div>CT-e Modelo <strong>57</strong> / Rodoviário</div><div id="esp_transp_cnpj" style="font-family:monospace">—</div></div>
+        <div><div class="nv-esp-title" id="esp_transp_nome">—</div><div class="nv-esp-subtitle">Comprovante de Frete (CT-e) — dados do documento fiscal de transporte</div></div>
+        <div style="text-align:right;font-size:10px;opacity:.8"><div>DACTE · CT-e Modelo <strong>57</strong> / Rodoviário</div><div id="esp_transp_cnpj" style="font-family:monospace">—</div></div>
       </div>
       <!-- Identificação -->
       <div class="nv-esp-section">
@@ -1195,7 +1195,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="card"><div class="card-title">Resumo por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Tabela resumo por filial: quantas entregas foram rastreadas, custo total de frete, quanto cada unidade representa do gasto total, qual transportadora domina e quantas empresas de transporte foram utilizadas.</span></span></div><div class="tw"><table><thead><tr><th>#</th><th>Empresa</th><th>NF-e</th><th>Total Frete</th><th>% do Total</th><th>Transp. Principal</th><th>Frete Transp.</th><th>Concentracao</th><th>N Transp.</th></tr></thead><tbody id="emp_tbody"></tbody></table></div></div>
   <div class="card"><div class="card-title">Top 5 Transportadoras por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">As 5 transportadoras mais usadas por cada filial e o quanto cada uma representa no custo de frete daquela unidade. Ajuda a identificar dependencias por regiao e oportunidades de unificar contratos.</span></span></div><div class="tw"><table><thead><tr><th>Empresa</th><th>Transportadora</th><th>NF-e</th><th>Frete Pago</th><th>% da Empresa</th><th>% do Total</th></tr></thead><tbody id="emp_det_tbody"></tbody></table></div></div>
-  <div class="sdiv" style="margin-top:4px">Frete entre Empresas (Operacional x Comercial)</div>
+  <div class="sdiv" style="margin-top:4px">Frete por Finalidade — Vendas a Clientes vs Transferências Internas</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card"><div class="kpi-tooltip">Custo de frete das entregas feitas a clientes externos. E o custo logistico diretamente ligado a receita de vendas — quanto a empresa paga para levar os produtos ate quem comprou.</div><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="emp_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="emp_frete_com_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo de frete para movimentar mercadoria entre as proprias lojas e filiais da empresa. Nao esta relacionado a nenhuma venda — e o custo interno de reposicao e redistribuicao de estoque.</div><div class="kpi-lbl">Frete Operacional (Transf.)</div><div class="kpi-val" id="emp_frete_op" style="color:var(--purple)">-</div><div class="kpi-sub" id="emp_frete_op_sub">-</div></div>
@@ -1373,7 +1373,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <button class="mob-nav-btn" data-tab="empresa"><i data-lucide="building-2"></i><span>Empresa</span></button>
   <button class="mob-nav-btn" data-tab="operacional"><i data-lucide="list"></i><span>Operat.</span></button>
   <button class="mob-nav-btn" data-tab="clientes"><i data-lucide="users"></i><span>Clientes</span></button>
-  <button class="mob-nav-btn" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span>Cobert.</span></button>
+  <button class="mob-nav-btn" data-tab="nao-vinculados"><i data-lucide="unlink"></i><span>Sem ID</span></button>
 </nav>
 
 </div><!-- #app -->
@@ -2359,7 +2359,7 @@ function renderAll(){
     const cats=[
       {label:'Frete de Saida',     val:vendas, qtd:qtdVendas, cor:'var(--blue)',    icon:'fa-truck',             desc:'CT-e vinculados a NF-e de saida registradas no faturamento — inclui vendas, bonificacoes, transferencias e demais operacoes de saida. Custo ja apurado e vinculado a uma nota fiscal.'},
       {label:'Frete de Compra',   val:compras,qtd:qtdComp,   cor:'var(--green)',   icon:'fa-boxes-stacked',     desc:'CT-e vinculados a NF de entrada de fornecedores. Custo logistico das compras identificado.'},
-      {label:'Dev. Marketplace',  val:devMkt, qtd:qtdDev,    cor:'var(--purple2)', icon:'fa-rotate-left',       desc:'Fretes de devolucao via Shopee ou Mercado Livre. Custo de retorno de mercadorias ao estoque.'},
+      {label:'Devoluções Marketplace',val:devMkt,qtd:qtdDev,  cor:'var(--purple2)', icon:'fa-rotate-left',       desc:'Fretes de devolucao via Shopee ou Mercado Livre. Custo de retorno de mercadorias ao estoque.'},
       {label:'CT-e c/ NF Cancelada',val:nfCanc,qtd:qtdNC,   cor:'var(--amber)',   icon:'fa-file-circle-xmark', desc:'CT-e valido emitido pela transportadora, porem a NF-e correspondente foi cancelada no ERP. Frete pago sem nota fiscal de venda associada — requer analise.'},
       {label:'Sem Vinculo',       val:semVinc,qtd:qtdSV,     cor:'var(--red2)',    icon:'fa-triangle-exclamation',desc:'CT-e sem NF-e correspondente identificada. Pode ser CTe de terceiros, periodo fora do faturamento importado ou nota ainda nao exportada do ERP.'},
     ];
@@ -3806,7 +3806,7 @@ function initApp(){
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Dev. Marketplace','empresa':'Por Empresa','operacional':'Operacional','natop':'Nat. Operacao','clientes':'Consolidacao Frete','nao-vinculados':'Cobertura de Dados','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','empresa':'Por Empresa','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -3870,12 +3870,12 @@ const ALL_TABS_INFO=[
   {id:'marketplace',label:'Marketplace'},
   {id:'compras',label:'Frete Compras'},
   {id:'delivery',label:'Delivery'},
-  {id:'dev-mkt',label:'Dev. Marketplace'},
+  {id:'dev-mkt',label:'Devoluções Marketplace'},
   {id:'empresa',label:'Por Empresa'},
   {id:'operacional',label:'Operacional'},
-  {id:'natop',label:'Nat. Operação'},
-  {id:'clientes',label:'Consolidação Frete'},
-  {id:'nao-vinculados',label:'Cobertura de Dados'},
+  {id:'natop',label:'Por Tipo de Venda'},
+  {id:'clientes',label:'Por Cliente'},
+  {id:'nao-vinculados',label:'CT-e sem Identificação'},
   {id:'geo',label:'Geográfico'},
   {id:'rotas',label:'Rotas'},
 ];
