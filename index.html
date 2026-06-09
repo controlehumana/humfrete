@@ -2338,7 +2338,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras')renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt')renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -3546,6 +3546,7 @@ function initApp(){
   })();
   function compFilter(){compPage=0;renderCompras();}
   function renderCompras(){
+    compPage=0;
     const rows=(DATA.compras||[]).filter(d=>{
       const empOk=(!compSelEmp.value||d.empresa_dest===compSelEmp.value)
                  &&(!state.empresas.length||state.empresas.includes(d.empresa_dest));
@@ -3633,6 +3634,7 @@ function initApp(){
     return null;
   }
   function renderDelivery(){
+    dlvPage=0;
     const rows=(DATA.delivery||[]).filter(d=>{
       const empOk=(!dlvSelEmp.value||d.empresa===dlvSelEmp.value)
                  &&(!state.empresas.length||state.empresas.includes(d.empresa));
@@ -3793,6 +3795,7 @@ function initApp(){
   })();
   function dmFilter(){dmPage=0;renderDevMkt();}
   function renderDevMkt(){
+    dmPage=0;
     const base=(DATA.devolucoes_mkt||[]).filter(d=>{
       const platOk=!dmSelPlat.value||d.mkt_type===dmSelPlat.value;
       const empOk=(!dmSelEmp.value||d.empresa_dest===dmSelEmp.value)
