@@ -2,30 +2,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Dados do dashboard — leitura apenas para autenticados
+    // Helpers
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isAdmin() {
+      return request.auth != null && userDoc().isAdmin == true;
+    }
+    // Extrai o prefixo de empresa do docId: "BRU1_det_000" -> "BRU1", "BRU1" -> "BRU1"
+    function empresaDoDoc(docId) {
+      return docId.split('_det_')[0];
+    }
+
+    // Dados do dashboard
+    // - _meta: somente admin
+    // - dados/{emp} e dados/{emp}_det_NNN: usuario com acesso a essa empresa OU admin
     match /dados/{docId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && (
+        isAdmin()
+        || (docId != '_meta' && empresaDoDoc(docId) in userDoc().empresas)
+      );
       allow write: if false; // apenas via SDK Admin (processar_frete.py)
     }
 
     // Perfis de usuario
     match /users/{uid} {
       // Leitura: proprio usuario ou admin
-      allow read: if request.auth.uid == uid
-                  || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
 
       // Criacao pelo proprio usuario — sem poder se tornar admin
-      allow create: if request.auth.uid == uid
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
                     && !('isAdmin' in request.resource.data);
 
-      // Atualizacao pelo proprio usuario — nao pode alterar isAdmin nem empresas/tabs
-      allow update: if request.auth.uid == uid
+      // Atualizacao pelo proprio usuario — nao pode alterar isAdmin, empresas nem tabs
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
                     && request.resource.data.isAdmin == resource.data.isAdmin
                     && request.resource.data.empresas == resource.data.empresas
                     && request.resource.data.tabs == resource.data.tabs;
 
       // Admin pode criar/atualizar qualquer usuario
-      allow create, update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow create, update: if isAdmin();
 
       // Ninguem deleta usuarios pela regra (apenas via Console ou SDK Admin)
       allow delete: if false;

@@ -637,7 +637,6 @@ def _carregar_nfse_entregadores():
         resultado = [{
             "id":              r["id"],
             "empresa":         r["empresa"],
-            "entregador_cnpj": r["emit_cnpj"],
             "entregador_nome": r["nome_entregador"] or r["emit_nome"] or "",
             "numero":          r["numero"] or "",
             "competencia":     fmt_date(r["competencia"]),

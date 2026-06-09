@@ -3645,7 +3645,7 @@ function initApp(){
     document.getElementById('dlv_qtd').textContent=N(rows.length);
     document.getElementById('dlv_total').textContent=BRL(totVal);
     document.getElementById('dlv_medio').textContent=rows.length?BRL(totVal/rows.length):'R$ 0';
-    document.getElementById('dlv_qtd_entreg').textContent=N([...new Set(rows.map(d=>d.entregador_cnpj).filter(Boolean))].length);
+    document.getElementById('dlv_qtd_entreg').textContent=N([...new Set(rows.map(d=>d.entregador_nome).filter(Boolean))].length);
     // Tendencia vs periodo anterior (mes ou ano, conforme filtro ativo)
     const _dp=_dlvPrevRows();
     const _trendHtml=(curVal,prevVal)=>{
@@ -3735,7 +3735,7 @@ function initApp(){
     };
     const porEntreg={};
     rows.forEach(d=>{
-      const key=(d.entregador_cnpj||'')+'||'+(d.entregador_nome||'');
+      const key=d.entregador_nome||'-';
       if(!porEntreg[key]) porEntreg[key]={nome:d.entregador_nome||'-',empresas:new Set(),qtd:0,total:0,minDt:null,maxDt:null};
       const e=porEntreg[key];
       e.empresas.add(d.empresa||'?');
@@ -3889,7 +3889,7 @@ function initApp(){
       return empOk&&anoOk&&mesOk&&qOk;
     });
     if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
-    const data=rows.map(d=>({'Data Emissao':fmtDate(d.data_emissao)||'','Competencia':d.competencia||'','Entregador':d.entregador_nome||'','CNPJ Entregador':d.entregador_cnpj||'','Empresa':d.empresa||'','Numero NFS-e':d.numero||'','Valor Servico (R$)':+(d.valor_servico||0).toFixed(2)}));
+    const data=rows.map(d=>({'Data Emissao':fmtDate(d.data_emissao)||'','Competencia':d.competencia||'','Entregador':d.entregador_nome||'','Empresa':d.empresa||'','Numero NFS-e':d.numero||'','Valor Servico (R$)':+(d.valor_servico||0).toFixed(2)}));
     const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
     const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
     const ci=hdr.indexOf('Valor Servico (R$)');if(ci>=0)for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
