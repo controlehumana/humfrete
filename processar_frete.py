@@ -184,8 +184,11 @@ def _parse_faturamento_db():
 
 def _popular_cnpj_nomes(nfe_map):
     """Garante que cnpj_nomes em cte.db tenha nomes para todos os CNPJs do faturamento.
-    Consulta BrasilAPI apenas para CNPJs ainda nao resolvidos."""
-    import urllib.request, json as _json, re as _re
+    Resolve primeiro via dados locais do CT-e (nome_destinatario/nome_remetente em
+    cte_campos, sem custo de API) e só consulta APIs externas para o restante,
+    com throttling e limite por execucao (BrasilAPI/CNPJ.ws tem rate-limit agressivo)."""
+    import urllib.request, json as _json, re as _re, time as _time
+    MAX_API_POR_EXECUCAO = 20  # limite de consultas externas por rodada (evita 429 e nao trava o pipeline)
     if not os.path.exists(QUIVE_DB):
         return
     conn = sqlite3.connect(QUIVE_DB, timeout=30)
@@ -207,31 +210,64 @@ def _popular_cnpj_nomes(nfe_map):
         "SELECT cnpj FROM cnpj_nomes WHERE razao_social != '' OR consultado_em >= date('now','-30 days')"
     ).fetchall()}
     novos = todos - existentes
-    print(f"   [CNPJ] {len(existentes)} em cache  |  {len(novos)} para consultar (novos ou sem nome há >30 dias)")
-    ok = 0
+    if not novos:
+        conn.close()
+        return
+    hoje = datetime.now().strftime('%Y-%m-%d')
+
+    # Camada local: nome do destinatario/remetente do CT-e (ja temos no banco, sem API)
+    locais = {}
+    for cnpj_col, nome_col in (('cnpj_destinatario', 'nome_destinatario'), ('cnpj_remetente', 'nome_remetente')):
+        for c, n in cur.execute(
+            f"SELECT DISTINCT {cnpj_col}, {nome_col} FROM cte_campos "
+            f"WHERE {nome_col} IS NOT NULL AND {nome_col} != ''"
+        ).fetchall():
+            c2 = _re.sub(r'\D', '', c or '')
+            if len(c2) == 14 and c2 not in locais:
+                locais[c2] = n.strip()
+
+    pendentes_api = []
+    resolvidos_local = 0
     for cnpj in sorted(novos):
+        if cnpj in locais:
+            cur.execute("INSERT OR REPLACE INTO cnpj_nomes VALUES (?,?,?)", (cnpj, locais[cnpj], hoje))
+            resolvidos_local += 1
+        else:
+            pendentes_api.append(cnpj)
+    conn.commit()
+    print(f"   [CNPJ] {len(existentes)} em cache  |  {len(novos)} novos ({resolvidos_local} via dados locais do CT-e, {len(pendentes_api)} via API)")
+
+    # Camada API: throttled, limitada por execucao para respeitar rate-limit (CNPJ.ws ~3/min)
+    lote = pendentes_api[:MAX_API_POR_EXECUCAO]
+    ok = 0
+    for cnpj in lote:
         nome = ''
         try:
-            with urllib.request.urlopen(f'https://brasilapi.com.br/api/cnpj/v1/{cnpj}', timeout=8) as r:
+            req = urllib.request.Request(f'https://brasilapi.com.br/api/cnpj/v1/{cnpj}', headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=8) as r:
                 d = _json.loads(r.read())
                 nome = (d.get('razao_social') or d.get('nome_fantasia') or '').strip()
         except Exception:
             pass
         if not nome:
+            _time.sleep(20)  # respeita rate-limit ~3 req/min do CNPJ.ws antes do fallback
             try:
-                with urllib.request.urlopen(f'https://publica.cnpj.ws/cnpj/{cnpj}', timeout=8) as r:
+                req = urllib.request.Request(f'https://publica.cnpj.ws/cnpj/{cnpj}', headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=8) as r:
                     d = _json.loads(r.read())
                     nome = (d.get('razao_social') or d.get('nome_fantasia') or '').strip()
             except Exception:
                 pass
-        cur.execute("INSERT OR REPLACE INTO cnpj_nomes VALUES (?,?,?)",
-                    (cnpj, nome or '', datetime.now().strftime('%Y-%m-%d')))
+        cur.execute("INSERT OR REPLACE INTO cnpj_nomes VALUES (?,?,?)", (cnpj, nome or '', hoje))
         if nome:
             ok += 1
+        _time.sleep(1.5)
     conn.commit()
     conn.close()
-    if novos:
-        print(f"   [CNPJ] {ok}/{len(novos)} nomes resolvidos via API")
+    if lote:
+        restantes = len(pendentes_api) - len(lote)
+        extra = f" ({restantes} restantes para a proxima execucao)" if restantes else ""
+        print(f"   [CNPJ] {ok}/{len(lote)} nomes resolvidos via API{extra}")
 
 
 def _ler_cnpj_nomes():

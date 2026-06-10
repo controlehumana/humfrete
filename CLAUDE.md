@@ -446,17 +446,23 @@ CREATE TABLE cnpj_nomes (
     consultado_em TEXT               -- YYYY-MM-DD
 )
 ```
-Criada automaticamente em `_popular_cnpj_nomes()`. CNPJs sem resultado da API ficam com `razao_social = ''`.
+Criada automaticamente em `_popular_cnpj_nomes()`. CNPJs sem resultado ficam com `razao_social = ''`.
 
 **Regra de re-consulta (30 dias):** um CNPJ é considerado "já consultado" (e pulado) apenas se tiver `razao_social != ''` **OU** `consultado_em >= date('now','-30 days')`. CNPJs com nome vazio e consulta mais antiga que 30 dias são re-tentados automaticamente. Isso evita o bloqueio permanente de CNPJs que falharam temporariamente na API.
 
 ### Funções Python (processar_frete.py)
 | Função | O que faz |
 |---|---|
-| `_popular_cnpj_nomes(nfe_map)` | Cria tabela, coleta CNPJs distintos do `nfe_map`, consulta API só para os novos, salva resultados |
+| `_popular_cnpj_nomes(nfe_map)` | Cria tabela, coleta CNPJs distintos do `nfe_map`, resolve via dados locais + API (ver abaixo), salva resultados |
 | `_ler_cnpj_nomes()` | Lê `cnpj_nomes` e retorna `{cnpj: razao_social}` (só com nome preenchido) |
 
 Chamadas em `main()` logo após `parse_faturamento()`. O dict vai para `dados["cnpj_nomes"]` → `split_by_empresa` → Firestore.
+
+### `_popular_cnpj_nomes` — resolução em 2 camadas (corrigido 2026-06-10)
+1. **Camada local (gratuita, instantânea):** para cada CNPJ "novo", busca `nome_destinatario`/`nome_remetente` em `cte_campos` (já vêm do XML do CT-e, indexado por `cnpj_destinatario`/`cnpj_remetente`). Cobre tipicamente ~70% dos CNPJs novos sem nenhuma chamada de rede.
+2. **Camada API (throttled):** só para os CNPJs que sobraram. `MAX_API_POR_EXECUCAO = 20` por rodada — BrasilAPI primeiro (`User-Agent: Mozilla/5.0`), se falhar `time.sleep(20)` antes do fallback CNPJ.ws (`publica.cnpj.ws`, rate-limit ~3 req/min sem chave), depois `time.sleep(1.5)` entre CNPJs. CNPJs não processados na rodada ficam para a próxima execução.
+
+**NUNCA remover o limite/throttling nem processar um lote grande de uma vez** — BrasilAPI/CNPJ.ws bloqueiam (403/429) rapidamente sem chave de API, e a regra de 30 dias faria os CNPJs que falharem ficarem com `razao_social=''` por um mês. Se precisar reprocessar um backlog grande de CNPJs vazios, resetar `consultado_em` para uma data antiga (reabre para `novos`) e deixar o throttling de 20/execução resolver gradualmente ao longo dos dias.
 
 ### Funções JS (index.html)
 | Função | O que faz |
