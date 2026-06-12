@@ -504,8 +504,8 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 }
 @media print{
   body *{visibility:hidden}
-  #nv-espelho-print,#nv-espelho-print *{visibility:visible}
-  #nv-espelho-print{position:fixed;top:0;left:0;width:100%;padding:12px;box-sizing:border-box;background:#fff;color:#000}
+  #nv-espelho-print,#nv-espelho-print *,#nfe-espelho-print,#nfe-espelho-print *{visibility:visible}
+  #nv-espelho-print,#nfe-espelho-print{position:fixed;top:0;left:0;width:100%;padding:12px;box-sizing:border-box;background:#fff;color:#000}
 }
 .nv-esp-overlay{display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.72);overflow-y:auto;padding:24px 16px}
 .nv-esp-wrap{background:#fff;color:#111;border-radius:8px;max-width:820px;margin:0 auto;font-family:Arial,sans-serif;font-size:11px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
@@ -813,9 +813,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
         <button class="cat-btn" id="op_f_neg" onclick="setOpSaldoFilter('NEG')" title="Empresa pagou mais frete a transportadora do que cobrou do cliente"><i class="fa-solid fa-arrow-down" style="color:var(--red);font-size:9px"></i> Saldo Negativo</button>
         <button class="cat-btn" id="op_f_zero" onclick="setOpSaldoFilter('ZERO')" title="Entregas em que nao houve cobranca de frete do cliente (frete gratis)"><i class="fa-solid fa-ban" style="color:var(--text3);font-size:9px"></i> Sem Cobranca</button>
       </div>
+      <input type="text" id="op_search" placeholder="Buscar por número de NF..." class="hd-filter-item" style="flex:1;min-width:160px;cursor:text">
     </div>
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
-      <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')" title="Valor pago pela empresa à transportadora pelo frete desta entrega (CT-e)">Valor Frete ⓘ</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th title="Valor de frete cobrado do cliente na nota fiscal de saída — pode ser zero (frete grátis) ou diferente do valor pago à transportadora">Fr.Cobrado ⓘ</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')" title="Saldo = Frete Cobrado do cliente − Valor Frete pago à transportadora. Positivo: empresa repassou mais do que pagou. Negativo: empresa subsidiou parte do frete.">Saldo ⓘ</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="tbody"></tbody></table>
+      <table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th><th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')" title="Valor pago pela empresa à transportadora pelo frete desta entrega (CT-e)">Valor Frete ⓘ</th><th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th title="Valor de frete cobrado do cliente na nota fiscal de saída — pode ser zero (frete grátis) ou diferente do valor pago à transportadora">Fr.Cobrado ⓘ</th><th class="sort-th" id="th_diferenca" onclick="sortBy('diferenca')" title="Saldo = Frete Cobrado do cliente − Valor Frete pago à transportadora. Positivo: empresa repassou mais do que pagou. Negativo: empresa subsidiou parte do frete.">Saldo ⓘ</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th><th title="Ver espelho da NF-e">Espelho</th></tr></thead><tbody id="tbody"></tbody></table>
     </div>
     <div class="pager" id="pager"></div>
   </div>
@@ -1093,6 +1094,87 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
     <div class="nv-esp-btns">
       <button class="nv-esp-btn nv-esp-btn-close" onclick="document.getElementById('nv-espelho-modal').style.display='none'">Fechar</button>
+      <button class="nv-esp-btn nv-esp-btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir / Salvar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ESPELHO NF-e -->
+<div id="nfe-espelho-modal" class="nv-esp-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="nv-esp-wrap">
+    <div id="nfe-espelho-print">
+      <div class="nv-esp-header">
+        <div><div class="nv-esp-title" id="nfesp_cliente">—</div><div class="nv-esp-subtitle">Espelho da Nota Fiscal Eletrônica — dados consolidados do dashboard de frete</div></div>
+        <div style="text-align:right;font-size:10px;opacity:.8"><div>NF-e Modelo <strong>55</strong> · Saída</div><div id="nfesp_emitente" style="font-family:monospace">—</div></div>
+      </div>
+      <!-- Identificação -->
+      <div class="nv-esp-section">
+        <div class="nv-esp-row">
+          <div class="nv-esp-cell" style="flex:2"><span class="nv-esp-lbl">Número</span><span class="nv-esp-val" id="nfesp_numero" style="font-size:14px;font-weight:700;color:#1a3a5c">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Série</span><span class="nv-esp-val" id="nfesp_serie">—</span></div>
+          <div class="nv-esp-cell" style="flex:2"><span class="nv-esp-lbl">Data de Emissão</span><span class="nv-esp-val" id="nfesp_data">—</span></div>
+          <div class="nv-esp-cell" style="flex:3"><span class="nv-esp-lbl">Natureza da Operação</span><span class="nv-esp-val" id="nfesp_natop">—</span></div>
+        </div>
+        <div class="nv-esp-block">
+          <span class="nv-esp-lbl">Chave de Acesso (44 dígitos)</span>
+          <span class="nv-esp-val nv-esp-chave" id="nfesp_chave">—</span>
+        </div>
+        <div class="nv-esp-row">
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Empresa Emitente</span><span class="nv-esp-val" id="nfesp_emp_nome" style="font-weight:700;color:#1a3a5c">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">CNPJ Emitente</span><span class="nv-esp-val" id="nfesp_emp_cnpj" style="font-family:monospace">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Canal</span><span class="nv-esp-val" id="nfesp_canal">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Nicho</span><span class="nv-esp-val" id="nfesp_nicho">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Linha</span><span class="nv-esp-val" id="nfesp_linha">—</span></div>
+        </div>
+      </div>
+      <!-- Destinatário -->
+      <div class="nv-esp-section">
+        <div class="nv-esp-block">
+          <div class="nv-esp-block-title">Destinatário / Remetente</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div style="flex:2;min-width:160px"><span class="nv-esp-lbl">Nome / Razão Social</span><span class="nv-esp-val" id="nfesp_dest_nome">—</span></div>
+            <div><span class="nv-esp-lbl">CNPJ / CPF</span><span class="nv-esp-val" id="nfesp_dest_cnpj" style="font-family:monospace">—</span></div>
+            <div><span class="nv-esp-lbl">Cidade / UF</span><span class="nv-esp-val" id="nfesp_dest_local">—</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Valores -->
+      <div class="nv-esp-section">
+        <div class="nv-esp-row">
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Valor Total da Nota</span><span class="nv-esp-val" id="nfesp_total" style="font-size:13px;font-weight:700;color:#1a3a5c">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Valor Linhahum</span><span class="nv-esp-val" id="nfesp_lh">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Valor Humana Alimentar</span><span class="nv-esp-val" id="nfesp_hu">—</span></div>
+        </div>
+      </div>
+      <!-- Transporte -->
+      <div class="nv-esp-section">
+        <div class="nv-esp-block">
+          <div class="nv-esp-block-title">Transportador / Frete</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div style="flex:2;min-width:160px"><span class="nv-esp-lbl">Transportadora</span><span class="nv-esp-val" id="nfesp_transp">—</span></div>
+            <div><span class="nv-esp-lbl">CNPJ</span><span class="nv-esp-val" id="nfesp_transp_cnpj" style="font-family:monospace">—</span></div>
+            <div style="flex:2;min-width:160px"><span class="nv-esp-lbl">Origem → Destino</span><span class="nv-esp-val" id="nfesp_rota">—</span></div>
+            <div><span class="nv-esp-lbl">Peso Bruto</span><span class="nv-esp-val" id="nfesp_peso">—</span></div>
+          </div>
+        </div>
+        <div class="nv-esp-row">
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Valor do Frete (pago à transportadora)</span><span class="nv-esp-val" id="nfesp_frete_pago" style="font-weight:700;color:var(--blue2)">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Frete Cobrado do Cliente</span><span class="nv-esp-val" id="nfesp_frete_cobrado">—</span></div>
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Saldo (Cobrado − Pago)</span><span class="nv-esp-val" id="nfesp_saldo" style="font-weight:700">—</span></div>
+        </div>
+        <div id="nfesp_rateio_section" style="display:none;background:#fffbe6;border-left:3px solid #f59e0b;padding:6px 8px;border-top:1px solid #ddd">
+          <span class="nv-esp-lbl" style="color:#92400e">Rateio entre NF-e do mesmo CT-e</span>
+          <span class="nv-esp-val" id="nfesp_rateio">—</span>
+        </div>
+        <div class="nv-esp-block">
+          <span class="nv-esp-lbl">CT-e Vinculado (Chave de Acesso)</span>
+          <span class="nv-esp-val nv-esp-chave" id="nfesp_cte_chave">—</span>
+        </div>
+      </div>
+      <div style="font-size:9px;color:#888;text-align:right;padding:4px 8px;background:#f8f9fa;border-top:1px solid #eee">Gerado pelo Dashboard de Gestão de Fretes — Controle Humana</div>
+    </div>
+    <div class="nv-esp-btns">
+      <button class="nv-esp-btn nv-esp-btn-close" onclick="document.getElementById('nfe-espelho-modal').style.display='none'">Fechar</button>
       <button class="nv-esp-btn nv-esp-btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir / Salvar PDF</button>
     </div>
   </div>
@@ -1962,6 +2044,7 @@ const selEst =document.getElementById('filter_estado');
 const selTr  =document.getElementById('filter_transp');
 const selCn  =document.getElementById('filter_canal');
 const inpQ   =document.getElementById('hd_search');
+const opSearchInp=document.getElementById('op_search');
 
 function buildCanalOptions(cat){
   if(!selCn) return;
@@ -2437,13 +2520,14 @@ function toggleRateioDetail(trId,cteChave,curNfe){
   const panel='<tr id="'+detId+'" style="background:#EEF3F8"><td colspan="19" style="padding:0"><div style="background:#FFFFFF;border-left:3px solid #F59E0B;padding:14px 18px;margin:0 0 2px 0;border-top:1px solid #E2E8F0"><div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#92400E"><i class="fa-solid fa-truck"></i> Rateio do CTe</span><span style="font-family:monospace;font-size:10px;color:#8099B4">...'+cteChave.slice(-14)+'</span><span style="font-size:11px;color:#475569">Frete total: <strong style="color:#1E293B">'+BRL(totCte)+'</strong></span><span style="font-size:11px;color:#475569">Dividido entre <strong style="color:#92400E">'+peers.length+'</strong> NF-e</span></div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid #D8E6F0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748B"><th style="padding:4px 10px;text-align:left">Empresa</th><th style="text-align:left">NF</th><th style="text-align:right">Valor da Nota</th><th style="text-align:right">Frete Rateado</th><th style="text-align:right">% do Rateio</th><th style="min-width:100px">Proporcao</th></tr></thead><tbody>'+peersHtml+'</tbody><tfoot><tr style="border-top:1px solid #D8E6F0;font-weight:700"><td colspan="3" style="padding:5px 10px;color:#8099B4;font-size:10px">Total</td><td style="text-align:right;color:#1E293B">'+BRL(totCte)+'</td><td style="text-align:right;color:#1E293B">100%</td><td></td></tr></tfoot></table></div></td></tr>';
   document.getElementById(trId).insertAdjacentHTML('afterend',panel);
 }
-function mkDetailRow(d,rowId){
+function mkDetailRow(d,rowId,idx){
   const dif=d.diferenca_frete||0;const dC=dif>0?'color:var(--green)':dif<0?'color:var(--red)':'color:var(--text3)';
   const cob=d.frete_cobrado||0;const pct=d.total_nf?d.valor_frete/d.total_nf*100:0;const rowCls=pct>10?' class="row-alert"':'';
   const rid=rowId||'x';
   const rateioBtn=d.is_rateio?'<button id="rb-'+rid+'" onclick="event.stopPropagation();toggleRateioDetail(\''+rid+'\',\''+d.cte_chave+'\',\''+d.chave_nfe+'\')" style="margin-left:6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.45);color:var(--yellow);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer;font-family:inherit" title="Frete proporcional — clique para ver o rateio entre as NF-e do mesmo CTe"><i class="fa-solid fa-divide"></i> Rateio</button>':'';
   const freteCellStyle=d.is_rateio?'color:var(--blue2);font-weight:600;white-space:nowrap;background:rgba(245,158,11,.05)':'color:var(--blue2);font-weight:600;white-space:nowrap';
-  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="'+freteCellStyle+'">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf,d.nat_operacao)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td></tr>';
+  const espelhoBtn='<button onclick="event.stopPropagation();if(window._showEspelhoNFe)window._showEspelhoNFe(window._opRows&&window._opRows['+idx+'])" title="Ver Espelho NF-e" style="background:rgba(94,106,210,.15);border:1px solid rgba(94,106,210,.3);color:var(--blue2);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:10px;white-space:nowrap"><i class="fa-solid fa-file-lines"></i></button>';
+  return '<tr id="'+rid+'"'+rowCls+'>'+'<td><strong>'+(d.empresa||'-')+'</strong></td><td>'+linhaTag(d.linha)+'</td>'+'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'+'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'+'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'+'<td style="'+freteCellStyle+'">'+BRL(d.valor_frete)+rateioBtn+'</td>'+'<td>'+pctBarInline(d.valor_frete,d.total_nf,d.nat_operacao)+'</td>'+'<td>'+BRL(d.linhahum_total||0)+'</td><td>'+BRL(d.humana_total||0)+'</td>'+'<td>'+(cob>0?BRL(cob):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td style="'+dC+';font-weight:700">'+(cob>0?BRL(dif):'<span style="color:var(--text3)">-</span>')+'</td>'+'<td>'+BRL(d.frete_linhahum||0)+'</td><td>'+BRL(d.frete_humana||0)+'</td>'+'<td style="text-align:center">'+(d.qtd_nf_cte||1)+'</td>'+'<td title="'+(d.transportadora||'')+'">'+trName(d.transportadora||'-')+'</td>'+'<td style="font-size:10px">'+(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:'')+'</td>'+'<td style="font-size:10px">'+(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:'')+'</td>'+'<td style="text-align:right">'+(d.peso_kg||0)+'</td>'+'<td style="text-align:center">'+espelhoBtn+'</td></tr>';
 }
 function mkPager(total,page,perPage,pagerId,onPage){
   const pages=Math.ceil(total/perPage);const pager=document.getElementById(pagerId);pager.innerHTML='';
@@ -2455,6 +2539,7 @@ function mkPager(total,page,perPage,pagerId,onPage){
   addBtn('>',page+1,false,page===pages-1);addBtn('>>',pages-1,false,page===pages-1);
 }
 let opSaldoFilter='';
+let opSearch='';
 function setOpSaldoFilter(val){
   opSaldoFilter=val;
   document.getElementById('op_f_all').classList.toggle('active',val==='');
@@ -2464,20 +2549,24 @@ function setOpSaldoFilter(val){
   tablePage=0;renderTable();
 }
 function opSaldoFilteredRows(){
-  if(!opSaldoFilter) return tableRows;
-  return tableRows.filter(d=>{
-    const cob=d.frete_cobrado||0;
-    if(opSaldoFilter==='ZERO') return cob<=0;
-    if(cob<=0) return false;
-    const dif=d.diferenca_frete||0;
-    if(opSaldoFilter==='POS') return dif>0;
-    if(opSaldoFilter==='NEG') return dif<0;
-    return true;
-  });
+  let rows=tableRows;
+  if(opSaldoFilter){
+    rows=rows.filter(d=>{
+      const cob=d.frete_cobrado||0;
+      if(opSaldoFilter==='ZERO') return cob<=0;
+      if(cob<=0) return false;
+      const dif=d.diferenca_frete||0;
+      if(opSaldoFilter==='POS') return dif>0;
+      if(opSaldoFilter==='NEG') return dif<0;
+      return true;
+    });
+  }
+  if(opSearch) rows=rows.filter(d=>String(d.numero||'').toLowerCase().includes(opSearch));
+  return rows;
 }
 function renderTable(){
-  const tbody=document.getElementById('tbody');const rows=opSaldoFilteredRows();const slice=rows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
-  tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'dr'+(tablePage*PAGE+i))).join('');
+  const tbody=document.getElementById('tbody');const rows=opSaldoFilteredRows();window._opRows=rows;const slice=rows.slice(tablePage*PAGE,tablePage*PAGE+PAGE);
+  tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'dr'+(tablePage*PAGE+i),tablePage*PAGE+i)).join('');
   mkPager(rows.length,tablePage,PAGE,'pager',pg=>{tablePage=pg;renderTable();});
 }
 function opExportXLSX(){
@@ -2536,6 +2625,7 @@ selEst.addEventListener('change',()=>{state.estado=selEst.value;renderAll();});
 selTr.addEventListener('change',()=>{state.transp=selTr.value;renderAll();});
 selCn.addEventListener('change',()=>{state.canal=selCn.value;renderAll();});
 inpQ.addEventListener('input',()=>{state.q=inpQ.value.toLowerCase();renderAll();});
+if(opSearchInp) opSearchInp.addEventListener('input',()=>{opSearch=opSearchInp.value.toLowerCase().trim();tablePage=0;renderTable();});
 (function(){
   const psSel=document.getElementById('page_size_sel');
   if(!psSel) return;
@@ -3455,10 +3545,61 @@ function initApp(){
     set('esp_motivo',c.motivo||(c.empresa_nf?'CTe emitido mas a NF-e correspondente foi cancelada no ERP — frete válido sem nota para vincular':isCancelado?'CT-e com evento de cancelamento registrado na SEFAZ — excluído de todos os cálculos do dashboard':'CTe sem NF-e referenciada'));
     modal.style.display='block';
   }
+  function showEspelhoNFe(d){
+    if(!d)return;
+    const modal=document.getElementById('nfe-espelho-modal');
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val||'—';};
+    const setHtml=(id,val)=>{const el=document.getElementById(id);if(el)el.innerHTML=val||'—';};
+    const serie=d.chave_nfe&&d.chave_nfe.length>=25?parseInt(d.chave_nfe.slice(22,25)):'—';
+    const empCnpj=Object.entries(CNPJ_EMPRESA).find(([,v])=>v===d.empresa)?.[0]||'';
+    set('nfesp_cliente',d.cliente||'Espelho NF-e');
+    set('nfesp_emitente','Emitente: '+(d.empresa||'—')+(empCnpj?' — '+_fmtCnpj(empCnpj):''));
+    set('nfesp_numero',d.numero||'—');
+    set('nfesp_serie',serie);
+    set('nfesp_data',fmtDate(d.data||''));
+    set('nfesp_natop',d.nat_operacao||'—');
+    setHtml('nfesp_chave',d.chave_nfe?`<span>${_fmtChave(d.chave_nfe)}</span>`:'—');
+    set('nfesp_emp_nome',d.empresa||'—');
+    set('nfesp_emp_cnpj',_fmtCnpj(empCnpj));
+    set('nfesp_canal',d.canal||'—');
+    set('nfesp_nicho',d.nicho||'—');
+    setHtml('nfesp_linha',linhaTag(d.linha));
+    set('nfesp_dest_nome',d.cliente||'—');
+    set('nfesp_dest_cnpj',_fmtCnpj(d.part_cnpj));
+    set('nfesp_dest_local',(d.cidade||'—')+(d.estado?' / '+d.estado:''));
+    set('nfesp_total',BRL(d.total_nf));
+    set('nfesp_lh',BRL(d.linhahum_total||0));
+    set('nfesp_hu',BRL(d.humana_total||0));
+    set('nfesp_transp',trName(d.transportadora||'-'));
+    set('nfesp_transp_cnpj',_fmtCnpj(d.transp_cnpj));
+    set('nfesp_rota',(d.origem_cidade||'—')+(d.origem_uf?'/'+d.origem_uf:'')+'  →  '+(d.destino_cidade||'—')+(d.destino_uf?'/'+d.destino_uf:''));
+    set('nfesp_peso',d.peso_kg>0?N(Math.round(d.peso_kg))+' kg':'—');
+    set('nfesp_frete_pago',BRL(d.valor_frete));
+    const cob=d.frete_cobrado||0;
+    set('nfesp_frete_cobrado',cob>0?BRL(cob):'—');
+    const dif=d.diferenca_frete||0;
+    const saldoEl=document.getElementById('nfesp_saldo');
+    if(saldoEl){
+      saldoEl.textContent=cob>0?BRL(dif):'—';
+      saldoEl.style.color=dif>0?'var(--green)':dif<0?'var(--red)':'var(--text3)';
+    }
+    const rateioSec=document.getElementById('nfesp_rateio_section');
+    if(rateioSec){
+      if(d.is_rateio){
+        rateioSec.style.display='';
+        set('nfesp_rateio','Esta NF-e representa '+(d.pct_rateio||0)+'% do frete total do CT-e ('+BRL(d.valor_frete_cte||0)+'), rateado entre '+(d.qtd_nfes_fat||1)+' NF-e(s).');
+      } else {
+        rateioSec.style.display='none';
+      }
+    }
+    setHtml('nfesp_cte_chave',d.cte_chave?`<span>${_fmtChave(d.cte_chave)}</span>`:'—');
+    modal.style.display='block';
+  }
   nvInp.addEventListener('input',nvFilter);nvSelUf.addEventListener('change',nvFilter);nvSelTr.addEventListener('change',nvFilter);nvSelMotivo.addEventListener('change',nvFilter);
   nvRebuildBase();
   window._renderNV=function(){nvRebuildBase();if(window._renderNC)window._renderNC();if(window._renderCancel)window._renderCancel();};
   window._nvShowEspelho=nvShowEspelho;
+  window._showEspelhoNFe=showEspelhoNFe;
   window.nvExportXLSX=nvExportXLSX;
 
   // CTe com NF Cancelada — função reativa (chamada pelo _renderNV e ao init)
