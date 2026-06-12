@@ -392,6 +392,25 @@ O script mantém uma cópia quase idêntica do HTML/JS do `index.html` em `HTML_
 
 ## Segurança e LGPD
 
+### O repositório `controlehumana/humfrete` é PÚBLICO
+GitHub Pages free tier exige repo público. Consequência crítica: **nada com dado real pode ser versionado**, porque tudo no Git fica acessível sem autenticação — inclusive em commits antigos do histórico, mesmo após remoção do HEAD.
+- **NUNCA versionar arquivos com `const DATA={...}` embutido** (snapshots, protótipos, relatórios standalone). O `.gitignore` já cobre `test_*.js`, `teste_*.html`, `dashboard_frete.html` — mas o `.gitignore` **não remove o que já está rastreado**. Ao criar arquivo novo de teste/preview, confirmar que casa com o `.gitignore` ANTES do primeiro `git add`.
+- O `index.html` e o `processar_frete.py` podem ser públicos (a `apiKey` Firebase no client é pública por design; os dados ficam no Firestore, protegidos pelas rules).
+
+### Incidente corrigido (2026-06-12)
+`test_js.js` (~19MB) e `teste_relatorio.html` continham faturamento/fretes/CNPJs reais embutidos e eram servidos sem login via Pages (contornavam o Firebase Auth). Já estavam no `.gitignore` mas seguiam rastreados de commits antigos. Fix (commit `b36bc7d`): `git rm --cached` + push → 404 no Pages. **Pendente:** dados ainda no histórico do repo público — exige reescrita de histórico (`git filter-repo`/BFG + `push --force`).
+
+### Gaps de segurança/resiliência conhecidos (auditoria 2026-06-12, ainda em aberto)
+1. **Histórico Git vazado** (acima) — limpar com filter-repo/BFG.
+2. **Sem backup do `cte.db`** — banco único (~684MB) numa só máquina; nenhum script faz cópia. Maior risco do projeto. Firestore só guarda o agregado, não reconstrói o banco.
+3. **Sem Firebase App Check** — login/Firestore abertos a abuso de cota de qualquer origem.
+4. **Sem 2FA** para conta admin (controla usuários e empresas).
+5. **`firestore.rules` aplicadas à mão** no Console (risco de divergência entre repo e produção).
+6. **`serviceAccountKey.json`** (admin total do Firestore) parado na máquina, sem rotação.
+
+### XSS — sempre escapar dados externos com `esc()` em innerHTML/template strings
+Regra #6 das "Regras obrigatórias". Corrigido em `renderAdminUsers()` (2026-06-12), que injetava `displayName`/`email`/`empresas`/`abas` sem escape. Auditar qualquer novo render que monte HTML com dados de usuário/Firestore.
+
 ### Firestore rules (`firestore.rules`)
 **Aplicar manualmente no Firebase Console → Firestore → Rules após qualquer alteração** — o arquivo no GitHub não publica automaticamente.
 
@@ -749,4 +768,6 @@ index.html                         ← aba Delivery (tab-delivery)
 - **`nat_op_sem_cte` e `cnpj_nomes` devem estar em `split_by_empresa`** — campos globais copiados inteiros para cada documento de empresa. Se omitidos, chegam como `{}` no frontend. Regra geral: qualquer campo global novo no payload de `processar_frete.py` precisa ser adicionado explicitamente em `split_by_empresa`.
 - **`sqlite3.Row` não tem `.get()`** — ao ler campos de `vw_nf_saida` ou qualquer query SQLite com `row_factory = sqlite3.Row`, usar sempre `r["campo"]` (KeyError se ausente) ou `dict(r).get("campo","")` para acesso seguro. Nunca `r.get("campo")` — isso causa `AttributeError` silenciado pelo fallback de CSV, zerando todo o faturamento e gerando payload de 11MB no Firestore.
 - **Crescimento do `cte.db`** — está em ~684 MB (jun/2026) e cresce continuamente (CTe + faturamento + NF entrada + NFS-e entregadores). Acompanhar via coluna `tamanho_mb` no Log de Importações (Admin); thresholds visuais: amarelo ≥1GB, vermelho ≥2GB. Se ficar grande demais para a máquina local, considerar migração para outro local ou Supabase (plano gratuito)
+- **`cte.db` sem backup** — nenhum script faz cópia de segurança; é um banco único numa só máquina. Maior risco de perda de dados do projeto. Ao mexer no `atualizar.py`, considerar adicionar cópia datada para nuvem (ver "Gaps de segurança/resiliência conhecidos")
+- **Repo público — não versionar dados** — qualquer arquivo com dados reais embutidos vaza sem autenticação (inclusive via histórico Git). Ver seção "Segurança e LGPD". `.gitignore` não desfaz tracking de arquivos já commitados — conferir antes do primeiro `git add`
 - **Novo script de importação/busca deve registrar no log** — todo script que grava em `cte.db` deve chamar `import_log.registrar(conn, script, origem, fonte, registros, novos, erros, status, detalhes)` ao final do `main()` (sucesso) e no `except` (erro fatal, com `raise` simples para preservar o traceback). Ver seção "Log de Importações — Painel Admin" para o padrão completo
