@@ -4134,10 +4134,10 @@ function renderAdminUsers(){
     const tabs=u.isAdmin?'Todas':((u.tabs||[]).map(id=>{const t=ALL_TABS_INFO.find(x=>x.id===id);return t?t.label:id;}).join(', ')||'nenhuma');
     const safeEmail=(u.email||'').replace(/'/g,"\\'");
     return`<div class="user-card">
-      <div class="user-avatar">${ini}</div>
+      <div class="user-avatar">${esc(ini)}</div>
       <div class="user-info">
-        <div class="user-email">${u.displayName||''} <span style="font-weight:400;color:var(--text3)">${u.email||''}</span>${u.isAdmin?'<span class="user-badge admin">ADMIN</span>':''}</div>
-        <div class="user-meta">Empresas: ${emps} &nbsp;·&nbsp; Abas: ${tabs}</div>
+        <div class="user-email">${esc(u.displayName||'')} <span style="font-weight:400;color:var(--text3)">${esc(u.email||'')}</span>${u.isAdmin?'<span class="user-badge admin">ADMIN</span>':''}</div>
+        <div class="user-meta">Empresas: ${esc(emps)} &nbsp;·&nbsp; Abas: ${esc(tabs)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <button class="admin-btn secondary" style="padding:5px 12px;font-size:11px" onclick="adminEditUser('${u.uid}')">Editar</button>
