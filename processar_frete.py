@@ -728,22 +728,28 @@ def _calcular_separacao():
     """Agrega nf_saida_items por empresa|ano|mes para o módulo de Produtividade
     (quantidade de pedidos e itens separados no armazém). Item-level (qtd_itens),
     diferente de vw_nf_saida que agrega por NF-e. Retorna chave flat "emp|ano|mes"
-    -> {pedidos, itens_total, itens_linhahum, itens_humana, por_canal, por_dow}.
+    -> {pedidos, itens_total, itens_linhahum, itens_humana, por_canal, por_dow, por_produto}.
+    por_produto trunca ao top 15 do mes (por qtd, só {qtd, pedidos} — sem descrição
+    duplicada) — suficiente pra montar um top 10 correto ao agregar varios meses no
+    frontend, sem embutir a cauda longa do catalogo (~400 SKUs) nem repetir texto de
+    descrição em cada mes (isso sozinho quase estourou o limite de 1MB do Firestore).
+    Retorna tupla (detalhe, produtos_desc) — produtos_desc é {codigo: descricao},
+    dict pequeno e global (como cnpj_map) pro frontend resolver o nome do produto.
     Exclui nat_operacao 'transf saldo icms devedor/credor' — lançamento contábil de
     saldo devedor/credor de ICMS, não mercadoria física; qtd_itens nessas linhas
     guarda um valor monetário/numérico completamente fora de escala (até ~120 milhões,
     contra no máximo ~14 mil em qualquer natureza de operação real de mercadoria)."""
     if not os.path.exists(QUIVE_DB):
-        return {}
+        return {}, {}
     try:
         conn = sqlite3.connect(QUIVE_DB, timeout=30)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nf_saida_items'")
         if not cur.fetchone():
-            conn.close(); return {}
+            conn.close(); return {}, {}
         rows = cur.execute("""
-            SELECT empresa, chave, data_emissao, canal, qtd_itens, descricao_item
+            SELECT empresa, chave, data_emissao, canal, qtd_itens, descricao_item, codigo_item
             FROM nf_saida_items
             WHERE empresa IS NOT NULL AND length(data_emissao) = 10
               AND UPPER(nat_operacao) NOT LIKE '%SALDO ICMS%'
@@ -751,9 +757,10 @@ def _calcular_separacao():
         conn.close()
     except Exception as e:
         print(f"   [AVISO] Não foi possível calcular separacao: {e}")
-        return {}
+        return {}, {}
     DOW_PT = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
     agg = {}  # "emp|ano|mes" -> acumuladores
+    produtos_desc = {}  # codigo_item -> descricao (global, sem repetir por mes)
     for r in rows:
         emp = r["empresa"]; data = r["data_emissao"] or ""; chave = r["chave"]
         if not emp or len(data) != 10: continue
@@ -761,10 +768,11 @@ def _calcular_separacao():
         qtd = br_float(r["qtd_itens"] or "0")
         key = f"{emp}|{ano}|{mes}"
         a = agg.setdefault(key, {"pedidos": set(), "itens_total": 0.0, "itens_linhahum": 0.0,
-                                  "itens_humana": 0.0, "por_canal": {}, "por_dow": {}})
+                                  "itens_humana": 0.0, "por_canal": {}, "por_dow": {}, "por_produto": {}})
         a["pedidos"].add(chave)
         a["itens_total"] += qtd
-        desc = (r["descricao_item"] or "").upper()
+        desc_item = r["descricao_item"] or ""
+        desc = desc_item.upper()
         if "LINHAHUM" in desc:
             a["itens_linhahum"] += qtd
         else:
@@ -776,6 +784,12 @@ def _calcular_separacao():
             a["por_dow"][dow] = a["por_dow"].get(dow, 0.0) + qtd
         except ValueError:
             pass
+        cod = r["codigo_item"] or "?"
+        if cod not in produtos_desc and desc_item:
+            produtos_desc[cod] = desc_item
+        p = a["por_produto"].setdefault(cod, {"qtd": 0.0, "pedidos": set()})
+        p["qtd"] += qtd
+        p["pedidos"].add(chave)
     resultado = {
         key: {
             "pedidos": len(a["pedidos"]),
@@ -784,11 +798,17 @@ def _calcular_separacao():
             "itens_humana": round(a["itens_humana"], 2),
             "por_canal": {k: round(v, 2) for k, v in a["por_canal"].items()},
             "por_dow": {k: round(v, 2) for k, v in a["por_dow"].items()},
+            # Array [codigo,qtd,pedidos] em vez de objeto — evita repetir os nomes das
+            # chaves "qtd"/"pedidos" em cada uma das ~20 entradas x 216 meses (~30% menor)
+            "por_produto": [
+                [cod, round(p["qtd"]), len(p["pedidos"])]
+                for cod, p in sorted(a["por_produto"].items(), key=lambda kv: -kv[1]["qtd"])[:15]
+            ],
         }
         for key, a in agg.items()
     }
-    print(f"   Separação: {len(resultado)} combinações emp|ano|mes calculadas")
-    return resultado
+    print(f"   Separação: {len(resultado)} combinações emp|ano|mes calculadas, {len(produtos_desc)} produtos distintos")
+    return resultado, produtos_desc
 
 
 def cruzar(nfe_map, cte_list, nfe_to_cte):
@@ -878,7 +898,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     nf_entrada_map = _carregar_nf_entrada()          # cte_chave -> [nf_data, ...]
     nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
     delivery = _carregar_nfse_entregadores()         # NFS-e dos entregadores (módulo Delivery)
-    separacao_detalhe = _calcular_separacao()         # Produtividade de separação por empresa (módulo Separação)
+    separacao_detalhe, produtos_desc = _calcular_separacao() # Produtividade de separação por empresa (módulo Separação)
     # Versão leve (sem por_canal/por_dow) para embutir sem filtro em todo doc de empresa —
     # permite ranking cruzando todas as empresas mesmo para usuário restrito a 1 empresa.
     # A versão completa (separacao_detalhe) é filtrada por empresa em split_by_empresa,
@@ -1063,7 +1083,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         _nat=nf.get("nat_operacao") or ""; _cod=nf.get("cod_nat_operacao") or ""
         if not(_nat_transf_py.search(_nat) or _nat_transf_py.search(_cod)): continue
         transf_sem_cte_list.append({
-            "chave":chave,"empresa":nf.get("empresa") or "","numero":nf.get("numero") or "",
+            "empresa":nf.get("empresa") or "","numero":nf.get("numero") or "",
             "data":nf.get("data_emissao") or "","cliente":nf.get("participante") or "",
             "cidade":nf.get("cidade") or "","estado":nf.get("estado") or "",
             "part_cnpj":nf.get("part_cnpj") or "","nat_operacao":_nat,
@@ -1184,6 +1204,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
         "delivery":delivery,
         "separacao_detalhe":separacao_detalhe,
+        "produtos_desc":produtos_desc,
     }
 
 
@@ -4105,6 +4126,7 @@ def split_by_empresa(dados):
             "empresa": emp,
             "gerado_em": dados.get("gerado_em",""),
             "cnpj_map": dados.get("cnpj_map",{}),
+            "produtos_desc": dados.get("produtos_desc",{}),
             "por_nat_op": dados.get("por_nat_op",[]),
             "nat_op_sem_cte": dados.get("nat_op_sem_cte",{}),
             "cnpj_nomes": cnpj_nomes_emp,
