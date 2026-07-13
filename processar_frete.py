@@ -728,7 +728,11 @@ def _calcular_separacao():
     """Agrega nf_saida_items por empresa|ano|mes para o módulo de Produtividade
     (quantidade de pedidos e itens separados no armazém). Item-level (qtd_itens),
     diferente de vw_nf_saida que agrega por NF-e. Retorna chave flat "emp|ano|mes"
-    -> {pedidos, itens_total, itens_linhahum, itens_humana, por_canal, por_dow}."""
+    -> {pedidos, itens_total, itens_linhahum, itens_humana, por_canal, por_dow}.
+    Exclui nat_operacao 'transf saldo icms devedor/credor' — lançamento contábil de
+    saldo devedor/credor de ICMS, não mercadoria física; qtd_itens nessas linhas
+    guarda um valor monetário/numérico completamente fora de escala (até ~120 milhões,
+    contra no máximo ~14 mil em qualquer natureza de operação real de mercadoria)."""
     if not os.path.exists(QUIVE_DB):
         return {}
     try:
@@ -742,6 +746,7 @@ def _calcular_separacao():
             SELECT empresa, chave, data_emissao, canal, qtd_itens, descricao_item
             FROM nf_saida_items
             WHERE empresa IS NOT NULL AND length(data_emissao) = 10
+              AND UPPER(nat_operacao) NOT LIKE '%SALDO ICMS%'
         """).fetchall()
         conn.close()
     except Exception as e:
