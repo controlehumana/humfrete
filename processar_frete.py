@@ -724,11 +724,43 @@ def _carregar_import_log(limite=60):
         return []
 
 
+def _novo_bucket():
+    return {"pedidos": set(), "itens_total": 0.0, "itens_linhahum": 0.0, "itens_humana": 0.0, "por_dow": {}}
+
+def _somar_bucket(b, chave, qtd, is_lh, dow):
+    b["pedidos"].add(chave)
+    b["itens_total"] += qtd
+    if is_lh: b["itens_linhahum"] += qtd
+    else: b["itens_humana"] += qtd
+    if dow: b["por_dow"][dow] = b["por_dow"].get(dow, 0.0) + qtd
+
+def _finalizar_bucket(b, com_dow=True):
+    out = {
+        "pedidos": len(b["pedidos"]), "itens_total": round(b["itens_total"], 2),
+        "itens_linhahum": round(b["itens_linhahum"], 2), "itens_humana": round(b["itens_humana"], 2),
+    }
+    if com_dow:
+        out["por_dow"] = {k: round(v, 2) for k, v in b["por_dow"].items()}
+    return out
+
+def _finalizar_bucket_array(nome, b):
+    # [nome,pedidos,itens_total,itens_linhahum,itens_humana] — array em vez de objeto,
+    # evita repetir os 4 nomes de chave em cada canal/natop de cada um dos 216 meses
+    return [nome, len(b["pedidos"]), round(b["itens_total"], 2),
+            round(b["itens_linhahum"], 2), round(b["itens_humana"], 2)]
+
+
 def _calcular_separacao():
     """Agrega nf_saida_items por empresa|ano|mes para o módulo de Produtividade
     (quantidade de pedidos e itens separados no armazém). Item-level (qtd_itens),
-    diferente de vw_nf_saida que agrega por NF-e. Retorna chave flat "emp|ano|mes"
-    -> {pedidos, itens_total, itens_linhahum, itens_humana, por_canal, por_dow, por_produto}.
+    diferente de vw_nf_saida que agrega por NF-e. Retorna chave flat "emp|ano|mes" ->
+    {pedidos, itens_total, itens_linhahum, itens_humana, por_dow, por_canal, por_natop,
+    por_produto} — por_canal/por_natop replicam as mesmas 4 métricas base (sem dow, pra
+    economizar espaço) quebradas por canal / nat. operação, para que os filtros do topbar
+    (Canal, Nat. Operação) também funcionem neste módulo, do mesmo jeito que já funcionam
+    em DATA.detalhes. O toggle B2B/Online não tem campo próprio — é derivado no frontend
+    agrupando por_canal com a mesma função getCategoria()/isOnlineCh() já usada em
+    DATA.detalhes, evitando duplicar essa classificação (e o espaço) no backend.
     por_produto trunca ao top 15 do mes (por qtd, só {qtd, pedidos} — sem descrição
     duplicada) — suficiente pra montar um top 10 correto ao agregar varios meses no
     frontend, sem embutir a cauda longa do catalogo (~400 SKUs) nem repetir texto de
@@ -749,7 +781,7 @@ def _calcular_separacao():
         if not cur.fetchone():
             conn.close(); return {}, {}
         rows = cur.execute("""
-            SELECT empresa, chave, data_emissao, canal, qtd_itens, descricao_item, codigo_item
+            SELECT empresa, chave, data_emissao, canal, nat_operacao, qtd_itens, descricao_item, codigo_item
             FROM nf_saida_items
             WHERE empresa IS NOT NULL AND length(data_emissao) = 10
               AND UPPER(nat_operacao) NOT LIKE '%SALDO ICMS%'
@@ -767,23 +799,19 @@ def _calcular_separacao():
         dia, mes, ano = data[0:2], data[3:5], data[6:10]
         qtd = br_float(r["qtd_itens"] or "0")
         key = f"{emp}|{ano}|{mes}"
-        a = agg.setdefault(key, {"pedidos": set(), "itens_total": 0.0, "itens_linhahum": 0.0,
-                                  "itens_humana": 0.0, "por_canal": {}, "por_dow": {}, "por_produto": {}})
-        a["pedidos"].add(chave)
-        a["itens_total"] += qtd
+        a = agg.setdefault(key, {**_novo_bucket(), "por_canal": {}, "por_natop": {}, "por_produto": {}})
         desc_item = r["descricao_item"] or ""
-        desc = desc_item.upper()
-        if "LINHAHUM" in desc:
-            a["itens_linhahum"] += qtd
-        else:
-            a["itens_humana"] += qtd
-        canal = r["canal"] or "N/A"
-        a["por_canal"][canal] = a["por_canal"].get(canal, 0.0) + qtd
+        is_lh = "LINHAHUM" in desc_item.upper()
+        dow = None
         try:
             dow = DOW_PT[datetime(int(ano), int(mes), int(dia)).weekday()]
-            a["por_dow"][dow] = a["por_dow"].get(dow, 0.0) + qtd
         except ValueError:
             pass
+        _somar_bucket(a, chave, qtd, is_lh, dow)
+        canal = r["canal"] or "N/A"
+        _somar_bucket(a["por_canal"].setdefault(canal, _novo_bucket()), chave, qtd, is_lh, dow)
+        natop = r["nat_operacao"] or "N/A"
+        _somar_bucket(a["por_natop"].setdefault(natop, _novo_bucket()), chave, qtd, is_lh, dow)
         cod = r["codigo_item"] or "?"
         if cod not in produtos_desc and desc_item:
             produtos_desc[cod] = desc_item
@@ -792,14 +820,11 @@ def _calcular_separacao():
         p["pedidos"].add(chave)
     resultado = {
         key: {
-            "pedidos": len(a["pedidos"]),
-            "itens_total": round(a["itens_total"], 2),
-            "itens_linhahum": round(a["itens_linhahum"], 2),
-            "itens_humana": round(a["itens_humana"], 2),
-            "por_canal": {k: round(v, 2) for k, v in a["por_canal"].items()},
-            "por_dow": {k: round(v, 2) for k, v in a["por_dow"].items()},
+            **_finalizar_bucket(a),
+            "por_canal": [_finalizar_bucket_array(k, v) for k, v in a["por_canal"].items()],
+            "por_natop": [_finalizar_bucket_array(k, v) for k, v in a["por_natop"].items()],
             # Array [codigo,qtd,pedidos] em vez de objeto — evita repetir os nomes das
-            # chaves "qtd"/"pedidos" em cada uma das ~20 entradas x 216 meses (~30% menor)
+            # chaves "qtd"/"pedidos" em cada uma das ~15 entradas x 216 meses (~30% menor)
             "por_produto": [
                 [cod, round(p["qtd"]), len(p["pedidos"])]
                 for cod, p in sorted(a["por_produto"].items(), key=lambda kv: -kv[1]["qtd"])[:15]

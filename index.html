@@ -4560,14 +4560,41 @@ function natopSetView(v){
   renderNatOp();
 }
 
-function _sepBase(ignoreEmpresa){
-  // Le o dict LEVE (resumo.separacao_por_emp_ano_mes) — sem breakdown de canal/dow,
-  // embutido sem filtro em todo doc de empresa, por isso cobre sempre todas as empresas
-  // (necessario pro ranking funcionar mesmo pra usuario restrito a 1 empresa).
-  const map=(DATA&&DATA.resumo&&DATA.resumo.separacao_por_emp_ano_mes)||{};
+function _sepBucket(v,natops,canal,cat){
+  // Escolhe o "bucket" mais especifico disponivel pra essa chave emp|ano|mes, respeitando
+  // (nessa ordem de prioridade) filtro de Canal > Nat.Operacao > Categoria B2B/Online.
+  // Limitacao conhecida: nao ha cruzamento exato entre os tres ao mesmo tempo (o dado
+  // agregado no backend guarda canal e nat.operacao como dimensoes independentes, nao
+  // uma tabela cruzada canal x natop — cruzar tudo nao caberia no limite de 1MB do
+  // Firestore). Quando mais de um filtro esta ativo, o mais especifico da lista acima vence.
+  if(canal){
+    const found=(v.por_canal||[]).find(c=>c[0]===canal);
+    return found?{pedidos:found[1],itens_total:found[2],itens_linhahum:found[3],itens_humana:found[4]}:null;
+  }
+  if(natops&&natops.length){
+    let out={pedidos:0,itens_total:0,itens_linhahum:0,itens_humana:0},achou=false;
+    (v.por_natop||[]).forEach(([n,p,it,lh,hu])=>{if(natops.includes(n)){achou=true;out.pedidos+=p;out.itens_total+=it;out.itens_linhahum+=lh;out.itens_humana+=hu;}});
+    return achou?out:null;
+  }
+  if(cat){
+    let out={pedidos:0,itens_total:0,itens_linhahum:0,itens_humana:0},achou=false;
+    (v.por_canal||[]).forEach(([c,p,it,lh,hu])=>{if(getCategoria(c)===cat){achou=true;out.pedidos+=p;out.itens_total+=it;out.itens_linhahum+=lh;out.itens_humana+=hu;}});
+    return achou?out:null;
+  }
+  return {pedidos:v.pedidos,itens_total:v.itens_total,itens_linhahum:v.itens_linhahum,itens_humana:v.itens_humana};
+}
+function _sepAgg(ignoreEmpresa){
+  // Fonte unica: DATA.separacao_detalhe (ja filtrado por empresa no backend — so contem
+  // as empresas as quais o usuario tem acesso). Respeita ano/mes/empresa/canal/nat.operacao/
+  // categoria B2B-Online/linha — mesmos filtros globais que o resto do dashboard usa.
+  const map=(DATA&&DATA.separacao_detalhe)||{};
   const ano=state.ano;
   const meses=(state.meses&&state.meses.length)?state.meses:null;
   const emps=(!ignoreEmpresa&&state.empresas&&state.empresas.length)?state.empresas:null;
+  const natops=(state.natop&&state.natop.length)?state.natop:null;
+  const canal=state.canal||null;
+  const cat=state.categoria||null;
+  const linha=state.linha||null;
   const out={pedidos:0,itens_total:0,itens_linhahum:0,itens_humana:0,por_emp:{},mesesVistos:new Set()};
   for(const k in map){
     const parts=k.split('|'),e=parts[0],a=parts[1],m=parts[2];
@@ -4575,14 +4602,17 @@ function _sepBase(ignoreEmpresa){
     if(meses&&!meses.includes(m)) continue;
     if(emps&&!emps.includes(e)) continue;
     const v=map[k];
-    out.pedidos+=v.pedidos||0;
-    out.itens_total+=v.itens_total||0;
-    out.itens_linhahum+=v.itens_linhahum||0;
-    out.itens_humana+=v.itens_humana||0;
+    const b=_sepBucket(v,natops,canal,cat);
+    if(!b) continue;
     out.mesesVistos.add(a+'|'+m);
+    const itensVal=linha==='Linhahum'?b.itens_linhahum:linha==='Humana Alimentar'?b.itens_humana:b.itens_total;
+    out.pedidos+=b.pedidos||0;
+    out.itens_total+=itensVal||0;
+    out.itens_linhahum+=b.itens_linhahum||0;
+    out.itens_humana+=b.itens_humana||0;
     if(!out.por_emp[e]) out.por_emp[e]={pedidos:0,itens_total:0};
-    out.por_emp[e].pedidos+=v.pedidos||0;
-    out.por_emp[e].itens_total+=v.itens_total||0;
+    out.por_emp[e].pedidos+=b.pedidos||0;
+    out.por_emp[e].itens_total+=itensVal||0;
   }
   return out;
 }
@@ -4594,12 +4624,15 @@ function _diasNoPeriodo(mesesVistos){
   return dias||1;
 }
 function _sepDetalhe(){
-  // Le o dict DETALHADO (DATA.separacao_detalhe) — canal/dow, filtrado por empresa no backend,
-  // so contem as empresas as quais o usuario tem acesso. Sempre respeita state.empresas.
+  // Le o dict DETALHADO (DATA.separacao_detalhe) — canal/dow/produtos, filtrado por
+  // empresa no backend. Respeita ano/mes/empresa/categoria (via getCategoria do canal).
+  // Nao aplica filtro de Canal/Nat.Operacao aqui — estes graficos SAO a propria quebra
+  // por canal/dia, e nao ha cruzamento canal x natop armazenado (ver nota em _sepBucket).
   const map=(DATA&&DATA.separacao_detalhe)||{};
   const ano=state.ano;
   const meses=(state.meses&&state.meses.length)?state.meses:null;
   const emps=(state.empresas&&state.empresas.length)?state.empresas:null;
+  const cat=state.categoria||null;
   const out={por_canal:{},por_dow:{},por_produto:{}};
   for(const k in map){
     const parts=k.split('|'),e=parts[0],a=parts[1],m=parts[2];
@@ -4607,7 +4640,10 @@ function _sepDetalhe(){
     if(meses&&!meses.includes(m)) continue;
     if(emps&&!emps.includes(e)) continue;
     const v=map[k];
-    for(const c in (v.por_canal||{})) out.por_canal[c]=(out.por_canal[c]||0)+v.por_canal[c];
+    (v.por_canal||[]).forEach(([c,p,it])=>{
+      if(cat&&getCategoria(c)!==cat) return;
+      out.por_canal[c]=(out.por_canal[c]||0)+it;
+    });
     for(const d in (v.por_dow||{})) out.por_dow[d]=(out.por_dow[d]||0)+v.por_dow[d];
     (v.por_produto||[]).forEach(([cod,qtd,pedidos])=>{
       if(!out.por_produto[cod]) out.por_produto[cod]={qtd:0,pedidos:0};
@@ -4619,7 +4655,7 @@ function _sepDetalhe(){
 }
 function renderSeparacao(){
   if(!DATA) return;
-  const cur=_sepBase(false);
+  const cur=_sepAgg(false);
   document.getElementById('sep_pedidos').textContent=N(cur.pedidos);
   document.getElementById('sep_itens_total').textContent=N(cur.itens_total);
   document.getElementById('sep_itens_lh').textContent=N(cur.itens_linhahum);
