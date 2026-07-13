@@ -239,6 +239,19 @@ Botões Todos / Saldo Positivo / Saldo Negativo / Sem Cobrança acima da tabela.
 - **Denominador:** faturamento das NF-e **transportadas por aquela carrier** (não o total da empresa)
 - Mede eficiência: quanto custa transportar R$100 de faturamento de saída com cada parceiro
 
+### Mapa de Desempenho por Empresa — Tooltip Explicativo (jul/2026)
+O heatmap `% Frete/Faturamento - Mapa de Desempenho por Empresa` (`renderYoY()`, container `#yoy_heatmap`) ganhou um tooltip (`#heat_tip`, mesmo padrão visual/hover de `#geo_tip` no módulo Geográfico) que explica automaticamente por que uma célula está acima do benchmark, em vez de só mostrar a cor.
+
+- **Dados agregados:** ao lado de `byYME` (frete `fr` / faturamento `nf` por `ano|emp` × mês, já existente), o loop de `tableRows.forEach` em `renderAll()` agora também popula `detYME[ano+'|'+emp][mes] = {nfes:Set<chave_nfe>, porTr:{trKey:frete}}` — conjunto de NF-e distintas (cobertura/ticket médio) e frete por transportadora (top carrier). Ambos exportados via `window._yoyData`.
+- Só células com `val!==null` recebem `class="heat-cell" data-emp data-ano data-mes` e `cursor:help`; `mouseenter`/`mousemove`/`mouseleave` são ligados após `container.innerHTML=html` em `renderYoY()`.
+- `_heatHover(e)` monta o tooltip a partir de 4 números, todos derivados de `window._yoyData` no momento do hover (sem nova consulta ao Firestore):
+  - **% Frete/Faturamento** da célula + diferença em pp vs a linha "Total Grupo" do mesmo mês (`byYME[ano][mes]`, sem sufixo de empresa)
+  - **Cobertura de Frete Rastreado** — `det.nfes.size` (NF-e com CT-e) ÷ `DATA.resumo.nfe_fat_por_emp_ano_mes["emp|ano|mes"]` (total de NF-e de venda do mês/empresa, mesmo dict usado por `_effDen()`)
+  - **Ticket Médio** das entregas rastreadas — `cell.nf / det.nfes.size`
+  - **Transportadora Principal** — maior valor em `det.porTr`, com `trDisp()` para nome canônico (respeita modo Grupo Econômico)
+- **"Possíveis motivos" (heurística, não é causalidade provada):** cobertura `<30%` → percentual calculado sobre uma fatia pequena das vendas, pode não representar o custo logístico total; ticket médio `<R$1000` combinado a % acima do grupo → frete cobrado por entrega tende a pesar mais sobre nota pequena; transportadora com `>50%` do frete da célula → concentração de fornecedor. Sem nenhum desses, mostra frase genérica de "dentro do padrão".
+- Reaproveita exatamente os mesmos campos que já alimentam `_effDen()`/`_filtCteConc()` (`nfe_fat_por_emp_ano_mes`) — qualquer mudança na definição desse dict no backend afeta a cobertura mostrada aqui também.
+
 ## Agrupamento por Grupo Econômico (index.html)
 
 Botão **"Grupo Econômico"** na barra de filtros — ativo por padrão, persiste em `localStorage('groupCarriers')`.
@@ -274,6 +287,7 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | `compras` | Frete Compras | Frete de entrada (NF fornecedores) |
 | `delivery` | Delivery | Custo com NFS-e de entregadores autônomos |
 | `dev-mkt` | Devoluções Marketplace | Devoluções via Shopee/ML/TikTok Shop |
+| `separacao` | Separação | Produtividade de picking por unidade — pedidos, itens separados, ranking, dia da semana, canal |
 | `empresa` | Por Empresa | Análise por filial |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
 | `natop` | Por Tipo de Venda | Cobertura de frete por natureza de operação — drill-down para Operacional |
@@ -687,6 +701,31 @@ const state={ano:'',meses:[],empresas:[],linha:'',natop:[],estado:'',transp:'',c
 ```
 `nicho` (string) — preenchido pelo drill-down da visão Nicho em `natopDrillDown()`; limpo via chip `×` em `updateTags()`; aplicado em `filterRows()` como `d.nicho !== state.nicho`.
 
+## Filtros do Topbar — Multiselect (index.html)
+
+Padrão `.ms-wrap > .ms-btn + .ms-dropdown` usado pelos 3 filtros multiselect do topbar: Mês (`ms_mes_*`), Empresa (`ms_emp_*`) e Nat. Operação (`ms_natop_*`, dentro de "Mais filtros"). Cada um segue a mesma estrutura: botão (`.ms-btn`) que abre um dropdown `position:fixed` (`.ms-dropdown`) com um checkbox "Todos" no topo + opções (`.ms-opt`), e uma função `sync*()` que recalcula `state.*` a partir dos checkboxes marcados e chama `renderAll()`.
+
+### Grade de meses (jul/2026)
+O filtro de Mês foi trocado de lista vertical de checkboxes (rolagem, itens pequenos) para uma grade `.mes-grid` de 4×3 chips clicáveis — todos os 12 meses visíveis sem rolar. Implementação:
+- Os 12 `.ms-opt` dos meses ficam dentro de um `<div class="mes-grid">` separado do checkbox "Todos os meses" (que continua fora da grade, como linha própria)
+- Checkbox de cada mês fica `display:none`; o `<label for="mes_XX">` ocupa o chip inteiro (clique em qualquer ponto do chip aciona o checkbox associado nativamente — sem JS extra de clique)
+- `.ms-opt.active` (aplicada/removida em `syncMeses()` a cada mudança) estiliza o chip selecionado; `updateTags()` também precisa marcar/desmarcar `.active` ao limpar o filtro via chip `×` (não só `checked`)
+- Esse padrão de grade (chip com label cobrindo a área toda) pode ser reaproveitado para outros multiselects com poucas opções fixas no futuro
+
+### `_msPosition(btn, drop)` — posicionamento dos dropdowns (jul/2026)
+Helper global que substitui o cálculo manual de `top`/`left` que cada multiselect fazia no próprio `click` handler. **Motivo:** `header.topbar` usa `backdrop-filter: blur(20px)`, e isso torna o header o *containing block* dos filhos `position:fixed` (mesma regra do CSS que se aplica a `transform`/`filter`/`will-change`). Como `.ms-dropdown` é `position:fixed`, `left`/`top` calculados com `btn.getBoundingClientRect()` (coordenadas relativas ao *viewport*) ficavam deslocados — o dropdown abria ao lado/abaixo da posição errada, tanto mais quanto maior o offset do header em relação à viewport (ex.: sidebar lateral empurra o header para a direita).
+```javascript
+function _msPosition(btn,drop){
+  const r=btn.getBoundingClientRect();
+  const cb=(btn.closest('header')||document.body).getBoundingClientRect();
+  drop.style.top=(r.bottom-cb.top+4)+'px';
+  drop.style.left=(r.left-cb.left)+'px';
+  drop.style.right='auto';
+}
+```
+Corrige subtraindo a posição do próprio `header` (o containing block real) antes de aplicar. **Não seria possível trocar para `position:absolute`** — `.topbar-row2` tem `overflow-y:hidden` (para permitir scroll horizontal dos filtros em telas estreitas), o que cortaria um dropdown absolute; por isso o `position:fixed` + correção manual é necessário.
+Usado pelos 3 dropdowns (`ms_mes_drop`, `ms_emp_drop`, `ms_natop_drop`) no lugar do cálculo inline duplicado.
+
 ## Globals críticos (ordem importa)
 
 Declarar no bloco de globals (antes de `onAuthStateChanged`) para evitar TDZ:
@@ -748,8 +787,34 @@ index.html                         ← aba Delivery (tab-delivery)
 - `_dlvPrevRows()` — espelha `_geoPrevRows()` do módulo Geográfico para achar o período de comparação (mês anterior se 1 mês selecionado, ano anterior se só ano selecionado, filtrando `DATA.delivery` por `data_emissao`)
 - Exposta via `window._renderDelivery` — chamada pelo tab switching quando aba `delivery` ativa
 
+## Módulo Separação — `separacao` (index.html, jul/2026)
+
+Produtividade de picking por unidade: quantidade de pedidos e itens separados no armazém, a partir do `nf_saida_items` item-a-item (não `vw_nf_saida`, que já vem agregado por NF-e — aqui a granularidade de `qtd_itens` é necessária).
+
+### `_calcular_separacao()` (processar_frete.py)
+- Lê `nf_saida_items` direto (empresa, chave, data_emissao, canal, qtd_itens, descricao_item), agrupa em memória por chave flat `"emp|ano|mes"`
+- `qtd_itens` é `TEXT` com formato brasileiro (`"1,00"`, `"2.100,00"` com separador de milhar) — **usar sempre `br_float()`**, nunca `float(s.replace(',','.'))` direto (quebra silenciosamente em valores com milhar, ex. `"2.100,00"` vira `2.1`)
+- LinhaHum vs Humana: mesmo critério já usado em `_parse_single_fat`/`cruzar()` — `"LINHAHUM" in descricao_item.upper()`. "Humana Alimentar" aqui é o complementar (tudo que não é LinhaHum: Fresubin, Trophic, etc.), não o total geral
+- Dia da semana calculado via `datetime(ano,mes,dia).weekday()` (0=Segunda) — rótulos em português
+
+### Dois dicts, tamanhos diferentes por design (ver pitfall do limite 1MB abaixo)
+| Campo | Onde vive | Filtrado por empresa? | Conteúdo |
+|---|---|---|---|
+| `resumo.separacao_por_emp_ano_mes` | dentro de `resumo` (como `nfe_fat_por_emp_ano_mes`) | **Não** — embutido inteiro (todas empresas) em todo doc | Só `{pedidos, itens_total, itens_linhahum, itens_humana}` — leve (~23 KB), permite ranking cruzando empresas mesmo pra usuário restrito a 1 empresa |
+| `separacao_detalhe` | top-level do payload (como `detalhes`/`compras`) | **Sim** — `split_by_empresa` filtra por prefixo `"{emp}|"` | Os mesmos 4 números + `por_canal`/`por_dow` — pesado (breakdown por canal/dia), só faz sentido escopado à própria empresa |
+
+### Frontend (index.html)
+- `_sepBase(ignoreEmpresa)` — itera `DATA.resumo.separacao_por_emp_ano_mes`; `ignoreEmpresa=true` usado **só** pelo ranking geral entre unidades (compara todas as empresas do período, ignora `state.empresas`); `false` usado pelos 4 KPIs (respeita todos os filtros globais)
+- `_sepDetalhe()` — itera `DATA.separacao_detalhe`; sempre respeita `state.empresas` (dict já vem filtrado por empresa do backend, então nunca teria dado de outra empresa mesmo sem o filtro)
+- `mkBarQtd(id,lbs,vals,color,lbl)` — variante de `mkBar` para quantidades (não BRL), usa `N()` nos eixos/tooltip
+- `_mergeData()` mescla os dois: `separacao_por_emp_ano_mes` (dentro de `resumo`) via `Object.assign` simples (todo doc já tem tudo); `separacao_detalhe` (top-level) via `Object.assign` também, mas aqui cada doc só contribui as próprias chaves — o merge reconstrói a visão completa pra quem tem acesso a múltiplas empresas
+
 ## Pitfalls conhecidos
 
+- **Limite de 1MB por documento Firestore — BRU1 já opera perto do teto** — o doc principal de cada empresa (tudo exceto `detalhes`, que são chunkados) precisa ficar abaixo de ~1024 KB. Em jul/2026, BRU1 estava em 978 KB (era 981 KB antes até do módulo Separação existir) — **~46 KB de margem**, a menor entre as 8 empresas por ser a maior filial. Campos que NÃO são filtrados por empresa (embutidos inteiros em todo doc) são os primeiros suspeitos ao investigar crescimento: `cnpj_nomes` (filtrado desde jul/2026 aos CNPJs de fato usados via `part_cnpj` em `detalhes` — única leitura no frontend é `_cliClientCell` na aba Por Cliente), `nfe_fat_por_emp_ano_mes`, `cte_conc_por_emp_ano_mes`, `separacao_por_emp_ano_mes` (todos pequenos, ok ficarem globais). **Antes de adicionar qualquer novo campo global ao payload, medir o impacto em KB no doc da BRU1** (o maior) com `json.dumps(...).encode('utf-8')` — se for pesado (breakdown por sub-categoria, por dia, etc.), preferir o padrão de `separacao_detalhe`: campo top-level filtrado por empresa em `split_by_empresa`, não dentro de `resumo`.
+- **`position:fixed` + `backdrop-filter` no ancestral = containing block trocado** — `header.topbar` tem `backdrop-filter:blur(20px)`, o que o torna o *containing block* de qualquer descendente `position:fixed` (mesma regra de `transform`/`filter`/`will-change`). Definir `left`/`top` de um elemento fixed com coordenadas de `getBoundingClientRect()` (relativas ao viewport) sem descontar a posição do header dá elemento deslocado. Ver `_msPosition()` na seção "Filtros do Topbar — Multiselect". Vale para qualquer novo elemento `position:fixed` criado dentro do `header`.
+
+- **`position:fixed` + `backdrop-filter` no ancestral = containing block trocado** — `header.topbar` tem `backdrop-filter:blur(20px)`, o que o torna o *containing block* de qualquer descendente `position:fixed` (mesma regra de `transform`/`filter`/`will-change`). Definir `left`/`top` de um elemento fixed com coordenadas de `getBoundingClientRect()` (relativas ao viewport) sem descontar a posição do header dá elemento deslocado. Ver `_msPosition()` na seção "Filtros do Topbar — Multiselect". Vale para qualquer novo elemento `position:fixed` criado dentro do `header`.
 - **`HTML_TEMPLATE` duplicado em `processar_frete.py`** — gera o `dashboard_frete.html` standalone com HTML/JS quase idêntico ao `index.html`. Mudanças de UI/JS em qualquer aba presente no template (ex.: Marketplace) precisam ser replicadas manualmente nos dois arquivos — ver seção "Módulo Marketplace"
 - **SDK Firebase v8** — usar v8.10.1 compat. v10 causa falha no WebChannel
 - **Encoding Python** — sempre `$env:PYTHONIOENCODING = "utf-8"` antes de rodar scripts

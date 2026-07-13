@@ -724,6 +724,68 @@ def _carregar_import_log(limite=60):
         return []
 
 
+def _calcular_separacao():
+    """Agrega nf_saida_items por empresa|ano|mes para o módulo de Produtividade
+    (quantidade de pedidos e itens separados no armazém). Item-level (qtd_itens),
+    diferente de vw_nf_saida que agrega por NF-e. Retorna chave flat "emp|ano|mes"
+    -> {pedidos, itens_total, itens_linhahum, itens_humana, por_canal, por_dow}."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB, timeout=30)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nf_saida_items'")
+        if not cur.fetchone():
+            conn.close(); return {}
+        rows = cur.execute("""
+            SELECT empresa, chave, data_emissao, canal, qtd_itens, descricao_item
+            FROM nf_saida_items
+            WHERE empresa IS NOT NULL AND length(data_emissao) = 10
+        """).fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível calcular separacao: {e}")
+        return {}
+    DOW_PT = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+    agg = {}  # "emp|ano|mes" -> acumuladores
+    for r in rows:
+        emp = r["empresa"]; data = r["data_emissao"] or ""; chave = r["chave"]
+        if not emp or len(data) != 10: continue
+        dia, mes, ano = data[0:2], data[3:5], data[6:10]
+        qtd = br_float(r["qtd_itens"] or "0")
+        key = f"{emp}|{ano}|{mes}"
+        a = agg.setdefault(key, {"pedidos": set(), "itens_total": 0.0, "itens_linhahum": 0.0,
+                                  "itens_humana": 0.0, "por_canal": {}, "por_dow": {}})
+        a["pedidos"].add(chave)
+        a["itens_total"] += qtd
+        desc = (r["descricao_item"] or "").upper()
+        if "LINHAHUM" in desc:
+            a["itens_linhahum"] += qtd
+        else:
+            a["itens_humana"] += qtd
+        canal = r["canal"] or "N/A"
+        a["por_canal"][canal] = a["por_canal"].get(canal, 0.0) + qtd
+        try:
+            dow = DOW_PT[datetime(int(ano), int(mes), int(dia)).weekday()]
+            a["por_dow"][dow] = a["por_dow"].get(dow, 0.0) + qtd
+        except ValueError:
+            pass
+    resultado = {
+        key: {
+            "pedidos": len(a["pedidos"]),
+            "itens_total": round(a["itens_total"], 2),
+            "itens_linhahum": round(a["itens_linhahum"], 2),
+            "itens_humana": round(a["itens_humana"], 2),
+            "por_canal": {k: round(v, 2) for k, v in a["por_canal"].items()},
+            "por_dow": {k: round(v, 2) for k, v in a["por_dow"].items()},
+        }
+        for key, a in agg.items()
+    }
+    print(f"   Separação: {len(resultado)} combinações emp|ano|mes calculadas")
+    return resultado
+
+
 def cruzar(nfe_map, cte_list, nfe_to_cte):
     print("\n[OK] Cruzando dados...")
     # Marketplace detectado pelo nome da transportadora OU pelo canal de venda
@@ -811,6 +873,16 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     nf_entrada_map = _carregar_nf_entrada()          # cte_chave -> [nf_data, ...]
     nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
     delivery = _carregar_nfse_entregadores()         # NFS-e dos entregadores (módulo Delivery)
+    separacao_detalhe = _calcular_separacao()         # Produtividade de separação por empresa (módulo Separação)
+    # Versão leve (sem por_canal/por_dow) para embutir sem filtro em todo doc de empresa —
+    # permite ranking cruzando todas as empresas mesmo para usuário restrito a 1 empresa.
+    # A versão completa (separacao_detalhe) é filtrada por empresa em split_by_empresa,
+    # senão o payload de cada empresa ultrapassa o limite de 1MB do Firestore.
+    separacao_por_emp_ano_mes = {
+        k: {"pedidos": v["pedidos"], "itens_total": v["itens_total"],
+            "itens_linhahum": v["itens_linhahum"], "itens_humana": v["itens_humana"]}
+        for k, v in separacao_detalhe.items()
+    }
     def _motivo_sem_vinculo(cte):
         if not cte["nfe_chaves"]:
             return "CTe não informou nota fiscal de origem"
@@ -1094,6 +1166,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "nfe_fat_por_ano":nfe_fat_por_ano,
             "nfe_fat_por_emp_ano":nfe_fat_por_emp_ano,
             "nfe_fat_por_emp_ano_mes":nfe_fat_por_emp_ano_mes,
+            "separacao_por_emp_ano_mes":separacao_por_emp_ano_mes,
             "cte_conc_por_empresa":cte_conc_por_empresa,
             "cte_conc_por_emp_ano_mes":cte_conc_por_emp_ano_mes,
             "nfe_sem_cte":len(nfe_sem_cte),"nfe_sem_cte_por_empresa":nfe_sem_cte_por_empresa,"cte_sem_fat":cte_sem_fat,
@@ -1105,6 +1178,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "ctes_nf_cancelada":ctes_nf_cancelada,
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
         "delivery":delivery,
+        "separacao_detalhe":separacao_detalhe,
     }
 
 
@@ -4011,17 +4085,24 @@ def split_by_empresa(dados):
     nv_all = dados.get("ctes_nao_vinculados", [])
     nc_all = dados.get("ctes_nf_cancelada", [])
     result = {}
+    cnpj_nomes_all = dados.get("cnpj_nomes",{})
     for emp in sorted(empresas):
         det = [d for d in dados.get("detalhes",[]) if d.get("empresa")==emp]
         total_frete = sum(d.get("valor_frete",0) for d in det)
         qtd = len(det)
+        # cnpj_nomes filtrado aos CNPJs de fato consultados pelo frontend nessa empresa
+        # (unica leitura e "Por Cliente" -> part_cnpj de detalhes). Embutir o dict inteiro
+        # (todas as empresas) inflava o doc principal perto do limite de 1MB do Firestore.
+        cnpjs_usados = {re.sub(r"\D", "", d.get("part_cnpj") or "") for d in det}
+        cnpjs_usados.discard("")
+        cnpj_nomes_emp = {c: cnpj_nomes_all[c] for c in cnpjs_usados if c in cnpj_nomes_all}
         result[emp] = {
             "empresa": emp,
             "gerado_em": dados.get("gerado_em",""),
             "cnpj_map": dados.get("cnpj_map",{}),
             "por_nat_op": dados.get("por_nat_op",[]),
             "nat_op_sem_cte": dados.get("nat_op_sem_cte",{}),
-            "cnpj_nomes": dados.get("cnpj_nomes",{}),
+            "cnpj_nomes": cnpj_nomes_emp,
             "ctes_nao_vinculados": [c for c in nv_all if not _nv_emp(c) or _nv_emp(c)==emp],
             "ctes_nf_cancelada":   [c for c in nc_all if not c.get("empresa_nf","") or c.get("empresa_nf","")==emp],
             "cancelados_data": [c for c in dados.get("cancelados_data",[]) if not c.get("empresa") or c.get("empresa")==emp],
@@ -4030,6 +4111,7 @@ def split_by_empresa(dados):
             "compras": [d for d in dados.get("compras",[]) if d.get("empresa_dest")==emp],
             "devolucoes_mkt": [d for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest")==emp],
             "delivery": [d for d in dados.get("delivery",[]) if d.get("empresa")==emp],
+            "separacao_detalhe": {k:v for k,v in dados.get("separacao_detalhe",{}).items() if k.startswith(emp+"|")},
             "transf_sem_cte": [d for d in dados.get("transf_sem_cte",[]) if d.get("empresa")==emp],
             "transf_fat": {k:v for k,v in dados.get("transf_fat",{}).items() if k.startswith(emp+"||")},
             "resumo": {

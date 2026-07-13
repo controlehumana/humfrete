@@ -605,6 +605,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <button class="tab-btn tab-highlight" data-tab="compras"><i data-lucide="package"></i><span class="sb-label">Frete Compras</span><span class="tab-badge" id="tb_comp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="delivery"><i data-lucide="truck"></i><span class="sb-label">Delivery</span><span class="tab-badge" id="tb_dlv">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Devoluções Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="separacao"><i data-lucide="clipboard-list"></i><span class="sb-label">Separação</span><span class="tab-badge" id="tb_sep">-</span></button>
     <div class="sb-section">Analise</div>
     <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="operacional"><i data-lucide="list"></i><span class="sb-label">Operacional</span><span class="tab-badge" id="tb_op">-</span></button>
@@ -1301,6 +1302,37 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
 </div>
 
+<!-- TAB SEPARACAO -->
+<div id="tab-separacao" class="tab-panel">
+  <div class="sdiv">Separação - Produtividade de Picking por Unidade</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de NF-e de saída emitidas no período filtrado. Cada NF-e representa um pedido separado fisicamente no armazém, independente da natureza da operação (venda, transferência, bonificação).</div><div class="kpi-val" id="sep_pedidos">-</div><div class="kpi-lbl">Pedidos</div><div class="kpi-sub">NF-e emitidas no período</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Soma da quantidade de itens de todas as linhas de produto separadas no período filtrado, somando LinhaHum e demais marcas.</div><div class="kpi-val" id="sep_itens_total">-</div><div class="kpi-lbl">Itens Separados</div><div class="kpi-sub">total no período</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de itens separados da marca própria LinhaHum no período filtrado.</div><div class="kpi-val" id="sep_itens_lh" style="color:var(--purple2)">-</div><div class="kpi-lbl">Itens LinhaHum</div><div class="kpi-sub" id="sep_itens_lh_pct">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de itens separados de todas as marcas distribuídas pela Humana Alimentar, exceto a linha própria LinhaHum.</div><div class="kpi-val" id="sep_itens_hu" style="color:var(--blue2)">-</div><div class="kpi-lbl">Itens Humana Alimentar</div><div class="kpi-sub" id="sep_itens_hu_pct">-</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Ranking Geral de Unidades — Itens Separados<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo entre todas as unidades do grupo no período (ano/mês) filtrado, sempre considerando todas as empresas independente do filtro de empresa ativo — para que o ranking faça sentido como comparação.</span></span></div>
+    <div class="ch-wrap"><canvas id="ch_sep_ranking"></canvas></div>
+    <div class="tw" style="margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">#</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Pedidos</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Itens Separados</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Itens/Pedido</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">% do Grupo</th></tr></thead>
+      <tbody id="sep_rank_tbody"></tbody>
+    </table></div>
+  </div>
+  <div class="ch2eq">
+    <div class="card">
+      <div class="card-title">Separação por Dia da Semana<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total de itens separados agrupado pelo dia da semana da emissão da NF-e, no período e empresas filtrados. Ajuda a identificar os dias de maior carga operacional no armazém.</span></span></div>
+      <div class="ch-wrap"><canvas id="ch_sep_dow"></canvas></div>
+      <div id="sep_dow_insight" style="margin-top:8px;font-size:11px;color:var(--text3)"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Separação por Canal<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total de itens separados agrupado por canal de venda, no período e empresas filtrados. Mostra qual canal mais exige do armazém em volume de itens, não necessariamente em faturamento.</span></span></div>
+      <div class="ch-wrap"><canvas id="ch_sep_canal"></canvas></div>
+      <div id="sep_canal_insight" style="margin-top:8px;font-size:11px;color:var(--text3)"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TAB POR EMPRESA -->
 <div id="tab-empresa" class="tab-panel">
   <div id="emp_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:#DBEAFE;border:1px solid #BFDBFE;border-radius:8px;font-size:12px;color:#1E40AF;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="opacity:.8"></i><span id="emp_periodo_txt">Carregando...</span></div>
@@ -1490,6 +1522,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <button class="mob-nav-btn" data-tab="compras"><i data-lucide="package"></i><span>Compras</span></button>
   <button class="mob-nav-btn" data-tab="delivery"><i data-lucide="truck"></i><span>Delivery</span></button>
   <button class="mob-nav-btn" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span>Dev.Mkt</span></button>
+  <button class="mob-nav-btn" data-tab="separacao"><i data-lucide="clipboard-list"></i><span>Separação</span></button>
   <button class="mob-nav-btn" data-tab="empresa"><i data-lucide="building-2"></i><span>Empresa</span></button>
   <button class="mob-nav-btn" data-tab="operacional"><i data-lucide="list"></i><span>Operat.</span></button>
   <button class="mob-nav-btn" data-tab="clientes"><i data-lucide="users"></i><span>Clientes</span></button>
@@ -1587,6 +1620,7 @@ function _mergeData(datas) {
   const nfePorAno    = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_ano||{}));
   const nfePorEmpAno = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano||{}));
   const nfePorEmpAnoMes = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_fat_por_emp_ano_mes||{}));
+  const sepPorEmpAnoMes = Object.assign({}, ...datas.map(d=>d.resumo?.separacao_por_emp_ano_mes||{}));
   const cteConcPorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_empresa||{}));
   const cteConcPorEmpAnoMes = Object.assign({}, ...datas.map(d=>d.resumo?.cte_conc_por_emp_ano_mes||{}));
   const nfeSemCtePorEmp = Object.assign({}, ...datas.map(d=>d.resumo?.nfe_sem_cte_por_empresa||{}));
@@ -1607,6 +1641,7 @@ function _mergeData(datas) {
     compras: datas.flatMap(d=>d.compras||[]),
     devolucoes_mkt: datas.flatMap(d=>d.devolucoes_mkt||[]),
     delivery: datas.flatMap(d=>d.delivery||[]),
+    separacao_detalhe: Object.assign({}, ...datas.map(d=>d.separacao_detalhe||{})),
     transf_sem_cte: datas.flatMap(d=>d.transf_sem_cte||[]),
     transf_fat: Object.assign({}, ...datas.map(d=>d.transf_fat||{})),
     resumo: {
@@ -1622,6 +1657,7 @@ function _mergeData(datas) {
       nfe_fat_por_ano: nfePorAno,
       nfe_fat_por_emp_ano: nfePorEmpAno,
       nfe_fat_por_emp_ano_mes: nfePorEmpAnoMes,
+      separacao_por_emp_ano_mes: sepPorEmpAnoMes,
       cte_conc_por_empresa: cteConcPorEmp,
       cte_conc_por_emp_ano_mes: cteConcPorEmpAnoMes,
       nfe_sem_cte_por_empresa: nfeSemCtePorEmp,
@@ -1911,6 +1947,7 @@ function _chartUpdate(id,type,data,options){
 function mkBar(id,lbs,vals,color,lbl){_chartUpdate(id,'bar',{labels:lbs,datasets:[{label:lbl||'Frete',data:vals,backgroundColor:color||'#69AFFA',borderRadius:5,borderSkipped:false}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}});}
 function mkMultiBar(id,lbs,vals,colors){_chartUpdate(id,'bar',{labels:lbs,datasets:[{label:'Frete',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}});}
 function mkDonut(id,lbs,vals){_chartUpdate(id,'doughnut',{labels:lbs,datasets:[{data:vals,backgroundColor:COLORS,borderWidth:2,borderColor:'#111214',hoverOffset:6}]},{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:9,padding:10,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return ' '+c.label+': '+BRL(c.raw)+' ('+(c.raw/t*100).toFixed(1)+'%)'}}}}});}
+function mkBarQtd(id,lbs,vals,color,lbl){_chartUpdate(id,'bar',{labels:lbs,datasets:[{label:lbl||'Itens',data:vals,backgroundColor:color||'#69AFFA',borderRadius:5,borderSkipped:false}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+N(c.raw)+' itens'}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>N(v),font:{size:10},color:'#8A8F98'}}}});}
 function mkGrouped(id,lbs,ds){_chartUpdate(id,'bar',{labels:lbs,datasets:ds},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}});}
 function mkStacked(id,lbs,ds){_chartUpdate(id,'bar',{labels:lbs,datasets:ds},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}});}
 function mkLine(id,lbs,ds){if(!hasChart())return;try{if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),{type:'line',data:{labels:lbs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:9,padding:16,color:'#8A8F98',usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)},backgroundColor:'#1E293B',borderColor:'#334155',borderWidth:1,titleColor:'#F8FAFC',bodyColor:'#94A3B8',padding:12,boxPadding:4}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}}}}});}catch(e){}}
@@ -2441,7 +2478,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -4120,13 +4157,14 @@ function initApp(){
     document.getElementById('tb_comp').textContent=N((DATA.compras||[]).length);
     document.getElementById('tb_dlv').textContent=N((DATA.delivery||[]).length);
     document.getElementById('tb_devmkt').textContent=N((DATA.devolucoes_mkt||[]).length);
+    document.getElementById('tb_sep').textContent=N(Object.values(DATA.resumo?.separacao_por_emp_ano_mes||{}).reduce((s,v)=>s+(v.pedidos||0),0));
     buildCteRateioIndex();
     renderAll();
   }catch(err){console.error('[FRETE] Erro na inicializacao:',err);}
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','empresa':'Por Empresa','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','empresa':'Por Empresa','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -4144,6 +4182,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     else if(tab==='compras'&&window._renderCompras) window._renderCompras();
     else if(tab==='delivery'&&window._renderDelivery) window._renderDelivery();
     else if(tab==='dev-mkt'&&window._renderDevMkt) window._renderDevMkt();
+    else if(tab==='separacao'&&window._renderSeparacao) window._renderSeparacao();
     else if(tab==='nao-vinculados'&&window._renderNV) window._renderNV();
     else if(tab==='operacional') renderTable();
     else if(tab==='geo') renderGeo();
@@ -4191,6 +4230,7 @@ const ALL_TABS_INFO=[
   {id:'compras',label:'Frete Compras'},
   {id:'delivery',label:'Delivery'},
   {id:'dev-mkt',label:'Devoluções Marketplace'},
+  {id:'separacao',label:'Separação'},
   {id:'empresa',label:'Por Empresa'},
   {id:'operacional',label:'Operacional'},
   {id:'natop',label:'Por Tipo de Venda'},
@@ -4511,6 +4551,101 @@ function natopSetView(v){
   renderNatOp();
 }
 
+function _sepBase(ignoreEmpresa){
+  // Le o dict LEVE (resumo.separacao_por_emp_ano_mes) — sem breakdown de canal/dow,
+  // embutido sem filtro em todo doc de empresa, por isso cobre sempre todas as empresas
+  // (necessario pro ranking funcionar mesmo pra usuario restrito a 1 empresa).
+  const map=(DATA&&DATA.resumo&&DATA.resumo.separacao_por_emp_ano_mes)||{};
+  const ano=state.ano;
+  const meses=(state.meses&&state.meses.length)?state.meses:null;
+  const emps=(!ignoreEmpresa&&state.empresas&&state.empresas.length)?state.empresas:null;
+  const out={pedidos:0,itens_total:0,itens_linhahum:0,itens_humana:0,por_emp:{}};
+  for(const k in map){
+    const parts=k.split('|'),e=parts[0],a=parts[1],m=parts[2];
+    if(ano&&a!==ano) continue;
+    if(meses&&!meses.includes(m)) continue;
+    if(emps&&!emps.includes(e)) continue;
+    const v=map[k];
+    out.pedidos+=v.pedidos||0;
+    out.itens_total+=v.itens_total||0;
+    out.itens_linhahum+=v.itens_linhahum||0;
+    out.itens_humana+=v.itens_humana||0;
+    if(!out.por_emp[e]) out.por_emp[e]={pedidos:0,itens_total:0};
+    out.por_emp[e].pedidos+=v.pedidos||0;
+    out.por_emp[e].itens_total+=v.itens_total||0;
+  }
+  return out;
+}
+function _sepDetalhe(){
+  // Le o dict DETALHADO (DATA.separacao_detalhe) — canal/dow, filtrado por empresa no backend,
+  // so contem as empresas as quais o usuario tem acesso. Sempre respeita state.empresas.
+  const map=(DATA&&DATA.separacao_detalhe)||{};
+  const ano=state.ano;
+  const meses=(state.meses&&state.meses.length)?state.meses:null;
+  const emps=(state.empresas&&state.empresas.length)?state.empresas:null;
+  const out={por_canal:{},por_dow:{}};
+  for(const k in map){
+    const parts=k.split('|'),e=parts[0],a=parts[1],m=parts[2];
+    if(ano&&a!==ano) continue;
+    if(meses&&!meses.includes(m)) continue;
+    if(emps&&!emps.includes(e)) continue;
+    const v=map[k];
+    for(const c in (v.por_canal||{})) out.por_canal[c]=(out.por_canal[c]||0)+v.por_canal[c];
+    for(const d in (v.por_dow||{})) out.por_dow[d]=(out.por_dow[d]||0)+v.por_dow[d];
+  }
+  return out;
+}
+function renderSeparacao(){
+  if(!DATA) return;
+  const cur=_sepBase(false);
+  document.getElementById('sep_pedidos').textContent=N(cur.pedidos);
+  document.getElementById('sep_itens_total').textContent=N(cur.itens_total);
+  document.getElementById('sep_itens_lh').textContent=N(cur.itens_linhahum);
+  document.getElementById('sep_itens_hu').textContent=N(cur.itens_humana);
+  const pctLh=cur.itens_total?cur.itens_linhahum/cur.itens_total*100:0;
+  const pctHu=cur.itens_total?cur.itens_humana/cur.itens_total*100:0;
+  document.getElementById('sep_itens_lh_pct').textContent=pctLh.toFixed(1)+'% do total';
+  document.getElementById('sep_itens_hu_pct').textContent=pctHu.toFixed(1)+'% do total';
+  // Ranking geral entre unidades — sempre todas as empresas, so respeita ano/mes
+  const rankAll=_sepBase(true);
+  const rankRows=Object.keys(rankAll.por_emp).map(e=>({emp:e,...rankAll.por_emp[e]}))
+    .sort((a,b)=>b.itens_total-a.itens_total);
+  const totGrupo=rankRows.reduce((s,r)=>s+r.itens_total,0);
+  mkBarQtd('ch_sep_ranking',rankRows.map(r=>r.emp),rankRows.map(r=>r.itens_total),'#69AFFA','Itens Separados');
+  document.getElementById('sep_rank_tbody').innerHTML=rankRows.map((r,i)=>{
+    const ipp=r.pedidos?r.itens_total/r.pedidos:0;
+    const pct=totGrupo?r.itens_total/totGrupo*100:0;
+    return '<tr style="border-bottom:1px solid var(--row-border)">'
+      +'<td style="padding:7px 10px;color:var(--text3)">'+(i+1)+'</td>'
+      +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(r.emp)+'</span></td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(r.pedidos)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700">'+N(r.itens_total)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+ipp.toFixed(1)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+pct.toFixed(1)+'%</td>'
+      +'</tr>';
+  }).join('') || '<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--text3)">Sem dados no período selecionado</td></tr>';
+  // Dia da semana e Canal — respeitam filtro de empresa (dict detalhado, filtrado no backend)
+  const det=_sepDetalhe();
+  const DOW_ORDER=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+  const dowVals=DOW_ORDER.map(d=>det.por_dow[d]||0);
+  mkBarQtd('ch_sep_dow',DOW_ORDER,dowVals,'#A78BFA','Itens Separados');
+  const dowTot=dowVals.reduce((a,b)=>a+b,0);
+  const maxDowIdx=dowVals.reduce((best,v,i)=>v>dowVals[best]?i:best,0);
+  const dowInsight=document.getElementById('sep_dow_insight');
+  if(dowInsight) dowInsight.innerHTML=dowTot?('<strong style="color:var(--text)">'+DOW_ORDER[maxDowIdx]+'</strong> é o dia com mais separação: '+N(dowVals[maxDowIdx])+' itens ('+(dowVals[maxDowIdx]/dowTot*100).toFixed(1)+'% do período).'):'Sem dados no período selecionado.';
+  // Canal — respeita filtro de empresa, top 8 + Outros
+  const canalEntries=Object.entries(det.por_canal).sort((a,b)=>b[1]-a[1]);
+  const top=canalEntries.slice(0,8);
+  const restoVal=canalEntries.slice(8).reduce((s,[,v])=>s+v,0);
+  const canalLbls=top.map(([k])=>k).concat(restoVal>0?['Outros']:[]);
+  const canalVals=top.map(([,v])=>v).concat(restoVal>0?[restoVal]:[]);
+  mkBarQtd('ch_sep_canal',canalLbls,canalVals,'#34D399','Itens Separados');
+  const canalTot=canalEntries.reduce((s,[,v])=>s+v,0);
+  const canalInsight=document.getElementById('sep_canal_insight');
+  if(canalInsight&&canalEntries.length) canalInsight.innerHTML='<strong style="color:var(--text)">'+esc(canalEntries[0][0])+'</strong> é o canal com mais separação: '+N(canalEntries[0][1])+' itens ('+(canalEntries[0][1]/canalTot*100).toFixed(1)+'% do período).';
+  else if(canalInsight) canalInsight.innerHTML='Sem dados no período selecionado.';
+}
+window._renderSeparacao=renderSeparacao;
 function renderNatOp(){
   if(!DATA) return;
   const cfg=_NATOP_VIEW_CFG[natopView];
