@@ -1412,7 +1412,8 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div style="font-size:11px;color:var(--text2);background:var(--s2);border-radius:8px;padding:12px 14px;line-height:1.7;border:1px solid var(--bd)">
       <strong style="color:var(--text)"><i class="fa-solid fa-list-check" style="margin-right:5px"></i>O que significa cada coluna da tabela "Levantamento Geral — Frete por Unidade e Categoria":</strong>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <div><strong style="color:var(--text)">Fretes Gerais</strong> — o custo TOTAL de frete daquela unidade no mês: soma de vendas a clientes + Delivery + as 3 categorias de transferência abaixo.</div>
+        <div><strong style="color:var(--text)">Fretes Gerais</strong> — o custo TOTAL de frete daquela unidade no mês: é a <strong style="color:var(--text)">soma de todas as colunas ao lado</strong> (Frete Venda + Delivery + as 3 categorias de transferência).</div>
+        <div><strong style="color:var(--blue2)">Frete Venda</strong> — custo de frete das entregas normais a clientes externos (o que não é transferência nem Delivery) — a maior parte do frete no dia a dia.</div>
         <div><strong style="color:var(--green2)">Frete Delivery</strong> — o que a unidade pagou a entregadores autônomos (motoboys/parceiros) para entregas locais.</div>
         <div><strong style="color:var(--purple2)">Frete Transf. Matriz&rarr;Unidade</strong> — custo de mercadoria enviada pela Matriz para essa unidade.</div>
         <div><strong style="color:var(--amber)">Frete Transf. Unidade&rarr;Matriz</strong> — custo de mercadoria enviada por essa unidade de volta para a Matriz.</div>
@@ -1430,10 +1431,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <div class="card"><div class="card-title">Evolucao Mensal por Categoria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Evolucao do custo mensal de cada categoria de frete interno/logistico: Delivery, transferencias de/para a Matriz e transferencias entre unidades. Ajuda a ver tendencias de crescimento de cada tipo de custo.</span></span></div><div class="ch-wrap-lg"><canvas id="ch_transf_evol"></canvas></div></div>
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span>Levantamento Geral — Frete por Unidade e Categoria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por unidade/mes com a quebra completa do frete: total geral, delivery, transferencias Matriz-Unidade nos dois sentidos e entre unidades. Estrutura equivalente a planilha de levantamento solicitada.</span></span></span>
+      <span>Levantamento Geral — Frete por Unidade e Categoria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por unidade/mes com a quebra completa do frete: total geral, venda a clientes, delivery, transferencias Matriz-Unidade nos dois sentidos e entre unidades. Fretes Gerais = Frete Venda + Frete Delivery + as 3 categorias de transferencia somadas — a tabela mostra a soma pronta e a quebra por categoria lado a lado.</span></span></span>
       <button onclick="transfExportXLSX()" title="Exportar para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="border-top:2px solid var(--bd2);font-weight:700"></tr></tfoot></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Venda</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="border-top:2px solid var(--bd2);font-weight:700"></tr></tfoot></table></div>
   </div>
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -3250,7 +3251,7 @@ function _transfBuildLevantamento(rows){
     const ano=(data||'').slice(6,10),mes=(data||'').slice(3,5);
     if(ano.length!==4||mes.length!==2) return null;
     const k=emp+'|'+ano+'|'+mes;
-    if(!map[k]) map[k]={emp,ano,mes,geral:0,delivery:0,m2u:0,u2m:0,entre:0};
+    if(!map[k]) map[k]={emp,ano,mes,geral:0,venda:0,delivery:0,m2u:0,u2m:0,entre:0};
     return map[k];
   };
   rows.forEach(d=>{
@@ -3260,6 +3261,7 @@ function _transfBuildLevantamento(rows){
     if(cat==='m2u') b.m2u+=d.valor_frete;
     else if(cat==='u2m') b.u2m+=d.valor_frete;
     else if(cat==='entre') b.entre+=d.valor_frete;
+    else b.venda+=d.valor_frete;
   });
   _transfDeliveryRows().forEach(d=>{
     const b=bucket(d.empresa,d.data_emissao); if(!b) return;
@@ -3306,19 +3308,21 @@ function _transfRenderLevantamento(lvt){
   document.getElementById('transf_lvt_tbody').innerHTML=lvt.length
     ?lvt.map(r=>'<tr><td><strong>'+esc(r.emp)+'</strong></td><td>'+(MESES[+r.mes]||r.mes)+'/'+r.ano+'</td>'
       +'<td style="text-align:right;font-weight:600">'+BRL(r.geral)+'</td>'
+      +'<td style="text-align:right;color:var(--blue2)">'+BRL(r.venda)+'</td>'
       +'<td style="text-align:right;color:var(--green2)">'+BRL(r.delivery)+'</td>'
       +'<td style="text-align:right;color:var(--purple2)">'+BRL(r.m2u)+'</td>'
       +'<td style="text-align:right;color:var(--amber)">'+BRL(r.u2m)+'</td>'
       +'<td style="text-align:right;color:var(--red2)">'+BRL(r.entre)+'</td>'
       +'<td style="text-align:right;font-weight:700">'+BRL(r.geral)+'</td></tr>').join('')
-    :'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">Nenhum dado no periodo selecionado</td></tr>';
+    :'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Nenhum dado no periodo selecionado</td></tr>';
   const tf=document.getElementById('transf_lvt_tfoot');
   if(tf){
-    const tot=lvt.reduce((s,r)=>{s.geral+=r.geral;s.delivery+=r.delivery;s.m2u+=r.m2u;s.u2m+=r.u2m;s.entre+=r.entre;return s;},{geral:0,delivery:0,m2u:0,u2m:0,entre:0});
+    const tot=lvt.reduce((s,r)=>{s.geral+=r.geral;s.venda+=r.venda;s.delivery+=r.delivery;s.m2u+=r.m2u;s.u2m+=r.u2m;s.entre+=r.entre;return s;},{geral:0,venda:0,delivery:0,m2u:0,u2m:0,entre:0});
     const bg='background:var(--s3)';
     tf.innerHTML=lvt.length
       ?'<td style="'+bg+'">Total</td><td style="'+bg+'"></td>'
         +'<td style="'+bg+';text-align:right">'+BRL(tot.geral)+'</td>'
+        +'<td style="'+bg+';text-align:right;color:var(--blue2)">'+BRL(tot.venda)+'</td>'
         +'<td style="'+bg+';text-align:right;color:var(--green2)">'+BRL(tot.delivery)+'</td>'
         +'<td style="'+bg+';text-align:right;color:var(--purple2)">'+BRL(tot.m2u)+'</td>'
         +'<td style="'+bg+';text-align:right;color:var(--amber)">'+BRL(tot.u2m)+'</td>'
@@ -3330,16 +3334,17 @@ function _transfRenderLevantamento(lvt){
 function transfExportXLSX(){
   if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
   if(!_transfLvtRows.length) return alert('Nenhum dado para exportar com os filtros atuais.');
-  const MC=['Fretes Gerais (R$)','Frete Delivery (R$)','Frete Transferencia Matriz->Unidade (R$)','Frete Transferencia Unidade->Matriz (R$)','Frete Entre Unidades (R$)','Total Fretes (R$)'];
+  const MC=['Fretes Gerais (R$)','Frete Venda (R$)','Frete Delivery (R$)','Frete Transferencia Matriz->Unidade (R$)','Frete Transferencia Unidade->Matriz (R$)','Frete Entre Unidades (R$)','Total Fretes (R$)'];
   const data=_transfLvtRows.map(r=>({
     'Unidade':r.emp,
     'Mes':((MESES[+r.mes]||r.mes)+'').toUpperCase().slice(0,3)+'/'+r.ano,
     [MC[0]]:+r.geral.toFixed(2),
-    [MC[1]]:+r.delivery.toFixed(2),
-    [MC[2]]:+r.m2u.toFixed(2),
-    [MC[3]]:+r.u2m.toFixed(2),
-    [MC[4]]:+r.entre.toFixed(2),
-    [MC[5]]:+r.geral.toFixed(2),
+    [MC[1]]:+r.venda.toFixed(2),
+    [MC[2]]:+r.delivery.toFixed(2),
+    [MC[3]]:+r.m2u.toFixed(2),
+    [MC[4]]:+r.u2m.toFixed(2),
+    [MC[5]]:+r.entre.toFixed(2),
+    [MC[6]]:+r.geral.toFixed(2),
   }));
   const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
   const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
