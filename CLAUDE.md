@@ -35,6 +35,8 @@ ClaudeCode\Faturamento\      ← qualquer nome, qualquer período, acumula sem d
 ClaudeCode\NF_Entrada\       ← relatório NF de Entrada, acumula sem duplicar
 ```
 
+**`Faturamento/` — fix do fluxo de pastas (2026-07-30):** `exportar_faturamento.js` salvava o CSV novo em `Faturamento/exports/`, mas `importar_faturamento.py` (`_find_latest()`) só lê a raiz de `Faturamento/` — os exports diários da tarefa agendada nunca eram vistos pela etapa 0a. Corrigido: o script agora salva o novo arquivo direto na raiz e move o anterior para `exports/` (que virou pasta de arquivo morto, sem leitura automática). Detalhes em `Faturamento/CLAUDE.md`.
+
 ## Scripts principais
 
 | Script | O que faz |
@@ -445,9 +447,14 @@ Regra #6 das "Regras obrigatórias". Corrigido em `renderAdminUsers()` (2026-06-
 | Coleção | Regra |
 |---|---|
 | `dados/{docId}` | Admin lê tudo; usuário comum lê apenas docs onde `empresaDoDoc(docId) in userDoc().empresas`; `_meta` somente admin |
-| `users/{uid}` | Leitura: próprio uid ou admin; escrita: usuário não pode alterar `isAdmin`/`empresas`/`tabs`; deleção bloqueada |
+| `users/{uid}` | Leitura: próprio uid ou admin; escrita: usuário não pode alterar `isAdmin`/`empresas`/`tabs`; deleção: **somente admin** (jul/2026 — antes era bloqueada para todos, `allow delete: if false`, o que deixava o botão "Excluir" do painel Admin sempre falhando com "Missing or insufficient permissions") |
 
 `empresaDoDoc(docId)` = `docId.split('_det_')[0]` → extrai `BRU1` de `BRU1_det_000`.
+
+### Exclusão de usuário — painel Admin (`adminDeleteUser`, jul/2026)
+- Botão "Excluir" chama `_db.collection('users').doc(uid).delete()` — remove **só o documento de perfil/permissões no Firestore**, não a conta de login no Firebase Auth (o usuário continua existindo no Auth, mas sem `users/{uid}` o app bloqueia o acesso com a tela de erro "Seu acesso não está configurado...")
+- Guard de segurança: `adminDeleteUser` bloqueia auto-exclusão (`uid===_currentUser.uid`) — sem isso, um admin poderia se excluir e ficar sem acesso ao próprio painel, precisando do Firebase Console para reverter
+- Se precisar remover também a conta de login (Firebase Auth), não há isso no painel — usar o Firebase Console → Authentication, ou um script Admin SDK (mesmo padrão do `reset_senha.js`)
 
 **Antes (jun/2026):** `allow read: if request.auth != null` — qualquer autenticado lia dados de todas as empresas contornando o filtro frontend.
 

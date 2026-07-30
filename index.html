@@ -4700,6 +4700,7 @@ document.getElementById('admin-user-form').addEventListener('submit',async(e)=>{
 
 if(typeof lucide!=='undefined'){try{lucide.createIcons();}catch(e){}}
 async function adminDeleteUser(uid,email){
+  if(_currentUser && uid===_currentUser.uid) return alert('Você não pode excluir a própria conta pelo painel.');
   if(!confirm('Remover acesso de '+email+'? O usuário não poderá mais entrar no sistema.')) return;
   try{
     await _db.collection('users').doc(uid).delete();

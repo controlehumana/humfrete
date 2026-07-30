@@ -45,8 +45,9 @@ service cloud.firestore {
       // Admin pode criar/atualizar qualquer usuario
       allow create, update: if isAdmin();
 
-      // Ninguem deleta usuarios pela regra (apenas via Console ou SDK Admin)
-      allow delete: if false;
+      // Admin pode deletar o perfil de qualquer outro usuario (remove acesso ao app)
+      // Nao remove a conta de login no Firebase Auth, so o perfil/permissoes no Firestore
+      allow delete: if isAdmin();
     }
   }
 }
