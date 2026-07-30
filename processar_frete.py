@@ -14,7 +14,7 @@ import sqlite3
 from html.parser import HTMLParser
 from xml.etree import ElementTree as ET
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 CTE_DIR     = os.path.join(BASE_DIR, "CTe")
@@ -686,6 +686,106 @@ def _carregar_nfse_entregadores():
         return []
 
 
+def _carregar_volumetria_entregadores():
+    """Carrega do banco SQLite o volume real de NF-e/peso entregues por cada
+    entregador cadastrado (tabela volumetria_nfe, importada de QUIVE/importar_volumetria.py
+    a partir do relatório de Volumetria do ERP), agregado por empresa+entregador+ano+mês.
+    Complementa o valor faturado em NFS-e (_carregar_nfse_entregadores) com o volume
+    real de entregas, para avaliar se o valor cobrado por entrega/kg é razoável."""
+    if not os.path.exists(QUIVE_DB):
+        return []
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volumetria_nfe'")
+        if not cur.fetchone():
+            conn.close(); return []
+        rows = cur.execute("""
+            SELECT v.empresa, e.cnpj_entregador, e.nome_entregador,
+                   substr(v.data_emissao,7,4) AS ano, substr(v.data_emissao,4,2) AS mes,
+                   COUNT(*) AS qtd_nfe, SUM(v.peso_kg) AS peso_kg, SUM(v.total_nf) AS valor_nf
+            FROM volumetria_nfe v
+            JOIN entregadores e ON e.cnpj_entregador = v.transp_cnpj AND e.empresa = v.empresa
+            WHERE length(v.data_emissao) = 10
+            GROUP BY v.empresa, e.cnpj_entregador, e.nome_entregador, ano, mes
+        """).fetchall()
+        # Meses (empresa, cnpj_entregador, "YYYY-MM") com pelo menos 1 NFS-e autorizada —
+        # usado para sinalizar quem entregou num mes mas nao emitiu nota de servico
+        nfse_meses = set(
+            (r2["emit_cnpj"], r2["empresa"], (r2["competencia"] or "")[:7])
+            for r2 in conn.execute(
+                "SELECT emit_cnpj, empresa, competencia FROM nfse_entregadores WHERE status='Authorized'"
+            ).fetchall()
+        )
+        conn.close()
+        resultado = [{
+            "empresa":         r["empresa"],
+            "entregador_nome": r["nome_entregador"],
+            "ano":             r["ano"],
+            "mes":             r["mes"],
+            "qtd_nfe":         r["qtd_nfe"],
+            "peso_kg":         round(r["peso_kg"] or 0, 2),
+            "valor_nf":        round(r["valor_nf"] or 0, 2),
+            "tem_nfse":        (r["cnpj_entregador"], r["empresa"], f'{r["ano"]}-{r["mes"]}') in nfse_meses,
+        } for r in rows]
+        print(f"   Volumetria Entregadores: {len(resultado)} combinacoes empresa/entregador/mes")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar volumetria_nfe: {e}")
+        return []
+
+
+def _carregar_volumetria_detalhe():
+    """Carrega do banco SQLite o detalhe por NF-e das entregas feitas por
+    entregadores cadastrados: cruza volumetria_nfe (relatório de Volumetria do
+    ERP) com o faturamento (vw_nf_saida, mesma chave de acesso) para trazer
+    cliente, cidade/UF e natureza de operação de cada entrega — permite ver
+    exatamente o que cada entregador entregou, não só o volume agregado."""
+    if not os.path.exists(QUIVE_DB):
+        return []
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volumetria_nfe'")
+        if not cur.fetchone():
+            conn.close(); return []
+        # Janela de 12 meses — evita crescimento indefinido do payload por empresa
+        # (este campo nao e chunked como 'detalhes'; ver pitfall no CLAUDE.md)
+        cutoff = (datetime.now() - timedelta(days=365)).strftime("%Y%m")
+        rows = cur.execute("""
+            SELECT v.empresa, e.nome_entregador, v.numero_nfe, v.data_emissao,
+                   v.canal, v.peso_kg, v.total_nf AS valor_volumetria,
+                   n.participante, n.part_cidade, n.part_estado, n.nat_operacao,
+                   n.total_nf AS valor_fat
+            FROM volumetria_nfe v
+            JOIN entregadores e ON e.cnpj_entregador = v.transp_cnpj AND e.empresa = v.empresa
+            LEFT JOIN vw_nf_saida n ON n.chave = v.chave_acesso
+            WHERE length(v.data_emissao) = 10
+              AND (substr(v.data_emissao,7,4) || substr(v.data_emissao,4,2)) >= ?
+        """, (cutoff,)).fetchall()
+        conn.close()
+        resultado = [{
+            "empresa":         r["empresa"],
+            "entregador_nome": r["nome_entregador"],
+            "numero":          r["numero_nfe"] or "",
+            "data":            r["data_emissao"] or "",
+            "canal":           r["canal"] or "",
+            "peso_kg":         round(r["peso_kg"] or 0, 2),
+            "valor_nf":        round(r["valor_fat"] if r["valor_fat"] is not None else (r["valor_volumetria"] or 0), 2),
+            "cliente":         r["participante"] or "",
+            "cidade":          r["part_cidade"] or "",
+            "estado":          r["part_estado"] or "",
+            "nat_operacao":    r["nat_operacao"] or "",
+        } for r in rows]
+        print(f"   Volumetria Detalhe: {len(resultado)} NF-e de entregadores")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar detalhe de volumetria_nfe: {e}")
+        return []
+
+
 def _carregar_import_log(limite=60):
     """Carrega do banco SQLite o histórico recente de execuções dos scripts de
     importação/busca (tabela import_log), para exibir no Painel Admin."""
@@ -923,6 +1023,8 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     nf_entrada_map = _carregar_nf_entrada()          # cte_chave -> [nf_data, ...]
     nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
     delivery = _carregar_nfse_entregadores()         # NFS-e dos entregadores (módulo Delivery)
+    volumetria_entregadores = _carregar_volumetria_entregadores()  # NF-e/peso entregues por entregador (módulo Delivery)
+    volumetria_detalhe = _carregar_volumetria_detalhe()  # detalhe por NF-e (cliente/cidade/UF) das entregas de entregadores
     separacao_detalhe, produtos_desc = _calcular_separacao() # Produtividade de separação por empresa (módulo Separação)
     # Versão leve (sem por_canal/por_dow) para embutir sem filtro em todo doc de empresa —
     # permite ranking cruzando todas as empresas mesmo para usuário restrito a 1 empresa.
@@ -1228,6 +1330,8 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "ctes_nf_cancelada":ctes_nf_cancelada,
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
         "delivery":delivery,
+        "volumetria_entregadores":volumetria_entregadores,
+        "volumetria_detalhe":volumetria_detalhe,
         "separacao_detalhe":separacao_detalhe,
         "produtos_desc":produtos_desc,
     }
@@ -4163,6 +4267,8 @@ def split_by_empresa(dados):
             "compras": [d for d in dados.get("compras",[]) if d.get("empresa_dest")==emp],
             "devolucoes_mkt": [d for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest")==emp],
             "delivery": [d for d in dados.get("delivery",[]) if d.get("empresa")==emp],
+            "volumetria_entregadores": [d for d in dados.get("volumetria_entregadores",[]) if d.get("empresa")==emp],
+            "volumetria_detalhe": [d for d in dados.get("volumetria_detalhe",[]) if d.get("empresa")==emp],
             "separacao_detalhe": {k:v for k,v in dados.get("separacao_detalhe",{}).items() if k.startswith(emp+"|")},
             "transf_sem_cte": [d for d in dados.get("transf_sem_cte",[]) if d.get("empresa")==emp],
             "transf_fat": {k:v for k,v in dados.get("transf_fat",{}).items() if k.startswith(emp+"||")},

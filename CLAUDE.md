@@ -21,7 +21,7 @@ Usa `serviceAccountKey.json` (já presente, nunca commitado) via Admin SDK para 
 ```
 py "C:\Users\caio.zinsly\Documents\ClaudeCode\atualizar.py"
 ```
-Executa: download CTe **D-3 a D-1** → importa NF Entrada → importa Faturamento → cria views → sobe Firestore.
+Executa: importa Faturamento → importa Volumetria → download CTe **D-3 a D-1** → importa NF Entrada → cria views → sobe Firestore.
 A janela D-3 a D-1 garante que o sábado seja capturado quando o script roda na segunda-feira.
 
 ### Manual (após exportar do ERP)
@@ -33,7 +33,10 @@ py atualizar_sem_download.py   ← pula download, importa arquivos, processa e p
 ```
 ClaudeCode\Faturamento\      ← qualquer nome, qualquer período, acumula sem duplicar
 ClaudeCode\NF_Entrada\       ← relatório NF de Entrada, acumula sem duplicar
+ClaudeCode\Volumetria\       ← relatório de Volumetria por Transportadora, acumula sem duplicar
 ```
+
+**`Volumetria/` (jul/2026):** relatório do ERP `adm_trans_volumetria` (`https://gestao.humanaalimentar.com.br/erp/_man/controle.php?adm_trans_volumetria`, export em `relatTransVolumetria.php?dt_inicio=...&dt_fim=...&filtro_empresa=TODAS&filtro_canal=...`). Uma linha por NF-e de saída com `CODIGO_TRANSPORTADORA`/`RAZAO_TRANSPORTADORA` — para entregas via entregador autônomo, esse código é o CNPJ do entregador (bate direto com `entregadores.cnpj_entregador`). Usado para medir o volume real de entregas de cada entregador (módulo Delivery), já que `nfse_entregadores` só tem o valor cobrado, não quantas entregas ele fez. Exportação manual do ERP por enquanto — sem automação via Playwright (diferente de `Faturamento/exportar_faturamento.js`).
 
 **`Faturamento/` — fix do fluxo de pastas (2026-07-30):** `exportar_faturamento.js` salvava o CSV novo em `Faturamento/exports/`, mas `importar_faturamento.py` (`_find_latest()`) só lê a raiz de `Faturamento/` — os exports diários da tarefa agendada nunca eram vistos pela etapa 0a. Corrigido: o script agora salva o novo arquivo direto na raiz e move o anterior para `exports/` (que virou pasta de arquivo morto, sem leitura automática). Detalhes em `Faturamento/CLAUDE.md`.
 
@@ -45,6 +48,7 @@ ClaudeCode\NF_Entrada\       ← relatório NF de Entrada, acumula sem duplicar
 | `atualizar_sem_download.py` | Igual mas pula download da API |
 | `importar_faturamento.py` | Importa CSV de faturamento → `nf_saida_items` |
 | `importar_nf_entrada.py` | Importa XLS de NF Entrada → `nf_entrada` |
+| `QUIVE/importar_volumetria.py` | Importa CSV de Volumetria (todos os arquivos da pasta) → `volumetria_nfe` |
 | `Frete/processar_frete.py` | ETL: banco → cruzamento → Firestore |
 
 ## Estrutura do projeto
@@ -57,13 +61,15 @@ ClaudeCode/
   importar_nf_entrada.py        # Importa NF de entrada para o banco
   Faturamento/                  # Relatórios de faturamento do ERP (qualquer nome)
   NF_Entrada/                   # Relatórios de NF de Entrada do ERP (qualquer nome)
+  Volumetria/                   # Relatórios de Volumetria por Transportadora do ERP (qualquer nome)
   QUIVE/
     buscar_cte.py               # Baixa CTe da API Qive → cte.db
     criar_view.py               # Parseia XMLs → tabelas cte_campos, cte_nf
     importar_entregadores.py    # Importa XLSX de referência → tabela entregadores
     buscar_nfse_entregadores.py # Busca NFS-e dos entregadores via API Arquivei → nfse_entregadores
+    importar_volumetria.py      # Importa relatório de Volumetria (todos os .csv da pasta) → volumetria_nfe
     import_log.py               # Helper compartilhado: registra execuções na tabela import_log
-    cte.db                      # SQLite: CTe + faturamento + NF entrada + delivery + log
+    cte.db                      # SQLite: CTe + faturamento + NF entrada + delivery + volumetria + log
   Frete/
     processar_frete.py          # ETL: cte.db → cruzamento → Firestore
     index.html                  # Web app GitHub Pages (arquivo único)
@@ -87,6 +93,7 @@ ClaudeCode/
 | `cnpj_nomes` | Cache CNPJ→Razão Social consultado via API. Chave: 14 dígitos sem formatação |
 | `entregadores` | Referência cadastral de entregadores autônomos (nome, CNPJ, empresa do grupo) |
 | `nfse_entregadores` | NFS-e de serviço emitidas pelos entregadores (módulo Delivery) |
+| `volumetria_nfe` | Volume real de entregas por NF-e (relatório de Volumetria do ERP) — usado para cruzar com `entregadores` e `nfse_entregadores` |
 | `import_log` | Histórico de execuções dos scripts de importação/busca — exibido no Painel Admin |
 
 ### Views principais
@@ -789,6 +796,7 @@ index.html                         ← aba Delivery (tab-delivery)
 |---|---|
 | `entregadores` | Referência cadastral: `cnpj_entregador`, `nome_entregador`, `cnpj_empresa` (recriada a cada import) |
 | `nfse_entregadores` | NFS-e emitidas pelos entregadores: `id` (PK), `empresa`, `emit_cnpj`, `emit_nome`, `numero`, `competencia`, `dt_emissao`, `valor_servico`, `status` |
+| `volumetria_nfe` | NF-e de saída do relatório de Volumetria: `chave_acesso` (PK, 44 dígitos), `empresa`, `numero_nfe`, `canal`, `data_emissao` (DD/MM/YYYY), `qtd_itens`, `peso_kg`, `volume_m3`, `transp_cnpj`, `transp_nome`, `total_nf` |
 
 ### `_carregar_nfse_entregadores()` (processar_frete.py)
 - Filtra `status = 'Authorized'` (ignora NFS-e canceladas/rejeitadas)
@@ -859,6 +867,27 @@ Orquestra tudo: filtra `rows`, calcula `freByEmp` via `_empAggregate` (reaprovei
 
 ### Não replicado no `HTML_TEMPLATE`
 Mesma ressalva do módulo Marketplace: `HTML_TEMPLATE` em `processar_frete.py` não tem a aba Transferências — só afeta o `dashboard_frete.html` standalone local, não o app publicado no GitHub Pages.
+
+### Volumetria por Entregador — validação do valor cobrado (jul/2026)
+
+`nfse_entregadores` só mostra o que o entregador **cobrou** (1 NFS-e por mês, valor cheio) — não dava para saber quantas entregas isso cobria, nem se o valor era razoável. O relatório de Volumetria do ERP (`volumetria_nfe`) resolve isso: 1 linha por NF-e de saída, com o CNPJ de quem entregou. Quando esse CNPJ é de um entregador cadastrado, dá pra medir o volume real (NF-e, peso) e cruzar com o que ele faturou.
+
+**`_carregar_volumetria_entregadores()` (processar_frete.py)** — agregado por empresa+entregador+ano+mês:
+```python
+JOIN entregadores e ON e.cnpj_entregador = v.transp_cnpj AND e.empresa = v.empresa
+```
+Campos: `empresa, entregador_nome, ano, mes, qtd_nfe, peso_kg, valor_nf, tem_nfse`. `tem_nfse` (bool) verifica se existe NFS-e `status='Authorized'` para o mesmo `(cnpj_entregador, empresa, "YYYY-MM")` em `nfse_entregadores` — é a base do painel de alerta (ver abaixo). Tabela pequena (poucas dezenas de linhas), sem risco de tamanho.
+
+**`_carregar_volumetria_detalhe()` (processar_frete.py)** — 1 linha por NF-e entregue por um entregador, com `LEFT JOIN vw_nf_saida ON n.chave = v.chave_acesso` trazendo cliente/cidade/UF/natureza do faturamento (mesma chave de acesso — 98,6% de correspondência testado com dados reais de jun-jul/2026). **Janela de 12 meses** (`WHERE ... >= data de 365 dias atrás`) — diferente de `detalhes` (que é chunked em docs separados), este campo vai inteiro em cada doc de empresa; sem o corte, cresceria ~60-120KB/mês nas empresas com mais entregadores (SOR, UBE) e furaria o limite de 1MB do Firestore em menos de 1 ano. Ver pitfall no fim do arquivo.
+
+Ambos os campos são filtrados por empresa em `split_by_empresa` (mesmo padrão de `delivery`) e mesclados via `flatMap` em `_mergeData()`.
+
+**Frontend (index.html, dentro da aba Delivery):**
+- **Ranking (`dlv_rank_tbody`)** — 3 colunas novas: NF-e Entregues, R$/Entrega, R$/kg. `volByEntreg` cruza `DATA.volumetria_entregadores` pelos mesmos filtros da tabela (empresa/ano/mês) e soma por `entregador_nome`; `R$/Entrega = e.total/vol.qtd`, `R$/kg = e.total/vol.peso` — guard `vol.qtd?...:'-'` porque alguns entregadores (ex. EDCARLOS MOREIRA DE SOUZA) sempre têm `peso_kg=0` no relatório (canal não captura peso)
+- **Card de alerta `dlv_gap_card`** ("Meses com Entrega sem Nota de Serviço") — filtra `DATA.volumetria_entregadores` por `tem_nfse===false`; **só respeita `state.empresas`**, ignora os filtros locais de período da aba (é um painel de controle, não deve esconder um gap por causa do filtro de mês ativo); `display:none` quando não há nenhuma linha
+- **Card "NF-e Entregues — Detalhe" (`dlvdet_tbody`)** — de `DATA.volumetria_detalhe`, com busca (`dlvdet_search`) + filtro de empresa (`dlvdet_sel_emp`) + paginação (`dlvdet_pager`, `PAGE` global) + export (`dlvDetExportXLSX`) — mesmo padrão da tabela "Detalhamento por Entregador" já existente (NFS-e), mas em granularidade de NF-e entregue, não de nota de serviço emitida
+
+**Pitfall — `tem_nfse` é por competência, não por total:** um entregador pode ter uma única NFS-e mensal cobrindo várias semanas; se a competência dela bater com o mês da entrega, `tem_nfse=true` mesmo que o valor pareça baixo pra o volume. O alerta serve pra achar meses **sem nenhuma** nota, não pra validar se o valor da nota é proporcional ao volume — isso é o que as colunas R$/Entrega e R$/kg do ranking fazem.
 
 ## Módulo Separação — `separacao` (index.html, jul/2026)
 
