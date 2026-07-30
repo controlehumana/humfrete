@@ -1398,7 +1398,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       </div>
       <input type="text" id="transf_det_search" placeholder="Buscar NF-e, transportadora, chave CT-e...">
     </div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Unidade</th><th>Categoria</th><th>Destino</th><th>Transportadora</th><th style="text-align:right">Peso</th><th style="text-align:right">Valor NF</th><th style="text-align:right">Valor Frete</th><th>Chave CT-e</th></tr></thead><tbody id="transf_det_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Unidade</th><th>Categoria</th><th>Destino</th><th>Transportadora</th><th style="text-align:right">Peso</th><th style="text-align:right">Valor NF</th><th style="text-align:right">Valor Frete</th><th style="text-align:right">% Frete/NF</th><th>Chave CT-e</th></tr></thead><tbody id="transf_det_tbody"></tbody></table></div>
     <div id="transf_det_pager" style="margin-top:10px"></div>
   </div>
   <div class="sdiv" style="margin-top:4px">Frete Comercial vs Operacional (Visao Geral)</div>
@@ -3437,6 +3437,8 @@ function _transfRenderDetalhe(){
   document.getElementById('transf_det_tbody').innerHTML=page.length
     ?page.map(r=>{
       const catColor={m2u:'var(--purple2)',u2m:'var(--amber)',entre:'var(--red2)'}[r.categoria]||'';
+      const pctFn=r.total_nf?(r.valor_frete/r.total_nf*100):0;
+      const pctC=pctFn>15?'var(--red2)':pctFn>8?'var(--amber)':'var(--green2)';
       return'<tr>'
         +'<td style="font-size:11px">'+esc(r.numero)+'</td>'
         +'<td style="font-size:11px">'+esc(r.data)+'</td>'
@@ -3447,9 +3449,10 @@ function _transfRenderDetalhe(){
         +'<td style="text-align:right">'+(r.peso_kg?N(r.peso_kg)+' kg':'-')+'</td>'
         +'<td style="text-align:right;color:var(--text2)">'+BRL(r.total_nf)+'</td>'
         +'<td style="text-align:right;font-weight:600">'+BRL(r.valor_frete)+'</td>'
+        +'<td style="text-align:right;font-weight:700;color:'+pctC+'">'+(r.total_nf?pctFn.toFixed(1)+'%':'-')+'</td>'
         +'<td style="font-size:9px;color:var(--text3);font-family:monospace">'+esc(r.cte_chave)+'</td></tr>';
     }).join('')
-    :'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia encontrada</td></tr>';
+    :'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia encontrada</td></tr>';
   mkPager(rows.length,transfDetPage,PAGE,'transf_det_pager',pg=>{transfDetPage=pg;_transfRenderDetalhe();});
 }
 function transfDetExportXLSX(){
@@ -3459,7 +3462,8 @@ function transfDetExportXLSX(){
   const data=rows.map(r=>({
     'NF-e':r.numero,'Data':r.data,'Unidade':r.empresa,'Categoria':_TRANSF_CAT_LBL[r.categoria]||r.categoria,
     'Destino':r.destino||'','Transportadora':trName(r.transportadora)||'','Peso (kg)':+(r.peso_kg||0).toFixed(2),
-    'Valor NF (R$)':+(r.total_nf||0).toFixed(2),'Valor Frete (R$)':+(r.valor_frete||0).toFixed(2),'Chave CT-e':r.cte_chave||'',
+    'Valor NF (R$)':+(r.total_nf||0).toFixed(2),'Valor Frete (R$)':+(r.valor_frete||0).toFixed(2),
+    '% Frete/NF':r.total_nf?+(r.valor_frete/r.total_nf*100).toFixed(2):0,'Chave CT-e':r.cte_chave||'',
   }));
   const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
   const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
