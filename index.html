@@ -1389,7 +1389,38 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <!-- TAB TRANSFERENCIAS -->
 <div id="tab-transferencias" class="tab-panel">
   <div id="transf_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:#DBEAFE;border:1px solid #BFDBFE;border-radius:8px;font-size:12px;color:#1E40AF;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="opacity:.8"></i><span id="transf_periodo_txt">Carregando...</span></div>
-  <div class="alert a-yellow" style="margin-bottom:14px;font-size:12px"><i class="fa-solid fa-circle-info"></i> Matriz considerada: <strong>BRU1</strong>. Movimentacoes classificadas pela empresa emissora da NF-e (origem) e pelo CNPJ destinatario do CT-e (destino) — quando o destino nao e uma unidade do grupo, a operacao entra apenas no total comercial, nao nas categorias de transferencia abaixo.</div>
+  <!-- Bloco explicativo: como interpretar os valores desta aba -->
+  <div class="card" style="padding:16px 18px;margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:12px">Como interpretar esta aba <span style="font-size:10px;font-weight:400;color:var(--text3)">— leia antes de analisar os números</span></div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:14px">
+      A <strong style="color:var(--text)">Matriz</strong> do grupo é a unidade <strong style="color:var(--text)">BRU1</strong> — o centro de distribuição que abastece as demais filiais. Cada movimentação de mercadoria é classificada pela <strong style="color:var(--text)">unidade que emitiu a nota fiscal</strong> (quem enviou) e pelo <strong style="color:var(--text)">CNPJ de quem recebeu</strong> — a partir disso o sistema decide automaticamente em qual categoria ela entra. Quando o destino não é uma unidade do grupo, a operação conta apenas como venda comum, não como transferência.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="background:var(--s2);border-radius:10px;padding:13px 14px;border-left:3px solid var(--purple)">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--purple);margin-bottom:6px"><i class="fa-solid fa-arrow-right" style="margin-right:4px"></i>Matriz &rarr; Unidade</div>
+        <p style="font-size:11px;color:var(--text2);line-height:1.65;margin:0">A <strong style="color:var(--text)">Matriz (BRU1) enviou</strong> mercadoria para outra unidade — normalmente reposição de estoque. O custo aparece na linha da <strong style="color:var(--text)">própria BRU1</strong> no Levantamento Geral, porque foi ela quem gerou a nota e pagou o frete — não na linha de quem recebeu.</p>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:13px 14px;border-left:3px solid var(--amber)">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--amber);margin-bottom:6px"><i class="fa-solid fa-arrow-left" style="margin-right:4px"></i>Unidade &rarr; Matriz</div>
+        <p style="font-size:11px;color:var(--text2);line-height:1.65;margin:0">Uma <strong style="color:var(--text)">unidade enviou</strong> mercadoria de volta para a Matriz — devolução ou rebalanceamento de estoque. O custo aparece na linha da <strong style="color:var(--text)">unidade que enviou</strong>, não na da Matriz.</p>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:13px 14px;border-left:3px solid var(--red2)">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--red2);margin-bottom:6px"><i class="fa-solid fa-right-left" style="margin-right:4px"></i>Entre Unidades</div>
+        <p style="font-size:11px;color:var(--text2);line-height:1.65;margin:0">Uma unidade enviou mercadoria <strong style="color:var(--text)">direto para outra unidade</strong> (nenhuma das duas é a Matriz) — transferência lateral entre filiais, sem passar pelo centro de distribuição.</p>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);background:var(--s2);border-radius:8px;padding:12px 14px;line-height:1.7;border:1px solid var(--bd)">
+      <strong style="color:var(--text)"><i class="fa-solid fa-list-check" style="margin-right:5px"></i>O que significa cada coluna da tabela "Levantamento Geral — Frete por Unidade e Categoria":</strong>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div><strong style="color:var(--text)">Fretes Gerais</strong> — o custo TOTAL de frete daquela unidade no mês: soma de vendas a clientes + Delivery + as 3 categorias de transferência abaixo.</div>
+        <div><strong style="color:var(--green2)">Frete Delivery</strong> — o que a unidade pagou a entregadores autônomos (motoboys/parceiros) para entregas locais.</div>
+        <div><strong style="color:var(--purple2)">Frete Transf. Matriz&rarr;Unidade</strong> — custo de mercadoria enviada pela Matriz para essa unidade.</div>
+        <div><strong style="color:var(--amber)">Frete Transf. Unidade&rarr;Matriz</strong> — custo de mercadoria enviada por essa unidade de volta para a Matriz.</div>
+        <div><strong style="color:var(--red2)">Frete Entre Unidades</strong> — custo de mercadoria enviada por essa unidade direto para outra unidade, sem passar pela Matriz.</div>
+        <div><strong style="color:var(--text)">Total Fretes</strong> — repete o valor de "Fretes Gerais": é a mesma soma, exibida de novo como conferência final da linha.</div>
+      </div>
+    </div>
+  </div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card"><div class="kpi-tooltip">Custo com entregadores autonomos (NFS-e de servico de transporte) no periodo filtrado. Mesma fonte de dados da aba Delivery.</div><div class="kpi-lbl">Frete Delivery</div><div class="kpi-val" id="transf_k_delivery" style="color:var(--green2)">-</div><div class="kpi-sub" id="transf_k_delivery_sub">-</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo de frete de mercadoria enviada pela Matriz (BRU1) para as demais unidades — reposicao/redistribuicao de estoque partindo do centro de distribuicao.</div><div class="kpi-lbl">Transf. Matriz &rarr; Unidade</div><div class="kpi-val" id="transf_k_m2u" style="color:var(--purple)">-</div><div class="kpi-sub" id="transf_k_m2u_sub">-</div></div>
