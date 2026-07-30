@@ -1471,7 +1471,16 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="kpi-card"><div class="kpi-tooltip">Total gasto com transferencias entre unidades do grupo. O custo e sempre atribuido a quem emitiu a nota e pagou o frete — nao gera receita de venda, e importante monitorar se a redistribuicao de estoque esta sendo feita de forma eficiente.</div><div class="kpi-lbl">Frete de Transferencia</div><div class="kpi-val" id="transf_hu_frete" style="color:var(--amber)">-</div><div class="kpi-sub" id="transf_hu_pct">do frete total</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo medio por movimentacao entre unidades. Se for alto, pode valer analisar se a redistribuicao de mercadoria esta sendo feita de forma eficiente ou se pode ser consolidada em menos viagens.</div><div class="kpi-lbl">Ticket Medio Interno</div><div class="kpi-val" id="transf_hu_ticket" style="font-size:18px">-</div></div>
   </div>
-  <div class="card"><div class="card-title">Detalhe por Rota — Empresa Origem x Unidade Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de quem enviou para quem: cada linha e uma rota entre unidades (ex: "Matriz &rarr; Unidade" de BRU1 para CMP), com a categoria, custo total e custo medio por envio. O custo aparece na linha da empresa que emitiu a nota e pagou o frete (Empresa Origem) — use esta tabela para ver o valor especifico de cada rota, mesmo sem mudar de quem e o custo no Levantamento Geral.</span></span></div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Unidade Destino</th><th>Categoria</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="transf_hu_tbody"></tbody></table></div></div>
+  <div class="card">
+    <div class="card-title">Detalhe por Rota — Empresa Origem x Unidade Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de quem enviou para quem: cada linha e uma rota entre unidades (ex: "Matriz &rarr; Unidade" de BRU1 para CMP), com a categoria, custo total e custo medio por envio. O custo aparece na linha da empresa que emitiu a nota e pagou o frete (Empresa Origem) — use esta tabela para ver o valor especifico de cada rota, mesmo sem mudar de quem e o custo no Levantamento Geral.</span></span></div>
+    <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px;width:fit-content;margin-bottom:12px">
+      <button class="cat-btn active" id="transf_hu_f_all" onclick="setTransfHuCat('')">Todos</button>
+      <button class="cat-btn" id="transf_hu_f_m2u" onclick="setTransfHuCat('m2u')">Matriz &rarr; Unidade</button>
+      <button class="cat-btn" id="transf_hu_f_u2m" onclick="setTransfHuCat('u2m')">Unidade &rarr; Matriz</button>
+      <button class="cat-btn" id="transf_hu_f_entre" onclick="setTransfHuCat('entre')">Entre Unidades</button>
+    </div>
+    <div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Unidade Destino</th><th>Categoria</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="transf_hu_tbody"></tbody></table></div>
+  </div>
   <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
   <div class="card"><div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="transf_sem_cte_tbody"></tbody></table></div></div>
 </div>
@@ -3413,10 +3422,23 @@ function _transfRenderComercialOp(rows,freByEmp){
     }).join('')
     :'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia no periodo selecionado</td></tr>';
 }
+let transfHuCat='';
+function setTransfHuCat(val){
+  transfHuCat=val;
+  ['all','m2u','u2m','entre'].forEach(k=>{
+    const el=document.getElementById('transf_hu_f_'+k);
+    if(el) el.classList.toggle('active',(val===''&&k==='all')||val===k);
+  });
+  renderTransferencias();
+}
 function _transfRenderHumana(rows,freByEmp){
   // Mesma classificacao do Levantamento Geral (m2u/u2m/entre) — o custo fica
   // sempre na linha de quem emitiu a nota e pagou o frete (Empresa Origem)
-  const rowsHu=rows.filter(d=>_transfCategoria(d));
+  const rowsHu=rows.filter(d=>{
+    const cat=_transfCategoria(d);
+    if(!cat) return false;
+    return !transfHuCat||cat===transfHuCat;
+  });
   const totHuFrete=rowsHu.reduce((s,d)=>s+d.valor_frete,0);
   const totFreteGlobal=rows.reduce((s,d)=>s+d.valor_frete,0)||1;
   document.getElementById('transf_hu_qtd').textContent=N(rowsHu.length);
