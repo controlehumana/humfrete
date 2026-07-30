@@ -823,8 +823,21 @@ Aba dedicada para analisar o frete de natureza "transferência" (movimentação 
 ### KPIs, gráfico e tabela principal
 - 4 KPIs (`_transfRenderKPIs`): Frete Delivery, Transf. Matriz→Unidade, Transf. Unidade→Matriz, Frete Entre Unidades — cada um com % sobre o total geral do levantamento filtrado
 - `_transfRenderEvolucao(lvt)` — gráfico `ch_transf_evol` (stacked, `mkStacked`) com evolução mensal das 4 categorias. **Chave de ordenação `ano+'-'+mes` (não `mes+'/'+ano`)** — string sort em `"MM/YYYY"` quebra virada de ano (ex. `"01/2026"` ordenaria antes de `"12/2025"`); ver mesmo cuidado em `ch_dlv_mensal` no módulo Delivery
-- `_transfRenderLevantamento(lvt)` — tabela `transf_lvt_tbody`, 1 linha por unidade/mês, guarda o array em `_transfLvtRows` para o export
+- `_transfRenderLevantamento(lvt)` — tabela `transf_lvt_tbody`, 1 linha por unidade/mês, guarda o array em `_transfLvtRows` para o export. Também preenche `<tfoot id="transf_lvt_tfoot">` com a soma de cada coluna numérica (`geral,delivery,m2u,u2m,entre`) sobre o `lvt` já filtrado — linha "Total" com `position:sticky;bottom:0` para ficar visível mesmo rolando a tabela (`max-height:70vh`)
 - `transfExportXLSX()` — exporta `_transfLvtRows` com as mesmas colunas/nomes da planilha de referência que originou o pedido (Unidade, Mês, Fretes Gerais, Frete Delivery, Frete Transferência Matriz→Unidade, Frete Transferência Unidade→Matriz, Frete Entre Unidades, Total Fretes), formatação `R$` via `.z` nas colunas monetárias (mesmo padrão de `compExportXLSX`/`dlvExportXLSX`)
+
+### `_transfBuildDetalhe(rows)` — Detalhes por NF-e (validação do Levantamento Geral)
+Card logo abaixo do Levantamento Geral, com 1 linha por NF-e/CT-e de transferência (não agregado) — usado para confirmar manualmente os totais da tabela agregada.
+- Filtra `rows` (mesmo `filterRows(DATA.detalhes,{excMkt:true})` do restante da aba) por `_transfCategoria(d)` truthy — ou seja, **só as 3 categorias de transferência** (`m2u`/`u2m`/`entre`), não inclui Delivery nem o comercial
+- Cada linha guardada em `_transfDetRowsAll`: `{numero,data,empresa,categoria,destino,transportadora,peso_kg,valor_frete,total_nf,cte_chave}` — `total_nf` é o valor da NF-e (`d.total_nf`), adicionado especificamente para comparar com o frete
+- **Ordenação:** `_transfDtKey(data)` converte `DD/MM/YYYY` → `YYYYMMDD` para sort cronológico correto (evita o mesmo problema de sort textual em `"MM/YYYY"` do gráfico de evolução); critério secundário `valor_frete` desc para linhas do mesmo dia
+- `_transfDetFiltered()` aplica os filtros locais da tabela (chips de categoria `transfDetCat` + busca `transfDetSearch` sobre `numero+transportadora+cte_chave+destino`) sobre `_transfDetRowsAll` — reaproveitado tanto pelo render quanto pelo export, para os dois sempre respeitarem o mesmo filtro ativo
+- `setTransfDetCat(val)` alterna os 4 chips (`transf_det_f_all/m2u/u2m/entre`, classe `cat-btn` — mesmo padrão visual do filtro de Saldo na aba Operacional) e zera a página
+- Paginação via `mkPager` (`PAGE` global, mesmo tamanho configurável usado em Operacional/Delivery/Cliente)
+
+**Colunas da tabela (`transf_det_tbody`) e do export (`transfDetExportXLSX`):** NF-e, Data, Unidade, Categoria (chip colorido conforme a categoria), Destino, Transportadora, Peso, **Valor NF** (`r.total_nf`, valor da mercadoria), Valor Frete, **% Frete/NF** (`valor_frete/total_nf*100`, cor verde ≤8%, amarelo ≤15%, vermelho >15% — thresholds de leitura rápida por linha, não os mesmos usados nos KPIs agregados de Visão Geral), Chave CT-e.
+- Guard `r.total_nf?...: '-'`/`:0` em ambos os lugares — evita `Infinity%`/divisão por zero quando `total_nf` vier zerado
+- Export usa o mesmo padrão de `.z='"R$"#,##0.00'` nas colunas monetárias (`Valor NF (R$)`, `Valor Frete (R$)`), aplicado via loop nos dois headers depois do `json_to_sheet`
 
 ### Seções herdadas da aba Por Empresa (renomeadas, lógica intacta)
 Movidas de `emp_*`/`_empRender*` para `transf_*`/`_transfRender*` — nenhuma mudança de comportamento, só remoção do escopo de "Por Empresa":
@@ -834,7 +847,7 @@ Movidas de `emp_*`/`_empRender*` para `transf_*`/`_transfRender*` — nenhuma mu
 - `_periodoLabelHTML(rows)` — helper extraído (antes duplicado dentro de `_empRenderPeriodo`) para montar o texto "Exibindo: ..." dos banners de período; usado tanto por `_empRenderPeriodo` (Por Empresa) quanto por `_transfRenderPeriodo` (Transferências)
 
 ### `renderTransferencias()`
-Orquestra tudo: filtra `rows`, calcula `freByEmp` via `_empAggregate` (reaproveitado de Por Empresa), constrói `lvt` via `_transfBuildLevantamento`, chama os renders acima na ordem KPIs → evolução → levantamento → comercial/op → grupo → sem CTe → período. Chamada pelo tab-switch (2 lugares: click handler e `renderAll()`) quando `tab==='transferencias'`.
+Orquestra tudo: filtra `rows`, calcula `freByEmp` via `_empAggregate` (reaproveitado de Por Empresa), constrói `lvt` via `_transfBuildLevantamento`, chama os renders acima na ordem KPIs → evolução → levantamento → detalhes por NF-e (`_transfBuildDetalhe`+`_transfRenderDetalhe`) → comercial/op → grupo → sem CTe → período. Chamada pelo tab-switch (2 lugares: click handler e `renderAll()`) quando `tab==='transferencias'`.
 
 ### Não replicado no `HTML_TEMPLATE`
 Mesma ressalva do módulo Marketplace: `HTML_TEMPLATE` em `processar_frete.py` não tem a aba Transferências — só afeta o `dashboard_frete.html` standalone local, não o app publicado no GitHub Pages.
