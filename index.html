@@ -1437,6 +1437,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Venda</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="border-top:2px solid var(--bd2);font-weight:700"></tr></tfoot></table></div>
   </div>
   <div class="card" style="margin-top:16px">
+    <div class="card-title">Matriz de Frete — Unidade Origem x Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Visão alternativa do mesmo dado do Levantamento Geral, somado no período filtrado (sem quebra por mês): cada linha é uma unidade origem (quem emitiu a nota e pagou o frete) e cada coluna é para onde aquele frete foi — outra unidade do grupo, ou as colunas fixas Venda (cliente externo) e Delivery (entregador autônomo). Ex.: a célula na linha BRU1/coluna CMP é o valor de "Matriz → Unidade" especificamente para Campinas. A coluna Total confere com "Fretes Gerais" da mesma unidade no Levantamento Geral.</span></span></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-x:auto;overflow-y:auto" id="transf_matrix_wrap"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>Detalhes por NF-e — Transferencias<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por NF-e/CT-e de transferencia, ja classificada na mesma categoria usada no Levantamento Geral. Use para validar/conferir os totais agregados da tabela acima.</span></span></span>
       <button onclick="transfDetExportXLSX()" title="Exportar registros filtrados para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
@@ -3575,6 +3579,55 @@ function transfDetExportXLSX(){
   XLSX.writeFile(wb,'transferencias_detalhe_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 window.transfDetExportXLSX=transfDetExportXLSX;
+// Matriz Unidade Origem x Destino — mesmo dado do Levantamento Geral, sem quebra por
+// mes, com Venda/Delivery como colunas fixas (nao tem "unidade destino" propria)
+function _transfRenderMatrix(rows){
+  const dlvRows=_transfDeliveryRows();
+  const byOrigem={};
+  const ensure=emp=>{ if(!byOrigem[emp]) byOrigem[emp]={venda:0,delivery:0,destinos:{}}; return byOrigem[emp]; };
+  const unidadesSet=new Set();
+  rows.forEach(d=>{
+    if(!d.empresa) return;
+    unidadesSet.add(d.empresa);
+    const o=ensure(d.empresa);
+    const destino=_transfDestino(d);
+    if(destino){ unidadesSet.add(destino); o.destinos[destino]=(o.destinos[destino]||0)+d.valor_frete; }
+    else o.venda+=d.valor_frete;
+  });
+  dlvRows.forEach(d=>{
+    if(!d.empresa) return;
+    unidadesSet.add(d.empresa);
+    ensure(d.empresa).delivery+=d.valor_servico||0;
+  });
+  const wrap=document.getElementById('transf_matrix_wrap');
+  if(!wrap) return;
+  const unidades=[...unidadesSet].sort();
+  const rowUnits=Object.keys(byOrigem).sort();
+  if(!rowUnits.length){ wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum dado no periodo selecionado</div>'; return; }
+  const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
+  const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
+  let html='<table style="border-collapse:separate;border-spacing:2px;min-width:100%">';
+  html+='<thead><tr><th style="'+thBase+';text-align:left;'+stickyBase+'">Unidade Origem</th>';
+  html+='<th style="'+thBase+';color:var(--blue2)">Venda</th><th style="'+thBase+';color:var(--green2)">Delivery</th>';
+  unidades.forEach(u=>{ html+='<th style="'+thBase+'">'+esc(u)+'</th>'; });
+  html+='<th style="'+thBase+';border-left:2px solid var(--bd2)">Total</th></tr></thead><tbody>';
+  rowUnits.forEach(emp=>{
+    const o=byOrigem[emp];
+    const totDest=Object.values(o.destinos).reduce((s,v)=>s+v,0);
+    const total=o.venda+o.delivery+totDest;
+    html+='<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;'+stickyBase+'">'+esc(emp)+'</td>';
+    html+='<td style="text-align:center;padding:5px 8px;color:var(--blue2)">'+(o.venda?BRL(o.venda):'-')+'</td>';
+    html+='<td style="text-align:center;padding:5px 8px;color:var(--green2)">'+(o.delivery?BRL(o.delivery):'-')+'</td>';
+    unidades.forEach(u=>{
+      const v=o.destinos[u]||0;
+      const isSelf=u===emp;
+      html+='<td style="text-align:center;padding:5px 8px'+(isSelf?';background:var(--input-bg)':'')+';color:var(--purple2)">'+(v?BRL(v):'-')+'</td>';
+    });
+    html+='<td style="text-align:center;padding:5px 10px;font-weight:800;color:var(--text);border-left:2px solid var(--bd2)">'+BRL(total)+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
 function renderTransferencias(){
   const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
   const {freByEmp}=_empAggregate(rows);
@@ -3582,6 +3635,7 @@ function renderTransferencias(){
   _transfRenderKPIs(lvt);
   _transfRenderEvolucao(lvt);
   _transfRenderLevantamento(lvt);
+  _transfRenderMatrix(rows);
   _transfBuildDetalhe(rows);
   _transfRenderDetalhe();
   _transfRenderComercialOp(rows,freByEmp);
