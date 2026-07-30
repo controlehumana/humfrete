@@ -1384,6 +1384,23 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody></table></div>
   </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>Detalhes por NF-e — Transferencias<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por NF-e/CT-e de transferencia, ja classificada na mesma categoria usada no Levantamento Geral. Use para validar/conferir os totais agregados da tabela acima.</span></span></span>
+      <button onclick="transfDetExportXLSX()" title="Exportar registros filtrados para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
+    <div class="sr">
+      <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
+        <button class="cat-btn active" id="transf_det_f_all" onclick="setTransfDetCat('')">Todos</button>
+        <button class="cat-btn" id="transf_det_f_m2u" onclick="setTransfDetCat('m2u')">Matriz &rarr; Unidade</button>
+        <button class="cat-btn" id="transf_det_f_u2m" onclick="setTransfDetCat('u2m')">Unidade &rarr; Matriz</button>
+        <button class="cat-btn" id="transf_det_f_entre" onclick="setTransfDetCat('entre')">Entre Unidades</button>
+      </div>
+      <input type="text" id="transf_det_search" placeholder="Buscar NF-e, transportadora, chave CT-e...">
+    </div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Unidade</th><th>Categoria</th><th>Destino</th><th>Transportadora</th><th style="text-align:right">Peso</th><th style="text-align:right">Valor Frete</th><th>Chave CT-e</th></tr></thead><tbody id="transf_det_tbody"></tbody></table></div>
+    <div id="transf_det_pager" style="margin-top:10px"></div>
+  </div>
   <div class="sdiv" style="margin-top:4px">Frete Comercial vs Operacional (Visao Geral)</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card"><div class="kpi-tooltip">Custo de frete das entregas feitas a clientes externos. E o custo logistico diretamente ligado a receita de vendas — quanto a empresa paga para levar os produtos ate quem comprou.</div><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="transf_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="transf_frete_com_sub">-</div></div>
@@ -2129,6 +2146,7 @@ const selTr  =document.getElementById('filter_transp');
 const selCn  =document.getElementById('filter_canal');
 const inpQ   =document.getElementById('hd_search');
 const opSearchInp=document.getElementById('op_search');
+const transfDetSearchInp=document.getElementById('transf_det_search');
 
 function buildCanalOptions(cat){
   if(!selCn) return;
@@ -2714,6 +2732,7 @@ selTr.addEventListener('change',()=>{state.transp=selTr.value;renderAll();});
 selCn.addEventListener('change',()=>{state.canal=selCn.value;renderAll();});
 inpQ.addEventListener('input',()=>{state.q=inpQ.value.toLowerCase();renderAll();});
 if(opSearchInp) opSearchInp.addEventListener('input',()=>{opSearch=opSearchInp.value.toLowerCase().trim();tablePage=0;renderTable();});
+if(transfDetSearchInp) transfDetSearchInp.addEventListener('input',()=>{transfDetSearch=transfDetSearchInp.value.toLowerCase().trim();transfDetPage=0;_transfRenderDetalhe();});
 (function(){
   const psSel=document.getElementById('page_size_sel');
   if(!psSel) return;
@@ -3381,6 +3400,74 @@ function _transfRenderPeriodo(rows){
   const el=document.getElementById('transf_periodo_txt');
   if(el) el.innerHTML=_periodoLabelHTML(rows);
 }
+// Detalhes por NF-e das transferencias (Matriz-Unidade/Unidade-Matriz/Entre Unidades) — valida o Levantamento Geral
+const _TRANSF_CAT_LBL={m2u:'Matriz → Unidade',u2m:'Unidade → Matriz',entre:'Entre Unidades'};
+let transfDetPage=0,transfDetCat='',transfDetSearch='';
+let _transfDetRowsAll=[];
+function _transfDtKey(data){ return data&&data.length>=10?data.slice(6,10)+data.slice(3,5)+data.slice(0,2):''; }
+function _transfBuildDetalhe(rows){
+  _transfDetRowsAll=rows.filter(d=>_transfCategoria(d)).map(d=>({
+    numero:d.numero,data:d.data,empresa:d.empresa,
+    categoria:_transfCategoria(d),destino:_transfDestino(d),
+    transportadora:d.transportadora,peso_kg:d.peso_kg,
+    valor_frete:d.valor_frete,cte_chave:d.cte_chave,
+  })).sort((a,b)=>_transfDtKey(a.data).localeCompare(_transfDtKey(b.data))||b.valor_frete-a.valor_frete);
+}
+function _transfDetFiltered(){
+  let rows=_transfDetRowsAll;
+  if(transfDetCat) rows=rows.filter(r=>r.categoria===transfDetCat);
+  if(transfDetSearch){
+    const q=transfDetSearch;
+    rows=rows.filter(r=>(r.numero+' '+r.transportadora+' '+r.cte_chave+' '+r.destino).toLowerCase().includes(q));
+  }
+  return rows;
+}
+function setTransfDetCat(val){
+  transfDetCat=val;transfDetPage=0;
+  ['all','m2u','u2m','entre'].forEach(k=>{
+    const el=document.getElementById('transf_det_f_'+k);
+    if(el) el.classList.toggle('active',(val===''&&k==='all')||val===k);
+  });
+  _transfRenderDetalhe();
+}
+function _transfRenderDetalhe(){
+  const rows=_transfDetFiltered();
+  const start=transfDetPage*PAGE;
+  const page=rows.slice(start,start+PAGE);
+  document.getElementById('transf_det_tbody').innerHTML=page.length
+    ?page.map(r=>{
+      const catColor={m2u:'var(--purple2)',u2m:'var(--amber)',entre:'var(--red2)'}[r.categoria]||'';
+      return'<tr>'
+        +'<td style="font-size:11px">'+esc(r.numero)+'</td>'
+        +'<td style="font-size:11px">'+esc(r.data)+'</td>'
+        +'<td><strong>'+esc(r.empresa)+'</strong></td>'
+        +'<td><span class="chip chip-gray" style="font-size:10px;color:'+catColor+'">'+_TRANSF_CAT_LBL[r.categoria]+'</span></td>'
+        +'<td>'+esc(r.destino||'-')+'</td>'
+        +'<td style="font-size:11px">'+esc(trName(r.transportadora))+'</td>'
+        +'<td style="text-align:right">'+(r.peso_kg?N(r.peso_kg)+' kg':'-')+'</td>'
+        +'<td style="text-align:right;font-weight:600">'+BRL(r.valor_frete)+'</td>'
+        +'<td style="font-size:9px;color:var(--text3);font-family:monospace">'+esc(r.cte_chave)+'</td></tr>';
+    }).join('')
+    :'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia encontrada</td></tr>';
+  mkPager(rows.length,transfDetPage,PAGE,'transf_det_pager',pg=>{transfDetPage=pg;_transfRenderDetalhe();});
+}
+function transfDetExportXLSX(){
+  if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+  const rows=_transfDetFiltered();
+  if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
+  const data=rows.map(r=>({
+    'NF-e':r.numero,'Data':r.data,'Unidade':r.empresa,'Categoria':_TRANSF_CAT_LBL[r.categoria]||r.categoria,
+    'Destino':r.destino||'','Transportadora':trName(r.transportadora)||'','Peso (kg)':+(r.peso_kg||0).toFixed(2),
+    'Valor Frete (R$)':+(r.valor_frete||0).toFixed(2),'Chave CT-e':r.cte_chave||'',
+  }));
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+  const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+  const ci=hdr.indexOf('Valor Frete (R$)');
+  if(ci>=0) for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+  XLSX.utils.book_append_sheet(wb,ws,'Detalhes Transferencias');
+  XLSX.writeFile(wb,'transferencias_detalhe_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+window.transfDetExportXLSX=transfDetExportXLSX;
 function renderTransferencias(){
   const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
   const {freByEmp}=_empAggregate(rows);
@@ -3388,6 +3475,8 @@ function renderTransferencias(){
   _transfRenderKPIs(lvt);
   _transfRenderEvolucao(lvt);
   _transfRenderLevantamento(lvt);
+  _transfBuildDetalhe(rows);
+  _transfRenderDetalhe();
   _transfRenderComercialOp(rows,freByEmp);
   _transfRenderHumana(rows,freByEmp);
   _transfRenderSemCte();
