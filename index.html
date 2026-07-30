@@ -1249,12 +1249,12 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="card" id="dlv_gap_card" style="display:none">
-    <div class="card-title" style="color:var(--red2)"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp; Meses com Entrega sem Nota de Servico<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Combinacoes de entregador + mes em que houve entrega registrada (relatorio de Volumetria) mas nenhuma NFS-e autorizada foi emitida naquele mes. Pode ser atraso na busca da nota via API, ou um gap real de cobranca — vale investigar. Nao respeita o filtro de periodo desta aba (mostra todo o historico), so o filtro global de empresa.</span></span></div>
-    <div class="tw dtbl" style="max-height:40vh;overflow-y:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Mes</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">NF-e Entregues</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor Mercadoria</th></tr></thead>
-        <tbody id="dlv_gap_tbody"></tbody>
-      </table>
+    <div class="card-title">Controle de Nota de Servico por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Cada celula e um mes em que o entregador teve entrega registrada (relatorio de Volumetria). Verde com check = tem NFS-e autorizada naquele mes. Vermelho com X = entregou mas nao ha NFS-e no mesmo mes — pode ser atraso na busca da nota via API, ou um gap real de cobranca. Celula cinza (—) = sem entrega registrada naquele mes. Nao respeita o filtro de periodo desta aba (mostra todo o historico), so o filtro global de empresa.</span></span></div>
+    <div id="dlv_gap_matrix" style="overflow-x:auto;overflow-y:visible"></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:12px;font-size:10px;color:var(--text2)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--green2);color:#fff;text-align:center;line-height:14px;font-size:9px">✓</span> Tem NFS-e no mes</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--red2);color:#fff;text-align:center;line-height:14px;font-size:9px">✕</span> Entregou sem NFS-e</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--input-bg);border:1px solid var(--bd2)"></span> Sem entrega no mes</span>
     </div>
   </div>
   <div class="card">
@@ -4308,22 +4308,49 @@ function initApp(){
         +'</tr>';
     }).join('');
     mkPager(rows.length,dlvPage,PAGE,'dlv_pager',pg=>{dlvPage=pg;renderDelivery();});
-    // Meses com entrega registrada mas sem NFS-e — so respeita o filtro global de empresa
-    const gapRows=(DATA.volumetria_entregadores||[]).filter(v=>{
-      if(v.tem_nfse) return false;
-      return !state.empresas.length||state.empresas.includes(v.empresa);
-    }).sort((a,b)=>(b.ano+b.mes).localeCompare(a.ano+a.mes)||b.valor_nf-a.valor_nf);
-    const gapCard=document.getElementById('dlv_gap_card');
-    if(gapCard) gapCard.style.display=gapRows.length?'':'none';
-    const gapTbody=document.getElementById('dlv_gap_tbody');
-    if(gapTbody) gapTbody.innerHTML=gapRows.map(v=>
-      '<tr style="border-bottom:1px solid var(--row-border)">'
-      +'<td style="padding:7px 10px;color:var(--text);font-weight:600">'+esc(v.entregador_nome)+'</td>'
-      +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(v.empresa)+'</span></td>'
-      +'<td style="padding:7px 10px;color:var(--text2)">'+(MESES[+v.mes]||v.mes)+'/'+v.ano+'</td>'
-      +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(v.qtd_nfe)+'</td>'
-      +'<td style="padding:7px 10px;text-align:right;color:var(--red2);font-weight:700">'+BRL(v.valor_nf)+'</td>'
-      +'</tr>').join('');
+    // Controle de NFS-e por Entregador — matriz entregador (linha) x mes (coluna)
+    // So respeita o filtro global de empresa, nao o periodo local desta aba
+    (function(){
+      const volAll=(DATA.volumetria_entregadores||[]).filter(v=>!state.empresas.length||state.empresas.includes(v.empresa));
+      const gapCard=document.getElementById('dlv_gap_card');
+      const gapWrap=document.getElementById('dlv_gap_matrix');
+      if(!gapCard||!gapWrap) return;
+      if(!volAll.length){gapCard.style.display='none';return;}
+      gapCard.style.display='';
+      const byKey={};
+      volAll.forEach(v=>{
+        const k=v.entregador_nome+'|'+v.ano+'-'+v.mes;
+        if(!byKey[k]) byKey[k]={temNfse:false,qtd:0,valor:0,empresas:new Set()};
+        byKey[k].temNfse=byKey[k].temNfse||v.tem_nfse;
+        byKey[k].qtd+=v.qtd_nfe||0;
+        byKey[k].valor+=v.valor_nf||0;
+        byKey[k].empresas.add(v.empresa);
+      });
+      const entregadores=[...new Set(volAll.map(v=>v.entregador_nome))].sort();
+      const mesesCols=[...new Set(volAll.map(v=>v.ano+'-'+v.mes))].sort();
+      const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
+      const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
+      let html='<table style="border-collapse:separate;border-spacing:2px;min-width:100%">';
+      html+='<thead><tr><th style="'+thBase+';text-align:left;'+stickyBase+'">Entregador</th>';
+      mesesCols.forEach(m=>{const mes=m.slice(5,7);html+='<th style="'+thBase+'">'+(MESES[+mes]||mes)+'/'+m.slice(2,4)+'</th>';});
+      html+='</tr></thead><tbody>';
+      entregadores.forEach(nome=>{
+        html+='<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;'+stickyBase+'">'+esc(nome)+'</td>';
+        mesesCols.forEach(m=>{
+          const cell=byKey[nome+'|'+m];
+          if(!cell){
+            html+='<td style="text-align:center;padding:5px 8px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:4px;color:var(--text3);font-size:10px">—</td>';
+          }else if(cell.temNfse){
+            html+='<td title="'+N(cell.qtd)+' NF-e entregues, '+BRL(cell.valor)+'" style="text-align:center;padding:5px 8px;background:var(--green2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✓</td>';
+          }else{
+            html+='<td title="'+N(cell.qtd)+' NF-e entregues, '+BRL(cell.valor)+' — sem NFS-e neste mes" style="text-align:center;padding:5px 8px;background:var(--red2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✕</td>';
+          }
+        });
+        html+='</tr>';
+      });
+      html+='</tbody></table>';
+      gapWrap.innerHTML=html;
+    })();
     // NF-e Entregues — Detalhe (cruza volumetria com faturamento)
     const detRows=(DATA.volumetria_detalhe||[]).filter(d=>{
       const empOk=(!dlvDetSelEmp.value||d.empresa===dlvDetSelEmp.value)
