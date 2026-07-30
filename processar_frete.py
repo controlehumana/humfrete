@@ -751,9 +751,11 @@ def _carregar_volumetria_detalhe():
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volumetria_nfe'")
         if not cur.fetchone():
             conn.close(); return []
-        # Janela de 12 meses — evita crescimento indefinido do payload por empresa
-        # (este campo nao e chunked como 'detalhes'; ver pitfall no CLAUDE.md)
-        cutoff = (datetime.now() - timedelta(days=365)).strftime("%Y%m")
+        # Janela de 6 meses — evita crescimento indefinido do payload por empresa
+        # (este campo nao e chunked como 'detalhes'). Com 12 meses de historico
+        # completo medido, UBE/SOR (mais entregadores) chegaram a ~500-540 KB só
+        # nesse campo — 6 meses reduz a margem de risco. Ver pitfall no CLAUDE.md.
+        cutoff = (datetime.now() - timedelta(days=182)).strftime("%Y%m")
         rows = cur.execute("""
             SELECT v.empresa, e.nome_entregador, v.numero_nfe, v.data_emissao,
                    v.canal, v.peso_kg, v.total_nf AS valor_volumetria,
