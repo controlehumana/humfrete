@@ -1382,7 +1382,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <span>Levantamento Geral — Frete por Unidade e Categoria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por unidade/mes com a quebra completa do frete: total geral, delivery, transferencias Matriz-Unidade nos dois sentidos e entre unidades. Estrutura equivalente a planilha de levantamento solicitada.</span></span></span>
       <button onclick="transfExportXLSX()" title="Exportar para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="position:sticky;bottom:0;border-top:2px solid var(--bd2);background:var(--s2);font-weight:700"></tr></tfoot></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="border-top:2px solid var(--bd2);font-weight:700"></tr></tfoot></table></div>
   </div>
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -3262,14 +3262,15 @@ function _transfRenderLevantamento(lvt){
   const tf=document.getElementById('transf_lvt_tfoot');
   if(tf){
     const tot=lvt.reduce((s,r)=>{s.geral+=r.geral;s.delivery+=r.delivery;s.m2u+=r.m2u;s.u2m+=r.u2m;s.entre+=r.entre;return s;},{geral:0,delivery:0,m2u:0,u2m:0,entre:0});
+    const bg='background:var(--s3)';
     tf.innerHTML=lvt.length
-      ?'<td colspan="2">Total</td>'
-        +'<td style="text-align:right">'+BRL(tot.geral)+'</td>'
-        +'<td style="text-align:right;color:var(--green2)">'+BRL(tot.delivery)+'</td>'
-        +'<td style="text-align:right;color:var(--purple2)">'+BRL(tot.m2u)+'</td>'
-        +'<td style="text-align:right;color:var(--amber)">'+BRL(tot.u2m)+'</td>'
-        +'<td style="text-align:right;color:var(--red2)">'+BRL(tot.entre)+'</td>'
-        +'<td style="text-align:right">'+BRL(tot.geral)+'</td>'
+      ?'<td style="'+bg+'">Total</td><td style="'+bg+'"></td>'
+        +'<td style="'+bg+';text-align:right">'+BRL(tot.geral)+'</td>'
+        +'<td style="'+bg+';text-align:right;color:var(--green2)">'+BRL(tot.delivery)+'</td>'
+        +'<td style="'+bg+';text-align:right;color:var(--purple2)">'+BRL(tot.m2u)+'</td>'
+        +'<td style="'+bg+';text-align:right;color:var(--amber)">'+BRL(tot.u2m)+'</td>'
+        +'<td style="'+bg+';text-align:right;color:var(--red2)">'+BRL(tot.entre)+'</td>'
+        +'<td style="'+bg+';text-align:right">'+BRL(tot.geral)+'</td>'
       :'';
   }
 }
