@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Reset de senha de usuário (Admin)
+
+O painel Admin **não é capaz de trocar a senha de um usuário existente** — o campo "Senha" só funciona ao criar um usuário novo (`createUserWithEmailAndPassword`). Alterar a senha de outro usuário exigiria uma Cloud Function com Admin SDK (o SDK client-side não permite), e isso requer o plano Blaze (pay-as-you-go) no Firebase — **decisão consciente do usuário de não migrar para Blaze** (evita precisar cadastrar cartão de crédito no projeto).
+
+**Workaround oficial:** rodar `reset_senha.js` (raiz de `Frete/`) localmente:
+```
+npm install firebase-admin   # uma vez
+node reset_senha.js <email> <novaSenha>
+```
+Usa `serviceAccountKey.json` (já presente, nunca commitado) via Admin SDK para setar a senha diretamente, sem depender de e-mail. A tela de edição de usuário no `index.html` desabilita o campo "Senha" ao editar usuário existente e mostra uma nota explicando isso, para não sugerir uma funcionalidade que não existe.
+
+**"Esqueci minha senha" (tela de login):** `sendPasswordResetEmail` retorna sucesso mas o e-mail pode não chegar (suspeita: filtro corporativo Microsoft 365 bloqueando o remetente `noreply@frete-db255.firebaseapp.com`, domínio compartilhado do Firebase). Ainda não investigado a fundo — se voltar a acontecer, usar `reset_senha.js` como alternativa imediata.
+
 ## Rotina diária de atualização
 
 ### Automático (Agendador de Tarefas — 08h30)
@@ -289,6 +302,7 @@ Campo adicionado em `processar_frete.py` (`cnpj_emitente` do CTe). Necessário p
 | `dev-mkt` | Devoluções Marketplace | Devoluções via Shopee/ML/TikTok Shop |
 | `separacao` | Separação | Produtividade de picking por unidade — pedidos, itens separados, ranking, dia da semana, canal |
 | `empresa` | Por Empresa | Análise por filial |
+| `transferencias` | Transferências | Frete de transferência entre unidades — quebra Matriz→Unidade/Unidade→Matriz/Entre Unidades + Delivery, levantamento Unidade×Mês exportável |
 | `operacional` | Operacional | Tabela detalhada por NF-e |
 | `natop` | Por Tipo de Venda | Cobertura de frete por natureza de operação — drill-down para Operacional |
 | `clientes` | Por Cliente | Oportunidades de consolidação + frete grátis por cliente |
@@ -786,6 +800,44 @@ index.html                         ← aba Delivery (tab-delivery)
 - Tabela detalhada paginada (`dlv_tbody` / `mkPager`)
 - `_dlvPrevRows()` — espelha `_geoPrevRows()` do módulo Geográfico para achar o período de comparação (mês anterior se 1 mês selecionado, ano anterior se só ano selecionado, filtrando `DATA.delivery` por `data_emissao`)
 - Exposta via `window._renderDelivery` — chamada pelo tab switching quando aba `delivery` ativa
+
+## Módulo Transferências — `transferencias` (index.html, jul/2026)
+
+Aba dedicada para analisar o frete de natureza "transferência" (movimentação de mercadoria entre unidades do próprio grupo), extraída da aba Por Empresa a pedido de um levantamento externo (planilha "Levantamento Geral": Unidade × Mês × Fretes Gerais/Delivery/Transf. Matriz→Unidade/Transf. Unidade→Matriz/Entre Unidades/Total). Todo o cálculo é feito no frontend, sem alteração no `processar_frete.py` — reaproveita `DATA.detalhes` (CT-e vinculados) e `DATA.delivery` (NFS-e de entregadores) já publicados.
+
+### Matriz e classificação de direção
+- `MATRIZ_UNIDADE='BRU1'` — constante global, única unidade tratada como matriz/centro de distribuição
+- `_transfDestino(d)` — resolve a empresa do grupo destinatária via `CNPJ_EMPRESA[d.dest_cnpj]` (mesma lógica de `isTransferencia()`, mas isolada)
+- `_transfCategoria(d)` — classifica uma linha em 3 categorias com base em **origem = `d.empresa`** (empresa emissora da NF-e/CT-e de saída) e **destino = `_transfDestino(d)`**:
+  - `null` — destino não é uma unidade do grupo (não entra nas 3 categorias, mas soma no total "Fretes Gerais"/`geral`)
+  - `'m2u'` — origem é a Matriz (BRU1 enviando para outra unidade)
+  - `'u2m'` — destino é a Matriz (unidade enviando de volta pra Matriz)
+  - `'entre'` — nem origem nem destino é a Matriz (lateral entre duas unidades)
+- **Atenção:** a categoria é atribuída à linha do **emissor** (`d.empresa`), não ao destinatário — por isso na tabela "Levantamento Geral" a linha da própria BRU1 é que carrega os valores de "Transf. Matriz→Unidade" (é ela quem gerou o CT-e/NF-e de saída), não a unidade que recebeu
+
+### `_transfBuildLevantamento(rows)` — Levantamento Geral (Unidade × Mês)
+- Agrega `rows` (CT-e vinculados, `filterRows(DATA.detalhes,{excMkt:true})`) + `_transfDeliveryRows()` (`DATA.delivery` filtrado pelos filtros globais ano/mês/empresa, mesmo padrão do card "Delivery vs. Frete Tradicional") em um dict por chave `"emp|ano|mes"`
+- Cada bucket: `{emp,ano,mes,geral,delivery,m2u,u2m,entre}` — `geral` soma **tudo** (comercial + as 3 categorias de transferência + delivery), as demais são quebras
+- **`ano`/`mes` extraídos de `d.data`/`d.data_emissao` (formato `DD/MM/YYYY`)** via `slice(6,10)`/`slice(3,5)` — mesmo padrão usado em `_transfDeliveryRows`/`dlvGlobalRows`
+
+### KPIs, gráfico e tabela principal
+- 4 KPIs (`_transfRenderKPIs`): Frete Delivery, Transf. Matriz→Unidade, Transf. Unidade→Matriz, Frete Entre Unidades — cada um com % sobre o total geral do levantamento filtrado
+- `_transfRenderEvolucao(lvt)` — gráfico `ch_transf_evol` (stacked, `mkStacked`) com evolução mensal das 4 categorias. **Chave de ordenação `ano+'-'+mes` (não `mes+'/'+ano`)** — string sort em `"MM/YYYY"` quebra virada de ano (ex. `"01/2026"` ordenaria antes de `"12/2025"`); ver mesmo cuidado em `ch_dlv_mensal` no módulo Delivery
+- `_transfRenderLevantamento(lvt)` — tabela `transf_lvt_tbody`, 1 linha por unidade/mês, guarda o array em `_transfLvtRows` para o export
+- `transfExportXLSX()` — exporta `_transfLvtRows` com as mesmas colunas/nomes da planilha de referência que originou o pedido (Unidade, Mês, Fretes Gerais, Frete Delivery, Frete Transferência Matriz→Unidade, Frete Transferência Unidade→Matriz, Frete Entre Unidades, Total Fretes), formatação `R$` via `.z` nas colunas monetárias (mesmo padrão de `compExportXLSX`/`dlvExportXLSX`)
+
+### Seções herdadas da aba Por Empresa (renomeadas, lógica intacta)
+Movidas de `emp_*`/`_empRender*` para `transf_*`/`_transfRender*` — nenhuma mudança de comportamento, só remoção do escopo de "Por Empresa":
+- `_transfRenderComercialOp` — KPIs Comercial vs Operacional + gráfico `ch_transf_tipo` + tabela "Custo Operacional por Empresa" (`transf_tbody`) — usa `isTransferencia(d)` (regex `NAT_TRANSF` OU destino no grupo), mais abrangente que `_transfCategoria` (não exige direção específica)
+- `_transfRenderHumana` — "Transferências entre Lojas do Grupo" (KPIs + tabela `transf_hu_tbody` "Detalhe por Empresa Origem x Loja Destino") — filtra por `HU_CLI` (cliente contém "HUMANA ALIMENTAR"), critério diferente de `isTransferencia`/`_transfCategoria` (usa o nome do cliente na NF, não o `dest_cnpj`)
+- `_transfRenderSemCte` — tabela `transf_sem_cte_tbody`, NF-e de transferência (`DATA.transf_sem_cte`, populado por `processar_frete.py`) sem CT-e vinculado
+- `_periodoLabelHTML(rows)` — helper extraído (antes duplicado dentro de `_empRenderPeriodo`) para montar o texto "Exibindo: ..." dos banners de período; usado tanto por `_empRenderPeriodo` (Por Empresa) quanto por `_transfRenderPeriodo` (Transferências)
+
+### `renderTransferencias()`
+Orquestra tudo: filtra `rows`, calcula `freByEmp` via `_empAggregate` (reaproveitado de Por Empresa), constrói `lvt` via `_transfBuildLevantamento`, chama os renders acima na ordem KPIs → evolução → levantamento → comercial/op → grupo → sem CTe → período. Chamada pelo tab-switch (2 lugares: click handler e `renderAll()`) quando `tab==='transferencias'`.
+
+### Não replicado no `HTML_TEMPLATE`
+Mesma ressalva do módulo Marketplace: `HTML_TEMPLATE` em `processar_frete.py` não tem a aba Transferências — só afeta o `dashboard_frete.html` standalone local, não o app publicado no GitHub Pages.
 
 ## Módulo Separação — `separacao` (index.html, jul/2026)
 

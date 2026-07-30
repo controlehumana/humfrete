@@ -608,6 +608,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <button class="tab-btn tab-highlight" data-tab="separacao"><i data-lucide="clipboard-list"></i><span class="sb-label">Separação</span><span class="tab-badge" id="tb_sep">-</span></button>
     <div class="sb-section">Analise</div>
     <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="transferencias"><i data-lucide="arrow-left-right"></i><span class="sb-label">Transferências</span></button>
     <button class="tab-btn tab-highlight" data-tab="operacional"><i data-lucide="list"></i><span class="sb-label">Operacional</span><span class="tab-badge" id="tb_op">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="natop"><i data-lucide="layers"></i><span class="sb-label">Por Tipo de Venda</span></button>
     <button class="tab-btn tab-highlight" data-tab="clientes"><i data-lucide="users"></i><span class="sb-label">Por Cliente</span><span class="tab-badge" id="tb_cli">-</span></button>
@@ -1355,27 +1356,6 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="card"><div class="card-title">Resumo por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Tabela resumo por filial: quantas entregas foram rastreadas, custo total de frete, quanto cada unidade representa do gasto total, qual transportadora domina e quantas empresas de transporte foram utilizadas.</span></span></div><div class="tw"><table><thead><tr><th>#</th><th>Empresa</th><th>NF-e</th><th>Total Frete</th><th>% do Total</th><th>Transp. Principal</th><th>Frete Transp.</th><th>Concentracao</th><th>N Transp.</th></tr></thead><tbody id="emp_tbody"></tbody></table></div></div>
   <div class="card"><div class="card-title">Top 5 Transportadoras por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">As 5 transportadoras mais usadas por cada filial e o quanto cada uma representa no custo de frete daquela unidade. Ajuda a identificar dependencias por regiao e oportunidades de unificar contratos.</span></span></div><div class="tw"><table><thead><tr><th>Empresa</th><th>Transportadora</th><th>NF-e</th><th>Frete Pago</th><th>% da Empresa</th><th>% do Total</th></tr></thead><tbody id="emp_det_tbody"></tbody></table></div></div>
-  <div class="sdiv" style="margin-top:4px">Frete por Finalidade — Vendas a Clientes vs Transferências Internas</div>
-  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete das entregas feitas a clientes externos. E o custo logistico diretamente ligado a receita de vendas — quanto a empresa paga para levar os produtos ate quem comprou.</div><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="emp_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="emp_frete_com_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete para movimentar mercadoria entre as proprias lojas e filiais da empresa. Nao esta relacionado a nenhuma venda — e o custo interno de reposicao e redistribuicao de estoque.</div><div class="kpi-lbl">Frete Operacional (Transf.)</div><div class="kpi-val" id="emp_frete_op" style="color:var(--purple)">-</div><div class="kpi-sub" id="emp_frete_op_sub">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de movimentacoes de estoque entre filiais com frete identificado. Representa quantas vezes no periodo a empresa enviou mercadoria de uma loja para outra, com custo de transporte registrado.</div><div class="kpi-lbl">NF-e Transferidas</div><div class="kpi-val" id="emp_qtd_transf">-</div><div class="kpi-sub" id="emp_qtd_transf_sub" style="line-height:1.6">NF-e unicas com CTe</div><div class="kpi-sub" id="emp_qtd_transf_fat" style="color:var(--text3);font-size:10px">- no faturamento</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Percentual do total gasto com frete que e custo interno entre lojas, sem gerar receita de venda. Acima de 20% pode indicar que a estrategia de distribuicao de estoque entre filiais precisa ser revisada.</div><div class="kpi-lbl">% Frete Operacional</div><div class="kpi-val" id="emp_pct_op">-</div><div class="kpi-sub">do frete total</div></div>
-  </div>
-  <div id="emp_transf_destinos_wrap" style="margin:2px 0 10px;font-size:11px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="color:var(--text3)" id="emp_transf_destinos_lbl">Destinos com CTe:</span><span id="emp_transf_destinos" style="display:flex;gap:4px;flex-wrap:wrap">-</span></div>
-  <div class="ch2eq">
-    <div class="card"><div class="card-title">Frete Comercial vs Operacional por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo por filial do frete de vendas a clientes (azul) vs frete de movimentacao interna de estoque (roxo). Ajuda a ver quanto do custo logistico de cada unidade e custo de venda e quanto e custo operacional interno.</span></span></div><div class="ch-wrap-lg"><canvas id="ch_emp_tipo"></canvas></div></div>
-    <div class="card"><div class="card-title">Custo Operacional por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Detalhe do custo de movimentacao interna de estoque por filial: quantas vezes enviou para outras lojas, quanto gastou, qual estado recebeu mais e o custo medio por envio interno.</span></span></div><div class="tw"><table><thead><tr><th>Empresa</th><th>NF Transferidas</th><th>Frete Operacional</th><th>% do Frete Total</th><th>UF Destino Principal</th><th>Ticket Medio</th></tr></thead><tbody id="emp_transf_tbody"></tbody></table></div></div>
-  </div>
-  <div class="sdiv" style="margin-top:4px">Transferencias entre Lojas do Grupo</div>
-  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-    <div class="kpi-card"><div class="kpi-tooltip">Movimentacoes de mercadoria exclusivamente entre lojas do grupo — de uma filial para outra filial da mesma empresa. Representa o custo de logistica interna para equilibrar o estoque da rede.</div><div class="kpi-lbl">NF-e Internas (entre Lojas)</div><div class="kpi-val" id="emp_hu_qtd" style="color:var(--amber)">-</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Total gasto para movimentar mercadoria entre as lojas da propria rede. Este custo nao gera receita direta — e importante monitorar para garantir que a redistribuicao de estoque seja justificada pelo resultado das vendas.</div><div class="kpi-lbl">Frete entre Lojas</div><div class="kpi-val" id="emp_hu_frete" style="color:var(--amber)">-</div><div class="kpi-sub" id="emp_hu_pct">do frete total</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por movimentacao de estoque entre lojas. Se for alto, pode valer analisar se a redistribuicao de mercadoria esta sendo feita de forma eficiente ou se pode ser consolidada em menos viagens.</div><div class="kpi-lbl">Ticket Medio Interno</div><div class="kpi-val" id="emp_hu_ticket" style="font-size:18px">-</div></div>
-  </div>
-  <div class="card"><div class="card-title">Detalhe por Empresa Origem x Loja Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de quem enviou para quem: cada linha mostra uma rota de redistribuicao de estoque entre lojas, com o custo total e o custo medio por envio. Identifica quais trajetos internos sao mais caros.</span></span></div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Loja Destino</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="emp_hu_tbody"></tbody></table></div></div>
-  <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
-  <div class="card"><div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="emp_transf_sem_cte_tbody"></tbody></table></div></div>
   <div class="sdiv" style="margin-top:4px">Evolucao Mensal por Transportadora</div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -1384,6 +1364,47 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
     <div class="ch-wrap-xl"><canvas id="ch_emp_tl"></canvas></div>
   </div>
+</div>
+
+<!-- TAB TRANSFERENCIAS -->
+<div id="tab-transferencias" class="tab-panel">
+  <div id="transf_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:#DBEAFE;border:1px solid #BFDBFE;border-radius:8px;font-size:12px;color:#1E40AF;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="opacity:.8"></i><span id="transf_periodo_txt">Carregando...</span></div>
+  <div class="alert a-yellow" style="margin-bottom:14px;font-size:12px"><i class="fa-solid fa-circle-info"></i> Matriz considerada: <strong>BRU1</strong>. Movimentacoes classificadas pela empresa emissora da NF-e (origem) e pelo CNPJ destinatario do CT-e (destino) — quando o destino nao e uma unidade do grupo, a operacao entra apenas no total comercial, nao nas categorias de transferencia abaixo.</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Custo com entregadores autonomos (NFS-e de servico de transporte) no periodo filtrado. Mesma fonte de dados da aba Delivery.</div><div class="kpi-lbl">Frete Delivery</div><div class="kpi-val" id="transf_k_delivery" style="color:var(--green2)">-</div><div class="kpi-sub" id="transf_k_delivery_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete de mercadoria enviada pela Matriz (BRU1) para as demais unidades — reposicao/redistribuicao de estoque partindo do centro de distribuicao.</div><div class="kpi-lbl">Transf. Matriz &rarr; Unidade</div><div class="kpi-val" id="transf_k_m2u" style="color:var(--purple)">-</div><div class="kpi-sub" id="transf_k_m2u_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete de mercadoria enviada por uma unidade de volta para a Matriz (BRU1) — devolucao/retorno de estoque para o centro de distribuicao.</div><div class="kpi-lbl">Transf. Unidade &rarr; Matriz</div><div class="kpi-val" id="transf_k_u2m" style="color:var(--amber)">-</div><div class="kpi-sub" id="transf_k_u2m_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete de mercadoria movimentada diretamente entre duas unidades do grupo sem passar pela Matriz.</div><div class="kpi-lbl">Frete Entre Unidades</div><div class="kpi-val" id="transf_k_entre" style="color:var(--red2)">-</div><div class="kpi-sub" id="transf_k_entre_sub">-</div></div>
+  </div>
+  <div class="card"><div class="card-title">Evolucao Mensal por Categoria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Evolucao do custo mensal de cada categoria de frete interno/logistico: Delivery, transferencias de/para a Matriz e transferencias entre unidades. Ajuda a ver tendencias de crescimento de cada tipo de custo.</span></span></div><div class="ch-wrap-lg"><canvas id="ch_transf_evol"></canvas></div></div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>Levantamento Geral — Frete por Unidade e Categoria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por unidade/mes com a quebra completa do frete: total geral, delivery, transferencias Matriz-Unidade nos dois sentidos e entre unidades. Estrutura equivalente a planilha de levantamento solicitada.</span></span></span>
+      <button onclick="transfExportXLSX()" title="Exportar para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody></table></div>
+  </div>
+  <div class="sdiv" style="margin-top:4px">Frete Comercial vs Operacional (Visao Geral)</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete das entregas feitas a clientes externos. E o custo logistico diretamente ligado a receita de vendas — quanto a empresa paga para levar os produtos ate quem comprou.</div><div class="kpi-lbl">Frete Comercial (Vendas)</div><div class="kpi-val" id="transf_frete_com" style="color:var(--blue2)">-</div><div class="kpi-sub" id="transf_frete_com_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo de frete para movimentar mercadoria entre as proprias lojas e filiais da empresa. Nao esta relacionado a nenhuma venda — e o custo interno de reposicao e redistribuicao de estoque. Inclui as 3 categorias acima (Matriz-Unidade, Unidade-Matriz, Entre Unidades).</div><div class="kpi-lbl">Frete Operacional (Transf.)</div><div class="kpi-val" id="transf_frete_op" style="color:var(--purple)">-</div><div class="kpi-sub" id="transf_frete_op_sub">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de movimentacoes de estoque entre filiais com frete identificado. Representa quantas vezes no periodo a empresa enviou mercadoria de uma loja para outra, com custo de transporte registrado.</div><div class="kpi-lbl">NF-e Transferidas</div><div class="kpi-val" id="transf_qtd">-</div><div class="kpi-sub" id="transf_qtd_sub" style="line-height:1.6">NF-e unicas com CTe</div><div class="kpi-sub" id="transf_qtd_fat" style="color:var(--text3);font-size:10px">- no faturamento</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Percentual do total gasto com frete que e custo interno entre lojas, sem gerar receita de venda. Acima de 20% pode indicar que a estrategia de distribuicao de estoque entre filiais precisa ser revisada.</div><div class="kpi-lbl">% Frete Operacional</div><div class="kpi-val" id="transf_pct_op">-</div><div class="kpi-sub">do frete total</div></div>
+  </div>
+  <div id="transf_destinos_wrap" style="margin:2px 0 10px;font-size:11px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="color:var(--text3)" id="transf_destinos_lbl">Destinos com CTe:</span><span id="transf_destinos" style="display:flex;gap:4px;flex-wrap:wrap">-</span></div>
+  <div class="ch2eq">
+    <div class="card"><div class="card-title">Frete Comercial vs Operacional por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo por filial do frete de vendas a clientes (azul) vs frete de movimentacao interna de estoque (roxo). Ajuda a ver quanto do custo logistico de cada unidade e custo de venda e quanto e custo operacional interno.</span></span></div><div class="ch-wrap-lg"><canvas id="ch_transf_tipo"></canvas></div></div>
+    <div class="card"><div class="card-title">Custo Operacional por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Detalhe do custo de movimentacao interna de estoque por filial: quantas vezes enviou para outras lojas, quanto gastou, qual estado recebeu mais e o custo medio por envio interno.</span></span></div><div class="tw"><table><thead><tr><th>Empresa</th><th>NF Transferidas</th><th>Frete Operacional</th><th>% do Frete Total</th><th>UF Destino Principal</th><th>Ticket Medio</th></tr></thead><tbody id="transf_tbody"></tbody></table></div></div>
+  </div>
+  <div class="sdiv" style="margin-top:4px">Transferencias entre Lojas do Grupo</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Movimentacoes de mercadoria exclusivamente entre lojas do grupo — de uma filial para outra filial da mesma empresa. Representa o custo de logistica interna para equilibrar o estoque da rede.</div><div class="kpi-lbl">NF-e Internas (entre Lojas)</div><div class="kpi-val" id="transf_hu_qtd" style="color:var(--amber)">-</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total gasto para movimentar mercadoria entre as lojas da propria rede. Este custo nao gera receita direta — e importante monitorar para garantir que a redistribuicao de estoque seja justificada pelo resultado das vendas.</div><div class="kpi-lbl">Frete entre Lojas</div><div class="kpi-val" id="transf_hu_frete" style="color:var(--amber)">-</div><div class="kpi-sub" id="transf_hu_pct">do frete total</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por movimentacao de estoque entre lojas. Se for alto, pode valer analisar se a redistribuicao de mercadoria esta sendo feita de forma eficiente ou se pode ser consolidada em menos viagens.</div><div class="kpi-lbl">Ticket Medio Interno</div><div class="kpi-val" id="transf_hu_ticket" style="font-size:18px">-</div></div>
+  </div>
+  <div class="card"><div class="card-title">Detalhe por Empresa Origem x Loja Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de quem enviou para quem: cada linha mostra uma rota de redistribuicao de estoque entre lojas, com o custo total e o custo medio por envio. Identifica quais trajetos internos sao mais caros.</span></span></div><div class="tw"><table><thead><tr><th>Empresa Origem</th><th>Loja Destino</th><th>NF-e</th><th>Frete Total</th><th>% da Empresa</th><th>UF</th><th>Ticket Medio</th></tr></thead><tbody id="transf_hu_tbody"></tbody></table></div></div>
+  <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
+  <div class="card"><div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="transf_sem_cte_tbody"></tbody></table></div></div>
 </div>
 
 <!-- TAB GEOGRAFICO -->
@@ -1466,6 +1487,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
           <div>
             <label class="admin-label" for="admin-pass">Senha</label>
             <input class="admin-input" id="admin-pass" type="password" placeholder="Senha inicial">
+            <div id="admin-pass-hint" style="display:none;font-size:11px;color:var(--text3);margin-top:3px">Não é possível trocar a senha de outro usuário por aqui. Peça para ele usar "Esqueci minha senha" na tela de login.</div>
           </div>
           <label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin-top:2px">
             <input type="checkbox" id="admin-is-admin" style="accent-color:var(--purple);width:14px;height:14px">
@@ -2487,7 +2509,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='transferencias')renderTransferencias();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -3092,7 +3114,158 @@ function _empRenderTabelaTransp(empList,totalG){
   });
   document.getElementById('emp_det_tbody').innerHTML=det.join('');
 }
-function _empRenderComercialOp(rows,freByEmp){
+function _periodoLabelHTML(rows){
+  const parts=[];
+  if(state.ano) parts.push(state.ano);
+  if(state.meses.length===1) parts.push(MESES[+state.meses[0]]||state.meses[0]);
+  else if(state.meses.length>1) parts.push(state.meses.length+' meses');
+  if(state.empresas.length===1) parts.push(state.empresas[0]);
+  else if(state.empresas.length>1) parts.push(state.empresas.length+' empresas');
+  if(state.linha) parts.push(state.linha);
+  if(state.canal) parts.push('Canal: '+state.canal);
+  if(state.estado) parts.push('UF: '+state.estado);
+  if(state.transp) parts.push('Transp: '+trName(state.transp));
+  return (parts.length?'<strong>Exibindo:</strong> '+parts.join(' - '):'<strong>Exibindo:</strong> Todos os periodos - Todas as empresas')
+    +' &nbsp;<span style="color:var(--text3);font-size:11px">('+N(rows.length)+' NF-e vinculadas)</span>';
+}
+function _empRenderPeriodo(rows,empList){
+  document.getElementById('emp_periodo_txt').innerHTML=_periodoLabelHTML(rows);
+  _empTlRows=rows;
+  const empTlSel=document.getElementById('emp_tl_emp');
+  const curEmpTl=empTlSel.value;
+  empTlSel.innerHTML='<option value="">Todas as empresas</option>';
+  empList.forEach(e=>{
+    const o=document.createElement('option');o.value=e.emp;o.textContent=e.emp;
+    if(e.emp===curEmpTl) o.selected=true;
+    empTlSel.appendChild(o);
+  });
+  buildEmpTimeline();
+}
+function renderEmpresa(){
+  const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
+  const {empList,trGlobal,totalG,freByEmp}=_empAggregate(rows);
+  _empRenderKPIs(empList,totalG);
+  _empRenderCharts(empList,trGlobal);
+  _empRenderTabelaEmpresas(empList,totalG);
+  _empRenderTabelaTransp(empList,totalG);
+  _empRenderPeriodo(rows,empList);
+}
+// ── ABA TRANSFERENCIAS ───────────────────────────────────────────────────────
+const MATRIZ_UNIDADE='BRU1';
+function _transfDestino(d){ return CNPJ_EMPRESA[d.dest_cnpj]||''; }
+// Classifica uma linha de transferencia (destino identificado como unidade do grupo) em:
+// 'm2u' (Matriz->Unidade), 'u2m' (Unidade->Matriz) ou 'entre' (lateral, sem tocar a Matriz)
+function _transfCategoria(d){
+  const destino=_transfDestino(d);
+  if(!destino) return null;
+  if(d.empresa===MATRIZ_UNIDADE) return 'm2u';
+  if(destino===MATRIZ_UNIDADE) return 'u2m';
+  return 'entre';
+}
+function _transfDeliveryRows(){
+  return (DATA.delivery||[]).filter(d=>{
+    const empOk=!state.empresas.length||state.empresas.includes(d.empresa);
+    const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+    const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+    return empOk&&anoOk&&mesOk;
+  });
+}
+// Levantamento Geral: 1 linha por Unidade x Mes com a quebra completa do frete
+function _transfBuildLevantamento(rows){
+  const map={};
+  const bucket=(emp,data)=>{
+    if(!emp) return null;
+    const ano=(data||'').slice(6,10),mes=(data||'').slice(3,5);
+    if(ano.length!==4||mes.length!==2) return null;
+    const k=emp+'|'+ano+'|'+mes;
+    if(!map[k]) map[k]={emp,ano,mes,geral:0,delivery:0,m2u:0,u2m:0,entre:0};
+    return map[k];
+  };
+  rows.forEach(d=>{
+    const b=bucket(d.empresa,d.data); if(!b) return;
+    b.geral+=d.valor_frete;
+    const cat=_transfCategoria(d);
+    if(cat==='m2u') b.m2u+=d.valor_frete;
+    else if(cat==='u2m') b.u2m+=d.valor_frete;
+    else if(cat==='entre') b.entre+=d.valor_frete;
+  });
+  _transfDeliveryRows().forEach(d=>{
+    const b=bucket(d.empresa,d.data_emissao); if(!b) return;
+    const v=d.valor_servico||0;
+    b.geral+=v; b.delivery+=v;
+  });
+  return Object.values(map).sort((a,b)=>a.emp===b.emp?(a.ano+a.mes).localeCompare(b.ano+b.mes):a.emp.localeCompare(b.emp));
+}
+function _transfRenderKPIs(lvt){
+  const totDelivery=lvt.reduce((s,r)=>s+r.delivery,0);
+  const totM2U=lvt.reduce((s,r)=>s+r.m2u,0);
+  const totU2M=lvt.reduce((s,r)=>s+r.u2m,0);
+  const totEntre=lvt.reduce((s,r)=>s+r.entre,0);
+  const totGeral=lvt.reduce((s,r)=>s+r.geral,0)||1;
+  const pctTxt=v=>(v/totGeral*100).toFixed(1)+'% do frete geral';
+  document.getElementById('transf_k_delivery').textContent=BRL(totDelivery);
+  document.getElementById('transf_k_delivery_sub').textContent=pctTxt(totDelivery);
+  document.getElementById('transf_k_m2u').textContent=BRL(totM2U);
+  document.getElementById('transf_k_m2u_sub').textContent=pctTxt(totM2U);
+  document.getElementById('transf_k_u2m').textContent=BRL(totU2M);
+  document.getElementById('transf_k_u2m_sub').textContent=pctTxt(totU2M);
+  document.getElementById('transf_k_entre').textContent=BRL(totEntre);
+  document.getElementById('transf_k_entre_sub').textContent=pctTxt(totEntre);
+}
+function _transfRenderEvolucao(lvt){
+  const byM={};
+  lvt.forEach(r=>{
+    const key=r.ano+'-'+r.mes;
+    if(!byM[key]) byM[key]={delivery:0,m2u:0,u2m:0,entre:0};
+    byM[key].delivery+=r.delivery; byM[key].m2u+=r.m2u; byM[key].u2m+=r.u2m; byM[key].entre+=r.entre;
+  });
+  const months=Object.keys(byM).sort();
+  const lbls=months.map(m=>(MESES[+m.slice(5,7)]||m.slice(5,7))+'/'+m.slice(0,4));
+  mkStacked('ch_transf_evol',lbls,[
+    {label:'Delivery',data:months.map(m=>byM[m].delivery),backgroundColor:'#34D399',borderRadius:3},
+    {label:'Matriz → Unidade',data:months.map(m=>byM[m].m2u),backgroundColor:'#7C3AED',borderRadius:3},
+    {label:'Unidade → Matriz',data:months.map(m=>byM[m].u2m),backgroundColor:'#F59E0B',borderRadius:3},
+    {label:'Entre Unidades',data:months.map(m=>byM[m].entre),backgroundColor:'#F87171',borderRadius:3},
+  ]);
+}
+let _transfLvtRows=[];
+function _transfRenderLevantamento(lvt){
+  _transfLvtRows=lvt;
+  document.getElementById('transf_lvt_tbody').innerHTML=lvt.length
+    ?lvt.map(r=>'<tr><td><strong>'+esc(r.emp)+'</strong></td><td>'+(MESES[+r.mes]||r.mes)+'/'+r.ano+'</td>'
+      +'<td style="text-align:right;font-weight:600">'+BRL(r.geral)+'</td>'
+      +'<td style="text-align:right;color:var(--green2)">'+BRL(r.delivery)+'</td>'
+      +'<td style="text-align:right;color:var(--purple2)">'+BRL(r.m2u)+'</td>'
+      +'<td style="text-align:right;color:var(--amber)">'+BRL(r.u2m)+'</td>'
+      +'<td style="text-align:right;color:var(--red2)">'+BRL(r.entre)+'</td>'
+      +'<td style="text-align:right;font-weight:700">'+BRL(r.geral)+'</td></tr>').join('')
+    :'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">Nenhum dado no periodo selecionado</td></tr>';
+}
+function transfExportXLSX(){
+  if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+  if(!_transfLvtRows.length) return alert('Nenhum dado para exportar com os filtros atuais.');
+  const MC=['Fretes Gerais (R$)','Frete Delivery (R$)','Frete Transferencia Matriz->Unidade (R$)','Frete Transferencia Unidade->Matriz (R$)','Frete Entre Unidades (R$)','Total Fretes (R$)'];
+  const data=_transfLvtRows.map(r=>({
+    'Unidade':r.emp,
+    'Mes':((MESES[+r.mes]||r.mes)+'').toUpperCase().slice(0,3)+'/'+r.ano,
+    [MC[0]]:+r.geral.toFixed(2),
+    [MC[1]]:+r.delivery.toFixed(2),
+    [MC[2]]:+r.m2u.toFixed(2),
+    [MC[3]]:+r.u2m.toFixed(2),
+    [MC[4]]:+r.entre.toFixed(2),
+    [MC[5]]:+r.geral.toFixed(2),
+  }));
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+  const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+  MC.forEach(h=>{
+    const ci=hdr.indexOf(h);
+    if(ci>=0) for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+  });
+  XLSX.utils.book_append_sheet(wb,ws,'Levantamento Geral');
+  XLSX.writeFile(wb,'levantamento_frete_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+window.transfExportXLSX=transfExportXLSX;
+function _transfRenderComercialOp(rows,freByEmp){
   const rowsCom=rows.filter(d=>!isTransferencia(d)),rowsOp=rows.filter(d=>isTransferencia(d));
   const totCom=rowsCom.reduce((s,d)=>s+d.valor_frete,0),totOp=rowsOp.reduce((s,d)=>s+d.valor_frete,0);
   const totAll=totCom+totOp||1;
@@ -3104,25 +3277,25 @@ function _empRenderComercialOp(rows,freByEmp){
     if(state.meses.length&&!state.meses.includes(mes)) return;
     _totalTransfFat+=cnt;
   });
-  document.getElementById('emp_frete_com').textContent=BRL(totCom);
-  document.getElementById('emp_frete_com_sub').textContent=N(rowsCom.length)+' NF-e de venda';
-  document.getElementById('emp_frete_op').textContent=BRL(totOp);
-  document.getElementById('emp_frete_op_sub').textContent=N(rowsOp.length)+' NF-e de transferencia';
-  document.getElementById('emp_qtd_transf').textContent=N(rowsOp.length);
-  document.getElementById('emp_qtd_transf_fat').textContent=N(_totalTransfFat)+' no faturamento';
-  document.getElementById('emp_pct_op').textContent=(totOp/totAll*100).toFixed(1)+'%';
+  document.getElementById('transf_frete_com').textContent=BRL(totCom);
+  document.getElementById('transf_frete_com_sub').textContent=N(rowsCom.length)+' NF-e de venda';
+  document.getElementById('transf_frete_op').textContent=BRL(totOp);
+  document.getElementById('transf_frete_op_sub').textContent=N(rowsOp.length)+' NF-e de transferencia';
+  document.getElementById('transf_qtd').textContent=N(rowsOp.length);
+  document.getElementById('transf_qtd_fat').textContent=N(_totalTransfFat)+' no faturamento';
+  document.getElementById('transf_pct_op').textContent=(totOp/totAll*100).toFixed(1)+'%';
   const _byDest={};
   rowsOp.forEach(d=>{const dest=resolveEmpDest(d);_byDest[dest]=(_byDest[dest]||0)+1;});
   const _destEntries=Object.entries(_byDest).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('emp_transf_destinos_lbl').textContent=state.empresas.length===1?'Destinos de '+state.empresas[0]+' (com CTe):':'Destinos das transferencias (com CTe):';
-  document.getElementById('emp_transf_destinos').innerHTML=_destEntries.length
+  document.getElementById('transf_destinos_lbl').textContent=state.empresas.length===1?'Destinos de '+state.empresas[0]+' (com CTe):':'Destinos das transferencias (com CTe):';
+  document.getElementById('transf_destinos').innerHTML=_destEntries.length
     ?_destEntries.map(([k,v])=>'<span class="chip chip-gray" style="font-size:10px"><b>'+esc(k)+'</b>: '+N(v)+'</span>').join('')
     :'<span style="color:var(--text3)">-</span>';
   const allEmps2=[...new Set(rows.map(d=>d.empresa).filter(Boolean))].sort();
   const byCom={},byOp2={};
   rowsCom.forEach(d=>{const e=d.empresa||'?';byCom[e]=(byCom[e]||0)+d.valor_frete;});
   rowsOp.forEach(d=>{const e=d.empresa||'?';byOp2[e]=(byOp2[e]||0)+d.valor_frete;});
-  mkGrouped('ch_emp_tipo',allEmps2,[
+  mkGrouped('ch_transf_tipo',allEmps2,[
     {label:'Comercial (Vendas)',data:allEmps2.map(e=>byCom[e]||0),backgroundColor:'#69AFFA',borderRadius:3},
     {label:'Operacional (Transf.)',data:allEmps2.map(e=>byOp2[e]||0),backgroundColor:'#7C3AED',borderRadius:3},
   ]);
@@ -3137,7 +3310,7 @@ function _empRenderComercialOp(rows,freByEmp){
     const topUf=Object.entries(v.destUfs).sort((a,b)=>b[1]-a[1])[0];
     return{emp,qtd:v.qtd,frete:v.frete,pctEmp:freByEmp[emp]?(v.frete/freByEmp[emp]*100):0,topUf:topUf?topUf[0]:'-',ticket:v.qtd?v.frete/v.qtd:0};
   }).sort((a,b)=>b.frete-a.frete);
-  document.getElementById('emp_transf_tbody').innerHTML=opList.length
+  document.getElementById('transf_tbody').innerHTML=opList.length
     ?opList.map(o=>{
       const pC=o.pctEmp>30?'color:var(--red2)':o.pctEmp>15?'color:var(--amber)':'color:var(--green2)';
       return'<tr>'
@@ -3149,14 +3322,14 @@ function _empRenderComercialOp(rows,freByEmp){
     }).join('')
     :'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia no periodo selecionado</td></tr>';
 }
-function _empRenderHumana(rows,freByEmp){
+function _transfRenderHumana(rows,freByEmp){
   const rowsHu=rows.filter(d=>HU_CLI.test(d.cliente||''));
   const totHuFrete=rowsHu.reduce((s,d)=>s+d.valor_frete,0);
   const totFreteGlobal=rows.reduce((s,d)=>s+d.valor_frete,0)||1;
-  document.getElementById('emp_hu_qtd').textContent=N(rowsHu.length);
-  document.getElementById('emp_hu_frete').textContent=BRL(totHuFrete);
-  document.getElementById('emp_hu_pct').textContent=(totHuFrete/totFreteGlobal*100).toFixed(1)+'% do frete total';
-  document.getElementById('emp_hu_ticket').textContent=rowsHu.length?BRL(totHuFrete/rowsHu.length):'-';
+  document.getElementById('transf_hu_qtd').textContent=N(rowsHu.length);
+  document.getElementById('transf_hu_frete').textContent=BRL(totHuFrete);
+  document.getElementById('transf_hu_pct').textContent=(totHuFrete/totFreteGlobal*100).toFixed(1)+'% do frete total';
+  document.getElementById('transf_hu_ticket').textContent=rowsHu.length?BRL(totHuFrete/rowsHu.length):'-';
   const huMap={};
   rowsHu.forEach(d=>{
     const k=(d.empresa||'?')+'||'+(d.cliente||'?');
@@ -3164,7 +3337,7 @@ function _empRenderHumana(rows,freByEmp){
     huMap[k].qtd++;huMap[k].frete+=d.valor_frete;
     if(d.destino_uf) huMap[k].uf=d.destino_uf;
   });
-  document.getElementById('emp_hu_tbody').innerHTML=Object.values(huMap).sort((a,b)=>b.frete-a.frete).map(h=>{
+  document.getElementById('transf_hu_tbody').innerHTML=Object.values(huMap).sort((a,b)=>b.frete-a.frete).map(h=>{
     const pct=freByEmp[h.emp]?(h.frete/freByEmp[h.emp]*100).toFixed(1):'-';
     return'<tr>'
       +'<td><strong>'+esc(h.emp)+'</strong></td>'
@@ -3176,14 +3349,14 @@ function _empRenderHumana(rows,freByEmp){
       +'<td style="color:var(--text2)">'+BRL(h.qtd?h.frete/h.qtd:0)+'</td></tr>';
   }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia interna no periodo selecionado</td></tr>';
 }
-function _empRenderTransfSemCte(){
+function _transfRenderSemCte(){
   const rows=(DATA.transf_sem_cte||[]).filter(d=>{
     if(state.empresas.length&&!state.empresas.includes(d.empresa)) return false;
     if(state.ano&&(d.data||'').slice(6,10)!==state.ano) return false;
     if(state.meses.length&&!state.meses.includes((d.data||'').slice(3,5))) return false;
     return true;
   });
-  document.getElementById('emp_transf_sem_cte_tbody').innerHTML=rows.length
+  document.getElementById('transf_sem_cte_tbody').innerHTML=rows.length
     ?rows.sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
       const cnpjRaw=(d.part_cnpj||'').replace(/\D/g,'');
       const cnpjFmt=cnpjRaw.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
@@ -3204,42 +3377,21 @@ function _empRenderTransfSemCte(){
     }).join('')
     :'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:16px">Nenhuma transferencia sem CTe no periodo selecionado</td></tr>';
 }
-function _empRenderPeriodo(rows,empList){
-  const parts=[];
-  if(state.ano) parts.push(state.ano);
-  if(state.meses.length===1) parts.push(MESES[+state.meses[0]]||state.meses[0]);
-  else if(state.meses.length>1) parts.push(state.meses.length+' meses');
-  if(state.empresas.length===1) parts.push(state.empresas[0]);
-  else if(state.empresas.length>1) parts.push(state.empresas.length+' empresas');
-  if(state.linha) parts.push(state.linha);
-  if(state.canal) parts.push('Canal: '+state.canal);
-  if(state.estado) parts.push('UF: '+state.estado);
-  if(state.transp) parts.push('Transp: '+trName(state.transp));
-  document.getElementById('emp_periodo_txt').innerHTML=
-    (parts.length?'<strong>Exibindo:</strong> '+parts.join(' - '):'<strong>Exibindo:</strong> Todos os periodos - Todas as empresas')
-    +' &nbsp;<span style="color:var(--text3);font-size:11px">('+N(rows.length)+' NF-e vinculadas)</span>';
-  _empTlRows=rows;
-  const empTlSel=document.getElementById('emp_tl_emp');
-  const curEmpTl=empTlSel.value;
-  empTlSel.innerHTML='<option value="">Todas as empresas</option>';
-  empList.forEach(e=>{
-    const o=document.createElement('option');o.value=e.emp;o.textContent=e.emp;
-    if(e.emp===curEmpTl) o.selected=true;
-    empTlSel.appendChild(o);
-  });
-  buildEmpTimeline();
+function _transfRenderPeriodo(rows){
+  const el=document.getElementById('transf_periodo_txt');
+  if(el) el.innerHTML=_periodoLabelHTML(rows);
 }
-function renderEmpresa(){
+function renderTransferencias(){
   const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
-  const {empList,trGlobal,totalG,freByEmp}=_empAggregate(rows);
-  _empRenderKPIs(empList,totalG);
-  _empRenderCharts(empList,trGlobal);
-  _empRenderTabelaEmpresas(empList,totalG);
-  _empRenderTabelaTransp(empList,totalG);
-  _empRenderComercialOp(rows,freByEmp);
-  _empRenderHumana(rows,freByEmp);
-  _empRenderTransfSemCte();
-  _empRenderPeriodo(rows,empList);
+  const {freByEmp}=_empAggregate(rows);
+  const lvt=_transfBuildLevantamento(rows);
+  _transfRenderKPIs(lvt);
+  _transfRenderEvolucao(lvt);
+  _transfRenderLevantamento(lvt);
+  _transfRenderComercialOp(rows,freByEmp);
+  _transfRenderHumana(rows,freByEmp);
+  _transfRenderSemCte();
+  _transfRenderPeriodo(rows);
 }
 // Posiciona um .ms-dropdown (position:fixed) abaixo do seu botao.
 // O header.topbar usa backdrop-filter, o que o torna o containing block dos
@@ -4173,7 +4325,7 @@ function initApp(){
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','empresa':'Por Empresa','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -4186,6 +4338,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     document.getElementById('tab-'+tab).classList.add('active');
     const _bc=document.getElementById('tb-bc-page');if(_bc)_bc.textContent=_TAB_NAMES[tab]||tab;
     if(tab==='empresa') renderEmpresa();
+    else if(tab==='transferencias') renderTransferencias();
     else if(tab==='marketplace') renderMarketplace();
     else if(tab==='clientes') renderClientes();
     else if(tab==='compras'&&window._renderCompras) window._renderCompras();
@@ -4241,6 +4394,7 @@ const ALL_TABS_INFO=[
   {id:'dev-mkt',label:'Devoluções Marketplace'},
   {id:'separacao',label:'Separação'},
   {id:'empresa',label:'Por Empresa'},
+  {id:'transferencias',label:'Transferências'},
   {id:'operacional',label:'Operacional'},
   {id:'natop',label:'Por Tipo de Venda'},
   {id:'clientes',label:'Por Cliente'},
@@ -4377,7 +4531,9 @@ function adminEditUser(uid){
   document.getElementById('admin-email').disabled=true;
   document.getElementById('admin-name').value=u.displayName||'';
   document.getElementById('admin-pass').value='';
-  document.getElementById('admin-pass').placeholder='Nova senha (vazio = não alterar)';
+  document.getElementById('admin-pass').placeholder='Não editável';
+  document.getElementById('admin-pass').disabled=true;
+  document.getElementById('admin-pass-hint').style.display='block';
   document.getElementById('admin-is-admin').checked=!!u.isAdmin;
   document.querySelectorAll('#admin-emp-checks .perm-chip').forEach(chip=>chip.classList.toggle('active',(u.empresas||[]).includes(chip.dataset.emp)));
   document.querySelectorAll('#admin-tab-checks .perm-chip').forEach(chip=>chip.classList.toggle('active',u.isAdmin||(u.tabs||[]).includes(chip.dataset.tabid)));
@@ -4389,7 +4545,9 @@ function adminCancelEdit(){
   _editingUid=null;
   document.getElementById('admin-user-form').reset();
   document.getElementById('admin-email').disabled=false;
+  document.getElementById('admin-pass').disabled=false;
   document.getElementById('admin-pass').placeholder='Senha inicial (obrigatório para novo usuário)';
+  document.getElementById('admin-pass-hint').style.display='none';
   document.querySelectorAll('.perm-chip').forEach(c=>c.classList.remove('active'));
   document.getElementById('admin-form-msg').style.display='none';
   document.getElementById('admin-form-err').style.display='none';
