@@ -788,6 +788,29 @@ def _carregar_volumetria_detalhe():
         return []
 
 
+def _carregar_volumetria_lookup():
+    """Carrega TODAS as linhas de volumetria_nfe (não só as de entregadores) num
+    dict chave_acesso -> {transp_nome, canal}. Usado para enriquecer a lista de
+    NF-e de transferência sem CT-e vinculado: mesmo sem CT-e no nosso banco (gap
+    do buscar_cte.py), o relatório de Volumetria do ERP pode ter identificado a
+    transportadora real que fez o transporte."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volumetria_nfe'")
+        if not cur.fetchone():
+            conn.close(); return {}
+        rows = cur.execute("SELECT chave_acesso, transp_nome, canal FROM volumetria_nfe").fetchall()
+        conn.close()
+        return {r["chave_acesso"]: {"transp_nome": r["transp_nome"] or "", "canal": r["canal"] or ""} for r in rows}
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar lookup de volumetria_nfe: {e}")
+        return {}
+
+
 def _carregar_import_log(limite=60):
     """Carrega do banco SQLite o histórico recente de execuções dos scripts de
     importação/busca (tabela import_log), para exibir no Painel Admin."""
@@ -1206,17 +1229,21 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         nat = nf.get("nat_operacao") or "N/A"
         nat_op_sem_cte[nat] = nat_op_sem_cte.get(nat, 0) + 1
     # NF-e de transferência do faturamento sem CTe vinculado
+    _vol_lookup = _carregar_volumetria_lookup()
     transf_sem_cte_list=[]
     for chave,nf in nfe_map.items():
         if chave in linked_nfe_chaves: continue
         _nat=nf.get("nat_operacao") or ""; _cod=nf.get("cod_nat_operacao") or ""
         if not(_nat_transf_py.search(_nat) or _nat_transf_py.search(_cod)): continue
+        _vol = _vol_lookup.get(chave) or {}
         transf_sem_cte_list.append({
             "empresa":nf.get("empresa") or "","numero":nf.get("numero") or "",
             "data":nf.get("data_emissao") or "","cliente":nf.get("participante") or "",
             "cidade":nf.get("cidade") or "","estado":nf.get("estado") or "",
             "part_cnpj":nf.get("part_cnpj") or "","nat_operacao":_nat,
             "total_nf":round(nf.get("total_nf") or 0,2),
+            "transp_volumetria": _vol.get("transp_nome") or "",
+            "canal_volumetria": _vol.get("canal") or "",
         })
     def make_list(d,key="frete"):
         return sorted([{"label":k,**v} for k,v in d.items()],key=lambda x:-x[key])
