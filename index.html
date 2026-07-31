@@ -1437,8 +1437,8 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Venda</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="border-top:2px solid var(--bd2);font-weight:700"></tr></tfoot></table></div>
   </div>
   <div class="card" style="margin-top:16px">
-    <div class="card-title">Matriz de Frete — Unidade Origem x Destino<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Visão alternativa do mesmo dado do Levantamento Geral, somado no período filtrado (sem quebra por mês): cada linha é uma unidade origem (quem emitiu a nota e pagou o frete) e cada coluna é para onde aquele frete foi — outra unidade do grupo, ou as colunas fixas Venda (cliente externo) e Delivery (entregador autônomo). Ex.: a célula na linha BRU1/coluna CMP é o valor de "Matriz → Unidade" especificamente para Campinas. A coluna Total confere com "Fretes Gerais" da mesma unidade no Levantamento Geral.</span></span></div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-x:auto;overflow-y:auto" id="transf_matrix_wrap"></div>
+    <div class="card-title">Custo de Transferência por Unidade<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Ranking das unidades pelo custo total de transferência no período filtrado (soma de todos os meses), com a quebra por categoria em cada barra. Quanto maior a barra, mais aquela unidade gastou emitindo notas de transferência — a cor mostra se foi enviando da Matriz, devolvendo para a Matriz, ou mandando direto para outra unidade.</span></span></div>
+    <div class="ch-wrap-lg"><canvas id="ch_transf_rank"></canvas></div>
   </div>
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -3243,7 +3243,14 @@ function _transfDestino(d){ return CNPJ_EMPRESA[d.dest_cnpj]||''; }
 // 'm2u' (Matriz->Unidade), 'u2m' (Unidade->Matriz) ou 'entre' (lateral, sem tocar a Matriz)
 function _transfCategoria(d){
   const destino=_transfDestino(d);
-  if(!destino) return null;
+  // Sem destino identificado, ou destino igual a propria empresa emissora: nao e
+  // transferencia real. O caso "destino===d.empresa" aparece quando uma NF-e tem
+  // mais de um CT-e vinculado (redespacho/subcontratacao) — o CT-e da etapa
+  // intermediaria pode ter a propria empresa como destinatario, mas a venda em si
+  // e normal (o outro CT-e da mesma NF-e ja aponta pro cliente real). Confirmado
+  // com dados reais (jul/2026): 54 casos assim em BRU1, todos com nat_operacao de
+  // venda/devolucao normal, nao transferencia de estoque.
+  if(!destino || destino===d.empresa) return null;
   if(d.empresa===MATRIZ_UNIDADE) return 'm2u';
   if(destino===MATRIZ_UNIDADE) return 'u2m';
   return 'entre';
@@ -3579,54 +3586,37 @@ function transfDetExportXLSX(){
   XLSX.writeFile(wb,'transferencias_detalhe_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 window.transfDetExportXLSX=transfDetExportXLSX;
-// Matriz Unidade Origem x Destino — mesmo dado do Levantamento Geral, sem quebra por
-// mes, com Venda/Delivery como colunas fixas (nao tem "unidade destino" propria)
-function _transfRenderMatrix(rows){
-  const dlvRows=_transfDeliveryRows();
+// Ranking horizontal: custo de transferencia por unidade origem, empilhado por
+// categoria — substitui a Matriz Unidade x Unidade (usuario achou confusa)
+function _transfRenderRankingChart(rows){
   const byOrigem={};
-  const ensure=emp=>{ if(!byOrigem[emp]) byOrigem[emp]={venda:0,delivery:0,destinos:{}}; return byOrigem[emp]; };
-  const unidadesSet=new Set();
   rows.forEach(d=>{
-    if(!d.empresa) return;
-    unidadesSet.add(d.empresa);
-    const o=ensure(d.empresa);
-    const destino=_transfDestino(d);
-    if(destino){ unidadesSet.add(destino); o.destinos[destino]=(o.destinos[destino]||0)+d.valor_frete; }
-    else o.venda+=d.valor_frete;
+    const cat=_transfCategoria(d);
+    if(!cat) return;
+    if(!byOrigem[d.empresa]) byOrigem[d.empresa]={m2u:0,u2m:0,entre:0};
+    byOrigem[d.empresa][cat]+=d.valor_frete;
   });
-  dlvRows.forEach(d=>{
-    if(!d.empresa) return;
-    unidadesSet.add(d.empresa);
-    ensure(d.empresa).delivery+=d.valor_servico||0;
+  const units=Object.keys(byOrigem).sort((a,b)=>{
+    const totA=byOrigem[a].m2u+byOrigem[a].u2m+byOrigem[a].entre;
+    const totB=byOrigem[b].m2u+byOrigem[b].u2m+byOrigem[b].entre;
+    return totA-totB; // asc — barra horizontal desenha de baixo pra cima
   });
-  const wrap=document.getElementById('transf_matrix_wrap');
-  if(!wrap) return;
-  const unidades=[...unidadesSet].sort();
-  const rowUnits=Object.keys(byOrigem).sort();
-  if(!rowUnits.length){ wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum dado no periodo selecionado</div>'; return; }
-  const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
-  const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
-  let html='<table style="border-collapse:separate;border-spacing:2px;min-width:100%">';
-  html+='<thead><tr><th style="'+thBase+';text-align:left;'+stickyBase+'">Unidade Origem</th>';
-  html+='<th style="'+thBase+';color:var(--blue2)">Venda</th><th style="'+thBase+';color:var(--green2)">Delivery</th>';
-  unidades.forEach(u=>{ html+='<th style="'+thBase+'">'+esc(u)+'</th>'; });
-  html+='<th style="'+thBase+';border-left:2px solid var(--bd2)">Total</th></tr></thead><tbody>';
-  rowUnits.forEach(emp=>{
-    const o=byOrigem[emp];
-    const totDest=Object.values(o.destinos).reduce((s,v)=>s+v,0);
-    const total=o.venda+o.delivery+totDest;
-    html+='<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;'+stickyBase+'">'+esc(emp)+'</td>';
-    html+='<td style="text-align:center;padding:5px 8px;color:var(--blue2)">'+(o.venda?BRL(o.venda):'-')+'</td>';
-    html+='<td style="text-align:center;padding:5px 8px;color:var(--green2)">'+(o.delivery?BRL(o.delivery):'-')+'</td>';
-    unidades.forEach(u=>{
-      const v=o.destinos[u]||0;
-      const isSelf=u===emp;
-      html+='<td style="text-align:center;padding:5px 8px'+(isSelf?';background:var(--input-bg)':'')+';color:var(--purple2)">'+(v?BRL(v):'-')+'</td>';
-    });
-    html+='<td style="text-align:center;padding:5px 10px;font-weight:800;color:var(--text);border-left:2px solid var(--bd2)">'+BRL(total)+'</td></tr>';
+  _chartUpdate('ch_transf_rank','bar',{
+    labels:units,
+    datasets:[
+      {label:'Matriz → Unidade',data:units.map(u=>byOrigem[u].m2u),backgroundColor:'#7C3AED',borderRadius:3},
+      {label:'Unidade → Matriz',data:units.map(u=>byOrigem[u].u2m),backgroundColor:'#F59E0B',borderRadius:3},
+      {label:'Entre Unidades',data:units.map(u=>byOrigem[u].entre),backgroundColor:'#F87171',borderRadius:3},
+    ]
+  },{
+    indexAxis:'y',
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},
+    scales:{
+      x:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}},
+      y:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}}
+    }
   });
-  html+='</tbody></table>';
-  wrap.innerHTML=html;
 }
 function renderTransferencias(){
   const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
@@ -3635,7 +3625,7 @@ function renderTransferencias(){
   _transfRenderKPIs(lvt);
   _transfRenderEvolucao(lvt);
   _transfRenderLevantamento(lvt);
-  _transfRenderMatrix(rows);
+  _transfRenderRankingChart(rows);
   _transfBuildDetalhe(rows);
   _transfRenderDetalhe();
   _transfRenderComercialOp(rows,freByEmp);
