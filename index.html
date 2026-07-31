@@ -3521,17 +3521,22 @@ window.transfDetExportXLSX=transfDetExportXLSX;
 // categoria — substitui a Matriz Unidade x Unidade (usuario achou confusa)
 function _transfRenderRankingChart(rows){
   const byOrigem={};
+  const byOrigemDestino={}; // empresa -> categoria -> {destino: valor} — pra detalhar no tooltip
   rows.forEach(d=>{
     const cat=_transfCategoria(d);
     if(!cat) return;
     if(!byOrigem[d.empresa]) byOrigem[d.empresa]={m2u:0,u2m:0,entre:0};
     byOrigem[d.empresa][cat]+=d.valor_frete;
+    if(!byOrigemDestino[d.empresa]) byOrigemDestino[d.empresa]={m2u:{},u2m:{},entre:{}};
+    const destino=_transfDestino(d)||'Destino não identificado';
+    byOrigemDestino[d.empresa][cat][destino]=(byOrigemDestino[d.empresa][cat][destino]||0)+d.valor_frete;
   });
   const units=Object.keys(byOrigem).sort((a,b)=>{
     const totA=byOrigem[a].m2u+byOrigem[a].u2m+byOrigem[a].entre;
     const totB=byOrigem[b].m2u+byOrigem[b].u2m+byOrigem[b].entre;
     return totA-totB; // asc — barra horizontal desenha de baixo pra cima
   });
+  const _catKey={'Matriz → Unidade':'m2u','Unidade → Matriz':'u2m','Entre Unidades':'entre'};
   _chartUpdate('ch_transf_rank','bar',{
     labels:units,
     datasets:[
@@ -3542,7 +3547,17 @@ function _transfRenderRankingChart(rows){
   },{
     indexAxis:'y',
     responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+BRL(c.raw)}}},
+    plugins:{
+      legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},
+      tooltip:{callbacks:{
+        label:c=>' '+c.dataset.label+': '+BRL(c.raw),
+        afterLabel:c=>{
+          const catKey=_catKey[c.dataset.label];
+          const porDestino=(byOrigemDestino[c.label]||{})[catKey]||{};
+          return Object.entries(porDestino).sort((a,b)=>b[1]-a[1]).map(([nome,val])=>'   → '+nome+': '+BRL(val));
+        }
+      }}
+    },
     scales:{
       x:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>BRL(v),font:{size:10},color:'#8A8F98'}},
       y:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}}
