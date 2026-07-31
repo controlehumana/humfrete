@@ -1193,6 +1193,73 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
 </div>
 
+<div id="transf-espelho-modal" class="nv-esp-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="nv-esp-wrap">
+    <div id="transf-espelho-print">
+      <div class="nv-esp-header">
+        <div><div class="nv-esp-title" id="tesp_dest_nome">—</div><div class="nv-esp-subtitle">Espelho da NF-e de Transferência — sem CT-e vinculado no dashboard</div></div>
+        <div style="text-align:right;font-size:10px;opacity:.8"><div>NF-e Modelo <strong>55</strong> · Transferência</div></div>
+      </div>
+      <div style="background:#fffbe6;border-left:3px solid #f59e0b;padding:6px 10px;font-size:10px;color:#92400e">Esta nota não tem CT-e vinculado no nosso banco (não encontrado via API Arquivei/Qive). Os dados abaixo vêm direto da NF-e (XML), buscada pela chave de acesso — servem para investigar manualmente se houve transporte real.</div>
+      <div class="nv-esp-section">
+        <div class="nv-esp-row">
+          <div class="nv-esp-cell" style="flex:2"><span class="nv-esp-lbl">Número</span><span class="nv-esp-val" id="tesp_numero" style="font-size:14px;font-weight:700;color:#1a3a5c">—</span></div>
+          <div class="nv-esp-cell" style="flex:2"><span class="nv-esp-lbl">Data de Emissão</span><span class="nv-esp-val" id="tesp_data">—</span></div>
+          <div class="nv-esp-cell" style="flex:2"><span class="nv-esp-lbl">Empresa Emitente</span><span class="nv-esp-val" id="tesp_empresa" style="font-weight:700;color:#1a3a5c">—</span></div>
+          <div class="nv-esp-cell" style="flex:3"><span class="nv-esp-lbl">Natureza da Operação</span><span class="nv-esp-val" id="tesp_natop">—</span></div>
+        </div>
+        <div class="nv-esp-block">
+          <span class="nv-esp-lbl">Chave de Acesso (44 dígitos)</span>
+          <span class="nv-esp-val nv-esp-chave" id="tesp_chave">—</span>
+        </div>
+      </div>
+      <div class="nv-esp-section">
+        <div class="nv-esp-block">
+          <div class="nv-esp-block-title">Destinatário</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div style="flex:2;min-width:160px"><span class="nv-esp-lbl">Nome / Razão Social</span><span class="nv-esp-val" id="tesp_dest_nome2">—</span></div>
+            <div><span class="nv-esp-lbl">CNPJ</span><span class="nv-esp-val" id="tesp_dest_cnpj" style="font-family:monospace">—</span></div>
+            <div><span class="nv-esp-lbl">Cidade / UF</span><span class="nv-esp-val" id="tesp_dest_local">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nv-esp-section">
+        <div class="nv-esp-row">
+          <div class="nv-esp-cell"><span class="nv-esp-lbl">Valor Total da Nota</span><span class="nv-esp-val" id="tesp_total" style="font-size:13px;font-weight:700;color:#1a3a5c">—</span></div>
+        </div>
+      </div>
+      <div class="nv-esp-section" id="tesp_itens_wrap" style="display:none">
+        <div class="nv-esp-block-title" style="margin-bottom:6px">Itens da Nota</div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="border-bottom:1px solid #ddd"><th style="text-align:left;padding:3px 6px">Descrição</th><th style="text-align:left;padding:3px 6px">CFOP</th><th style="text-align:right;padding:3px 6px">Qtd</th><th style="text-align:right;padding:3px 6px">Vlr Unit.</th><th style="text-align:right;padding:3px 6px">Vlr Total</th></tr></thead>
+          <tbody id="tesp_itens_tbody"></tbody>
+        </table>
+      </div>
+      <div class="nv-esp-section" id="tesp_transp_section" style="display:none">
+        <div class="nv-esp-block">
+          <div class="nv-esp-block-title">Transporte (bloco &lt;transp&gt; da NF-e)</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div style="flex:2;min-width:160px"><span class="nv-esp-lbl">Transportadora Declarada na Nota</span><span class="nv-esp-val" id="tesp_transp">—</span></div>
+            <div><span class="nv-esp-lbl">CNPJ</span><span class="nv-esp-val" id="tesp_transp_cnpj" style="font-family:monospace">—</span></div>
+            <div><span class="nv-esp-lbl">Peso Bruto</span><span class="nv-esp-val" id="tesp_peso">—</span></div>
+            <div><span class="nv-esp-lbl">Qtd. Volumes</span><span class="nv-esp-val" id="tesp_volumes">—</span></div>
+          </div>
+        </div>
+        <div class="nv-esp-block">
+          <span class="nv-esp-lbl">Informações Complementares (campo livre da nota)</span>
+          <span class="nv-esp-val" id="tesp_infcpl" style="font-size:11px">—</span>
+        </div>
+      </div>
+      <div id="tesp_sem_espelho" style="display:none;padding:10px;font-size:11px;color:var(--text3);background:var(--s2);border-radius:6px">Espelho completo (itens/transporte) ainda não foi buscado pra essa nota — rode <code>buscar_nfe_espelho.py</code> pra atualizar.</div>
+      <div style="font-size:9px;color:#888;text-align:right;padding:4px 8px;background:#f8f9fa;border-top:1px solid #eee">Gerado pelo Dashboard de Gestão de Fretes — Controle Humana</div>
+    </div>
+    <div class="nv-esp-btns">
+      <button class="nv-esp-btn nv-esp-btn-close" onclick="document.getElementById('transf-espelho-modal').style.display='none'">Fechar</button>
+      <button class="nv-esp-btn nv-esp-btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir / Salvar PDF</button>
+    </div>
+  </div>
+</div>
+
 <!-- TAB COMPRAS -->
 <div id="tab-compras" class="tab-panel">
   <div class="sdiv">Frete de Entrada - Custo Logistico nas Compras</div>
@@ -1481,7 +1548,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
   <div class="card">
     <div class="card-title" style="margin-bottom:10px">NF-e de Transferencia Sem CT-e Vinculado<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">NF-e de transferencia sem CT-e no nosso banco (nao encontrado via API Arquivei/Qive). Quando o relatorio de Volumetria do ERP identifica uma transportadora para essa NF-e, ela aparece na coluna "Transportadora (Volumetria)" — significa que o transporte existiu de verdade, so nao foi baixado pelo buscar_cte.py (possivel lacuna: nosso CNPJ pode nao ser o tomador desse CT-e). Linhas sem transportadora na Volumetria provavelmente sao retirada no balcao, sem transporte formal.</span></span></div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th>Transportadora (Volumetria)</th><th style="text-align:right">Valor NF</th></tr></thead><tbody id="transf_sem_cte_tbody"></tbody></table></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th>Transportadora (Volumetria)</th><th style="text-align:right">Valor NF</th><th>Ver NF-e</th></tr></thead><tbody id="transf_sem_cte_tbody"></tbody></table></div>
   </div>
 </div>
 
@@ -1715,6 +1782,16 @@ async function _loadData(empresas) {
         .filter(r => r.status === 'fulfilled' && r.value.exists)
         .flatMap(r => { try { return JSON.parse(r.value.data().payload).items || []; } catch(e){ return []; } });
     }
+    const nEspChunks = data.espelho_chunks || 0;
+    if (nEspChunks > 0) {
+      const espChunkIds = Array.from({length: nEspChunks}, (_, i) => emp + '_esp_' + String(i).padStart(3, '0'));
+      const espChunkResults = await Promise.allSettled(espChunkIds.map(id => _db.collection('dados').doc(id).get()));
+      const espFailed = espChunkResults.filter(r => r.status === 'rejected').length;
+      if (espFailed > 0) console.warn(emp + ': ' + espFailed + '/' + nEspChunks + ' chunks de espelho falharam');
+      data.transf_espelho = espChunkResults
+        .filter(r => r.status === 'fulfilled' && r.value.exists)
+        .flatMap(r => { try { return JSON.parse(r.value.data().payload).items || []; } catch(e){ return []; } });
+    }
     return data;
   }));
   DATA = _mergeData(datas);
@@ -1754,6 +1831,7 @@ function _mergeData(datas) {
     volumetria_detalhe: datas.flatMap(d=>d.volumetria_detalhe||[]),
     separacao_detalhe: Object.assign({}, ...datas.map(d=>d.separacao_detalhe||{})),
     transf_sem_cte: datas.flatMap(d=>d.transf_sem_cte||[]),
+    transf_espelho: datas.flatMap(d=>d.transf_espelho||[]),
     transf_fat: Object.assign({}, ...datas.map(d=>d.transf_fat||{})),
     resumo: {
       ...(datas[0]?.resumo||{}),
@@ -3449,15 +3527,17 @@ function _transfRenderHumana(rows,freByEmp){
       +'<td style="color:var(--text2)">'+BRL(h.qtd?h.frete/h.qtd:0)+'</td></tr>';
   }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia entre unidades no periodo selecionado</td></tr>';
 }
+let _transfSemCteRows=[];
 function _transfRenderSemCte(){
   const rows=(DATA.transf_sem_cte||[]).filter(d=>{
     if(state.empresas.length&&!state.empresas.includes(d.empresa)) return false;
     if(state.ano&&(d.data||'').slice(6,10)!==state.ano) return false;
     if(state.meses.length&&!state.meses.includes((d.data||'').slice(3,5))) return false;
     return true;
-  });
+  }).sort((a,b)=>a.data.localeCompare(b.data));
+  _transfSemCteRows=rows;
   document.getElementById('transf_sem_cte_tbody').innerHTML=rows.length
-    ?rows.sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
+    ?rows.map((d,idx)=>{
       const cnpjRaw=(d.part_cnpj||'').replace(/\D/g,'');
       const cnpjFmt=cnpjRaw.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
       const empNome=CNPJ_EMPRESA[cnpjRaw]||CNPJ_EMPRESA[d.part_cnpj]||'';
@@ -3478,10 +3558,62 @@ function _transfRenderSemCte(){
         +'<td style="font-size:11px"><span class="chip chip-gray">'+esc(d.cidade)+'/'+esc(d.estado)+'</span></td>'
         +'<td style="font-size:10px;color:var(--text3)">'+esc(d.nat_operacao)+'</td>'
         +'<td style="font-size:11px;line-height:1.4">'+transpHtml+'</td>'
-        +'<td style="text-align:right;color:var(--text2)">'+BRL(d.total_nf)+'</td></tr>';
+        +'<td style="text-align:right;color:var(--text2)">'+BRL(d.total_nf)+'</td>'
+        +'<td style="text-align:center"><button onclick="showEspelhoTransfSemCte('+idx+')" title="Ver NF-e" style="background:rgba(94,106,210,.15);border:1px solid rgba(94,106,210,.3);color:var(--blue2);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:10px"><i class="fa-solid fa-file-lines"></i></button></td></tr>';
     }).join('')
-    :'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">Nenhuma transferencia sem CTe no periodo selecionado</td></tr>';
+    :'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px">Nenhuma transferencia sem CTe no periodo selecionado</td></tr>';
 }
+function showEspelhoTransfSemCte(idx){
+  const d=_transfSemCteRows[idx];
+  if(!d) return;
+  const modal=document.getElementById('transf-espelho-modal');
+  if(!modal) return;
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val||'—';};
+  const setHtml=(id,val)=>{const el=document.getElementById(id);if(el)el.innerHTML=val||'—';};
+  const cnpjFmt=v=>{const c=(v||'').replace(/\D/g,'');return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5')||'—';};
+  const cnpjRaw=(d.part_cnpj||'').replace(/\D/g,'');
+  const empDestNome=CNPJ_EMPRESA[cnpjRaw]||CNPJ_EMPRESA[d.part_cnpj]||d.cliente||'—';
+  set('tesp_numero',d.numero);
+  set('tesp_data',d.data);
+  set('tesp_empresa',d.empresa);
+  set('tesp_natop',d.nat_operacao);
+  setHtml('tesp_chave',d.chave?'<span>'+esc(d.chave)+'</span>':'—');
+  set('tesp_dest_nome',empDestNome);
+  set('tesp_dest_nome2',empDestNome);
+  set('tesp_dest_cnpj',cnpjFmt(d.part_cnpj));
+  set('tesp_dest_local',(d.cidade||'—')+(d.estado?' / '+d.estado:''));
+  set('tesp_total',BRL(d.total_nf));
+  const esp=(DATA.transf_espelho||[]).find(e=>e.chave===d.chave);
+  const itensWrap=document.getElementById('tesp_itens_wrap');
+  if(esp&&esp.itens&&esp.itens.length){
+    document.getElementById('tesp_itens_tbody').innerHTML=esp.itens.map(it=>
+      '<tr><td style="font-size:11px">'+esc(it.descricao||'-')+'</td>'
+      +'<td style="font-size:10px;color:var(--text3)">'+esc(it.cfop||'-')+'</td>'
+      +'<td style="text-align:right;font-size:11px">'+N(it.qtd||0)+'</td>'
+      +'<td style="text-align:right;font-size:11px">'+BRL(it.valor_unit||0)+'</td>'
+      +'<td style="text-align:right;font-size:11px;font-weight:600">'+BRL(it.valor_total||0)+'</td></tr>'
+    ).join('');
+    itensWrap.style.display='';
+  } else {
+    itensWrap.style.display='none';
+  }
+  const transpSec=document.getElementById('tesp_transp_section');
+  const semEspelhoMsg=document.getElementById('tesp_sem_espelho');
+  if(esp){
+    transpSec.style.display='';
+    semEspelhoMsg.style.display='none';
+    set('tesp_transp',esp.transp_nome||'Nao informada na nota (retirada no balcao ou sem transportadora declarada)');
+    set('tesp_transp_cnpj',cnpjFmt(esp.transp_cnpj));
+    set('tesp_peso',esp.peso_bruto>0?N(esp.peso_bruto)+' kg':'—');
+    set('tesp_volumes',esp.qtd_volumes>0?N(esp.qtd_volumes):'—');
+    set('tesp_infcpl',esp.info_complementar||'(vazio)');
+  } else {
+    transpSec.style.display='none';
+    semEspelhoMsg.style.display='';
+  }
+  modal.style.display='block';
+}
+window.showEspelhoTransfSemCte=showEspelhoTransfSemCte;
 function _transfRenderPeriodo(rows){
   const el=document.getElementById('transf_periodo_txt');
   if(el) el.innerHTML=_periodoLabelHTML(rows);

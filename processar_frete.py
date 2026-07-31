@@ -847,6 +847,47 @@ def _carregar_volumetria_lookup():
         return {}
 
 
+def _carregar_nfe_espelho_lookup():
+    """Carrega os espelhos de NF-e de transferência sem CT-e já buscados via
+    QUIVE/buscar_nfe_espelho.py (itens, transportadora do bloco <transp>, peso,
+    informações complementares) — alimenta o botão "Ver NF-e" na aba
+    Transferências. Dict chave -> dict com os campos do espelho."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nfe_espelho'")
+        if not cur.fetchone():
+            conn.close(); return {}
+        rows = cur.execute(
+            "SELECT chave, empresa, transp_cnpj, transp_nome, peso_bruto, qtd_volumes, "
+            "info_complementar, itens_json FROM nfe_espelho"
+        ).fetchall()
+        conn.close()
+        resultado = {}
+        for r in rows:
+            try:
+                itens = json.loads(r["itens_json"] or "[]")
+            except (TypeError, ValueError):
+                itens = []
+            resultado[r["chave"]] = {
+                "chave": r["chave"],
+                "empresa": r["empresa"] or "",
+                "transp_cnpj": r["transp_cnpj"] or "",
+                "transp_nome": r["transp_nome"] or "",
+                "peso_bruto": round(r["peso_bruto"] or 0, 2),
+                "qtd_volumes": round(r["qtd_volumes"] or 0, 2),
+                "info_complementar": r["info_complementar"] or "",
+                "itens": itens,
+            }
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar lookup de nfe_espelho: {e}")
+        return {}
+
+
 def _carregar_import_log(limite=60):
     """Carrega do banco SQLite o histórico recente de execuções dos scripts de
     importação/busca (tabela import_log), para exibir no Painel Admin."""
@@ -1266,6 +1307,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         nat_op_sem_cte[nat] = nat_op_sem_cte.get(nat, 0) + 1
     # NF-e de transferência do faturamento sem CTe vinculado
     _vol_lookup = _carregar_volumetria_lookup()
+    _espelho_lookup = _carregar_nfe_espelho_lookup()
     transf_sem_cte_list=[]
     for chave,nf in nfe_map.items():
         if chave in linked_nfe_chaves: continue
@@ -1273,6 +1315,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if not(_nat_transf_py.search(_nat) or _nat_transf_py.search(_cod)): continue
         _vol = _vol_lookup.get(chave) or {}
         transf_sem_cte_list.append({
+            "chave":chave,
             "empresa":nf.get("empresa") or "","numero":nf.get("numero") or "",
             "data":nf.get("data_emissao") or "","cliente":nf.get("participante") or "",
             "cidade":nf.get("cidade") or "","estado":nf.get("estado") or "",
@@ -1281,6 +1324,13 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "transp_volumetria": _vol.get("transp_nome") or "",
             "canal_volumetria": _vol.get("canal") or "",
         })
+    # Espelho completo (itens, transporte, info complementar) das NF-e de
+    # transferencia sem CTe -- lista SEPARADA (nao embutida em transf_sem_cte)
+    # porque precisa ser chunked (itens deixam o payload grande demais pra ir
+    # direto no doc principal). So inclui espelhos das NF-e que realmente
+    # aparecem em transf_sem_cte_list (evita lixo de espelhos ja resolvidos).
+    _chaves_sem_cte = {d["chave"] for d in transf_sem_cte_list}
+    transf_espelho_list = [esp for chave, esp in _espelho_lookup.items() if chave in _chaves_sem_cte]
     def make_list(d,key="frete"):
         return sorted([{"label":k,**v} for k,v in d.items()],key=lambda x:-x[key])
     # Ano mínimo dos CTe — denominador correto para cobCte (exclui faturamento histórico sem CTe)
@@ -1390,7 +1440,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "ctes_nao_vinculados_count":len(ctes_nao_vinculados),
             "valor_total_frete":round(total_frete,2),"media_frete":round(total_frete/qtd_com,2) if qtd_com else 0,
             "total_faturamento":total_faturamento},
-        "transf_fat":transf_fat,"transf_sem_cte":transf_sem_cte_list,"cnpj_map":CNPJ_MAP,
+        "transf_fat":transf_fat,"transf_sem_cte":transf_sem_cte_list,"transf_espelho":transf_espelho_list,"cnpj_map":CNPJ_MAP,
         "por_nat_op":make_list(por_nat_op),"nat_op_sem_cte":nat_op_sem_cte,"detalhes":detalhes,"ctes_nao_vinculados":ctes_nao_vinculados,
         "ctes_nf_cancelada":ctes_nf_cancelada,
         "compras":compras,"devolucoes_mkt":devolucoes_mkt,
@@ -4336,6 +4386,7 @@ def split_by_empresa(dados):
             "volumetria_detalhe": [d for d in dados.get("volumetria_detalhe",[]) if d.get("empresa")==emp],
             "separacao_detalhe": {k:v for k,v in dados.get("separacao_detalhe",{}).items() if k.startswith(emp+"|")},
             "transf_sem_cte": [d for d in dados.get("transf_sem_cte",[]) if d.get("empresa")==emp],
+            "transf_espelho": [d for d in dados.get("transf_espelho",[]) if d.get("empresa")==emp],
             "transf_fat": {k:v for k,v in dados.get("transf_fat",{}).items() if k.startswith(emp+"||")},
             "resumo": {
                 **dados.get("resumo",{}),
@@ -4386,21 +4437,34 @@ def upload_to_firestore(empresa_data, dados_completos):
             chunks = [detalhes[i:i+CHUNK_SIZE] for i in range(0, len(detalhes), CHUNK_SIZE)]
             n_chunks = len(chunks)
 
-            # Documento principal: tudo menos detalhes
-            main_doc = {k: v for k, v in data.items() if k != "detalhes"}
+            espelhos = data.get("transf_espelho", [])
+            esp_chunks = [espelhos[i:i+CHUNK_SIZE] for i in range(0, len(espelhos), CHUNK_SIZE)]
+            n_esp_chunks = len(esp_chunks)
+
+            # Documento principal: tudo menos os campos chunked (detalhes, transf_espelho)
+            main_doc = {k: v for k, v in data.items() if k not in ("detalhes", "transf_espelho")}
             main_doc["det_chunks"] = n_chunks
+            main_doc["espelho_chunks"] = n_esp_chunks
             main_doc["gerado_em"] = data.get("gerado_em", "")
 
             main_json = json.dumps(main_doc, ensure_ascii=False)
             main_kb = len(main_json.encode("utf-8")) / 1024
             db.collection("dados").document(emp).set({"payload": main_json, "gerado_em": main_doc["gerado_em"], "size_kb": round(main_kb, 1)})
-            print(f"   OK  dados/{emp}  ({main_kb:.0f} KB, {n_chunks} chunks de detalhes)")
+            print(f"   OK  dados/{emp}  ({main_kb:.0f} KB, {n_chunks} chunks de detalhes, {n_esp_chunks} chunks de espelho)")
 
             # Chunks de detalhes
             for i, chunk in enumerate(chunks):
                 chunk_json = json.dumps({"items": chunk}, ensure_ascii=False)
                 chunk_kb = len(chunk_json.encode("utf-8")) / 1024
                 doc_id = f"{emp}_det_{i:03d}"
+                db.collection("dados").document(doc_id).set({"payload": chunk_json, "size_kb": round(chunk_kb, 1)})
+                print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB, {len(chunk)} itens)")
+
+            # Chunks de espelho de NF-e (itens/transporte das transferencias sem CTe)
+            for i, chunk in enumerate(esp_chunks):
+                chunk_json = json.dumps({"items": chunk}, ensure_ascii=False)
+                chunk_kb = len(chunk_json.encode("utf-8")) / 1024
+                doc_id = f"{emp}_esp_{i:03d}"
                 db.collection("dados").document(doc_id).set({"payload": chunk_json, "size_kb": round(chunk_kb, 1)})
                 print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB, {len(chunk)} itens)")
 
