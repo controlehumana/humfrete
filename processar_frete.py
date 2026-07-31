@@ -725,12 +725,18 @@ def _carregar_volumetria_entregadores():
         # Meses (empresa, cnpj_entregador, "YYYY-MM") com pelo menos 1 NFS-e autorizada —
         # usado para sinalizar quem entregou num mes mas nao emitiu nota de servico
         nfse_rows = conn.execute(
-            "SELECT emit_cnpj, empresa, competencia FROM nfse_entregadores WHERE status='Authorized'"
+            "SELECT emit_cnpj, empresa, competencia, valor_servico FROM nfse_entregadores WHERE status='Authorized'"
         ).fetchall()
         nfse_meses = set(
             (r2["emit_cnpj"], r2["empresa"], (r2["competencia"] or "")[:7])
             for r2 in nfse_rows
         )
+        # Valor faturado por (cnpj_entregador, empresa, "YYYY-MM") -- usado nas linhas
+        # sinteticas abaixo pra mostrar o valor real da NFS-e em vez de R$0,00
+        nfse_valor_mes = defaultdict(float)
+        for r2 in nfse_rows:
+            k2 = (r2["emit_cnpj"], r2["empresa"], (r2["competencia"] or "")[:7])
+            nfse_valor_mes[k2] += r2["valor_servico"] or 0
         nomes_entregador = {
             (r3["cnpj_entregador"], r3["empresa"]): r3["nome_entregador"]
             for r3 in conn.execute(
@@ -747,6 +753,7 @@ def _carregar_volumetria_entregadores():
             "peso_kg":         round(r["peso_kg"] or 0, 2),
             "valor_nf":        round(r["valor_nf"] or 0, 2),
             "tem_nfse":        (r["cnpj_entregador"], r["empresa"], f'{r["ano"]}-{r["mes"]}') in nfse_meses,
+            "sem_volumetria":  False,
         } for r in rows]
         # Entregador+mes com NFS-e emitida mas SEM nenhuma linha na Volumetria (o relatorio
         # do ERP nao identifica esse CNPJ como transportadora naquele mes) fica invisivel na
@@ -761,9 +768,11 @@ def _carregar_volumetria_entregadores():
             if not nome:
                 continue
             ano, mes = competencia.split("-")
+            valor_faturado = round(nfse_valor_mes.get((emit_cnpj, empresa, competencia), 0), 2)
             resultado.append({
                 "empresa": empresa, "entregador_nome": nome, "ano": ano, "mes": mes,
-                "qtd_nfe": 0, "peso_kg": 0.0, "valor_nf": 0.0, "tem_nfse": True,
+                "qtd_nfe": 0, "peso_kg": 0.0, "valor_nf": valor_faturado, "tem_nfse": True,
+                "sem_volumetria": True,
             })
         print(f"   Volumetria Entregadores: {len(resultado)} combinacoes empresa/entregador/mes")
         return resultado
