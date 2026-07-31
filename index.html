@@ -1505,7 +1505,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Unidade</th><th>Mes</th><th style="text-align:right">Fretes Gerais</th><th style="text-align:right">Frete Venda</th><th style="text-align:right">Frete Delivery</th><th style="text-align:right">Frete Transf. Matriz&rarr;Unidade</th><th style="text-align:right">Recebido em Transferencia (Matriz&rarr;Unidade)<span class="card-tip" style="margin-left:4px"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Valor de frete da mercadoria que essa unidade RECEBEU da Matriz no mes -- so informativo, o custo continua sendo da Matriz (ver coluna "Pago por"). Nao entra na soma de Fretes Gerais/Total Fretes desta linha, pra nao contar o mesmo frete duas vezes.</span></span></th><th>Pago por</th><th style="text-align:right">Frete Transf. Unidade&rarr;Matriz</th><th style="text-align:right">Frete Entre Unidades</th><th style="text-align:right">Total Fretes</th></tr></thead><tbody id="transf_lvt_tbody"></tbody><tfoot><tr id="transf_lvt_tfoot" style="border-top:2px solid var(--bd2);font-weight:700"></tr></tfoot></table></div>
   </div>
   <div class="card" style="margin-top:16px">
-    <div class="card-title">Custo de Transferência por Unidade<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Ranking das unidades pelo custo total de transferência no período filtrado (soma de todos os meses), com a quebra por categoria em cada barra. Quanto maior a barra, mais aquela unidade gastou emitindo notas de transferência — a cor mostra se foi enviando da Matriz, devolvendo para a Matriz, ou mandando direto para outra unidade.</span></span></div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>Custo de Transferência por Unidade<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Ranking das unidades pelo custo total de transferência no período filtrado (soma de todos os meses), com a quebra por categoria em cada barra. Quanto maior a barra, mais aquela unidade gastou emitindo notas de transferência — a cor mostra se foi enviando da Matriz, devolvendo para a Matriz, ou mandando direto para outra unidade. Passe o mouse num segmento pra ver o detalhe por unidade de destino.</span></span></span>
+      <button onclick="transfRankExportXLSX()" title="Exportar para Excel o detalhe por unidade de destino (mesmo dado do tooltip)" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
     <div class="ch-wrap-lg"><canvas id="ch_transf_rank"></canvas></div>
   </div>
   <div class="card" style="margin-top:16px">
@@ -3695,6 +3698,7 @@ function transfDetExportXLSX(){
 window.transfDetExportXLSX=transfDetExportXLSX;
 // Ranking horizontal: custo de transferencia por unidade origem, empilhado por
 // categoria — substitui a Matriz Unidade x Unidade (usuario achou confusa)
+let _transfRankByOrigemDestino={};
 function _transfRenderRankingChart(rows){
   const byOrigem={};
   const byOrigemDestino={}; // empresa -> categoria -> {destino: valor} — pra detalhar no tooltip
@@ -3707,6 +3711,7 @@ function _transfRenderRankingChart(rows){
     const destino=_transfDestino(d)||'Destino não identificado';
     byOrigemDestino[d.empresa][cat][destino]=(byOrigemDestino[d.empresa][cat][destino]||0)+d.valor_frete;
   });
+  _transfRankByOrigemDestino=byOrigemDestino;
   const units=Object.keys(byOrigem).sort((a,b)=>{
     const totA=byOrigem[a].m2u+byOrigem[a].u2m+byOrigem[a].entre;
     const totB=byOrigem[b].m2u+byOrigem[b].u2m+byOrigem[b].entre;
@@ -3740,6 +3745,31 @@ function _transfRenderRankingChart(rows){
     }
   });
 }
+function transfRankExportXLSX(){
+  if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+  const rows=[];
+  Object.entries(_transfRankByOrigemDestino).forEach(([origem,porCat])=>{
+    Object.entries(porCat).forEach(([cat,porDestino])=>{
+      Object.entries(porDestino).forEach(([destino,valor])=>{
+        rows.push({
+          'Unidade Origem':origem,
+          'Categoria':_TRANSF_CAT_LBL[cat]||cat,
+          'Unidade Destino':destino,
+          'Frete (R$)':+valor.toFixed(2),
+        });
+      });
+    });
+  });
+  if(!rows.length) return alert('Nenhum dado para exportar com os filtros atuais.');
+  rows.sort((a,b)=>a['Unidade Origem'].localeCompare(b['Unidade Origem'])||a['Categoria'].localeCompare(b['Categoria'])||b['Frete (R$)']-a['Frete (R$)']);
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(rows);
+  const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+  const ci=hdr.indexOf('Frete (R$)');
+  if(ci>=0) for(let ri=1;ri<=rows.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+  XLSX.utils.book_append_sheet(wb,ws,'Custo por Unidade');
+  XLSX.writeFile(wb,'custo_transferencia_por_unidade_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+window.transfRankExportXLSX=transfRankExportXLSX;
 function renderTransferencias(){
   const rows=filterRows(DATA.detalhes,{excMkt:true,onlyMkt:false});
   const {freByEmp}=_empAggregate(rows);
