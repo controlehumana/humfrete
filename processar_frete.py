@@ -712,12 +712,19 @@ def _carregar_volumetria_entregadores():
         """).fetchall()
         # Meses (empresa, cnpj_entregador, "YYYY-MM") com pelo menos 1 NFS-e autorizada —
         # usado para sinalizar quem entregou num mes mas nao emitiu nota de servico
+        nfse_rows = conn.execute(
+            "SELECT emit_cnpj, empresa, competencia FROM nfse_entregadores WHERE status='Authorized'"
+        ).fetchall()
         nfse_meses = set(
             (r2["emit_cnpj"], r2["empresa"], (r2["competencia"] or "")[:7])
-            for r2 in conn.execute(
-                "SELECT emit_cnpj, empresa, competencia FROM nfse_entregadores WHERE status='Authorized'"
-            ).fetchall()
+            for r2 in nfse_rows
         )
+        nomes_entregador = {
+            (r3["cnpj_entregador"], r3["empresa"]): r3["nome_entregador"]
+            for r3 in conn.execute(
+                "SELECT cnpj_entregador, empresa, nome_entregador FROM entregadores"
+            ).fetchall()
+        }
         conn.close()
         resultado = [{
             "empresa":         r["empresa"],
@@ -729,6 +736,23 @@ def _carregar_volumetria_entregadores():
             "valor_nf":        round(r["valor_nf"] or 0, 2),
             "tem_nfse":        (r["cnpj_entregador"], r["empresa"], f'{r["ano"]}-{r["mes"]}') in nfse_meses,
         } for r in rows]
+        # Entregador+mes com NFS-e emitida mas SEM nenhuma linha na Volumetria (o relatorio
+        # do ERP nao identifica esse CNPJ como transportadora naquele mes) fica invisivel na
+        # matriz "Controle de Nota de Servico" sem isso, mesmo tendo faturado (ex.: Henrique
+        # Pacetti Dezembro, jul/2026). Adiciona com volume zerado (sem evidencia de entrega
+        # real) so pra ele aparecer com o check verde de "tem NFS-e".
+        cobertos = {(r["empresa"], r["cnpj_entregador"], f'{r["ano"]}-{r["mes"]}') for r in rows}
+        for emit_cnpj, empresa, competencia in nfse_meses:
+            if len(competencia) != 7 or (empresa, emit_cnpj, competencia) in cobertos:
+                continue
+            nome = nomes_entregador.get((emit_cnpj, empresa))
+            if not nome:
+                continue
+            ano, mes = competencia.split("-")
+            resultado.append({
+                "empresa": empresa, "entregador_nome": nome, "ano": ano, "mes": mes,
+                "qtd_nfe": 0, "peso_kg": 0.0, "valor_nf": 0.0, "tem_nfse": True,
+            })
         print(f"   Volumetria Entregadores: {len(resultado)} combinacoes empresa/entregador/mes")
         return resultado
     except Exception as e:

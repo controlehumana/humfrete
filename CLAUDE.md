@@ -906,6 +906,20 @@ Ambos os campos são filtrados por empresa em `split_by_empresa` (mesmo padrão 
 
 **Pitfall — `tem_nfse` é por competência, não por total:** um entregador pode ter uma única NFS-e mensal cobrindo várias semanas; se a competência dela bater com o mês da entrega, `tem_nfse=true` mesmo que o valor pareça baixo pra o volume. O alerta serve pra achar meses **sem nenhuma** nota, não pra validar se o valor da nota é proporcional ao volume — isso é o que as colunas R$/Entrega e R$/kg do ranking fazem.
 
+**Limitação conhecida — Henrique Pacetti Dezembro (e futuros casos parecidos):** entregador cadastrado e com NFS-e emitida, mas **zero linhas em `volumetria_nfe`** (o relatório de Volumetria do ERP não o identifica como transportadora em nenhum mês, mesmo em períodos cobertos pelo export). Como a matriz de controle dependia 100% do cruzamento com `volumetria_entregadores`, ele ficava invisível ali mesmo tendo faturado normalmente. **Fix (jul/2026):** `_carregar_volumetria_entregadores()` agora complementa com uma passada extra sobre `nfse_entregadores` — para todo (entregador, empresa, mês) com NFS-e autorizada mas sem nenhuma linha de volumetria correspondente, adiciona uma entrada sintética (`qtd_nfe=0, peso_kg=0, valor_nf=0, tem_nfse=true`). Aparece na matriz com ✓ verde, sem volume conhecido — não dá pra mostrar ✕ (entregou sem nota) pra esses casos, porque não há evidência independente de entrega sem o cruzamento de volume real.
+
+## Cobertura de CT-e — busca pela chave da NF-e (jul/2026)
+
+**Contexto:** usuário notou (via casos concretos como a transportadora Logfar Logistica, CNPJ 05.530.576/0019-03, ~R$3,4M em fretes segundo a Volumetria e zero CT-e capturado) que a "Cobertura de Faturamento" baixa (~46% antes deste fix) não era só retirada no depósito — parte real era limitação técnica de captura de CT-e.
+
+**Causa raiz:** `QUIVE/buscar_cte.py` só busca CT-e via `GET /v1/cte/taker?cnpj[]=<nossas 8 empresas>` — funciona quando o CT-e tem um **CNPJ de tomador explícito** no XML. Muitos CT-e usam o **indicador simples** (`<toma3><toma>0</toma></toma3>`, valores 0-3 = tomador é remetente/expedidor/recebedor/destinatário, **sem CNPJ próprio declarado**) — a busca por CNPJ tomador da Arquivei não indexa esses, mesmo quando o indicador aponta pra uma das nossas empresas (ex.: toma=0 com `<rem><CNPJ>` = BRU1).
+
+**Fix:** novo script `QUIVE/buscar_cte_por_nfe.py` usa um endpoint diferente e mais recente, `POST /v1/dfe/cte` (`Filters.Nfes: [chave_nfe,...]`), que busca o CT-e **direto pela chave de acesso da NF-e transportada** — contorna o problema do indicador de tomador por completo. Detalhes técnicos completos (schema do endpoint, integração com `criar_view.py`, resultado da 1ª execução) em `QUIVE/CLAUDE.md`.
+
+**Impacto real (1ª execução, jul/2026, base completa):** NF-e vinculadas a CT-e subiu de 66.765 pra **106.952** (quase dobrou); frete total subiu de R$4,25M pra **R$6,80M**; % Frete/Receita de 1,6% pra **2,5%**. Não é ruído — é frete que sempre existiu mas ficava fora de qualquer relatório porque o CT-e nunca tinha sido baixado. **Se o % Frete/Receita parecer ter "subido" de repente numa auditoria futura, essa é a explicação — não é um bug novo, é dado que passou a existir.**
+
+**Integrado no `atualizar.py`** como Etapa 2b — roda automaticamente em toda atualização, não precisa ser lembrado manualmente.
+
 ## Módulo Separação — `separacao` (index.html, jul/2026)
 
 Produtividade de picking por unidade: quantidade de pedidos e itens separados no armazém, a partir do `nf_saida_items` item-a-item (não `vw_nf_saida`, que já vem agregado por NF-e — aqui a granularidade de `qtd_itens` é necessária).
@@ -941,7 +955,7 @@ Produtividade de picking por unidade: quantidade de pedidos e itens separados no
 - **Faturamento período** — NF de Nov/Dez 2024 e Jan 2025 ainda ausentes; exportar do ERP
 - **~340 CTe sem vínculo** — não têm NF referenciada, investigação via espelho CT-e na aba Cobertura de Dados
 - **`ctes_nao_vinculados` por empresa** — `_split_por_empresa()` usa `_nv_emp(c)` (rem_cnpj → nfe_refs) para filtrar por empresa. CTes sem empresa identificada entram em TODOS os documentos. `ctes_nf_cancelada` filtrado por `empresa_nf`. Antes deste fix, ALL CTes iam para TODOS os documentos.
-- **Cobertura de Faturamento baixa (~46%)** — ~65k "Venda de Mercadoria" sem CTe são provavelmente retiradas no depósito (Caminho B: identificar flag de retirada no ERP para excluir do denominador)
+- **Cobertura de Faturamento — melhorada significativamente (jul/2026)** — ver seção "Busca de CT-e pela chave da NF-e" abaixo. Descrição antiga ("~46%, ~65k Venda de Mercadoria sem CTe são retiradas no depósito") ficou parcialmente desatualizada: parte real do gap era limitação de captura da API (CT-e existia, não era baixado), não retirada no depósito. Não presumir o percentual antigo sem checar o dado atual.
 - **`_effDen()` deve ser global** — definir ANTES de `renderInsights` e `renderAll`. Se definida dentro de `renderAll`, causa `ReferenceError` silencioso que impede renderização de todos os blocos posteriores (gráficos, heatmap, etc.)
 - **Dev.Mkt data format** — `devolucoes_mkt.data_emissao` está em `DD/MM/YYYY` (igual a `compras`). Slice correto: ano=`slice(6,10)`, mês=`slice(3,5)`. Não usar `slice(0,4)`/`slice(5,7)` (formato YYYY-MM-DD)
 - **Filtros respeitam empresa em todos os módulos** — `_renderNC` filtra por `empresa_nf` (via `state.empresas`), `_renderCancel` por `empresa` (via `state.empresas`), cards Visão Geral usam `_effDen()`, Integridade usa `cte_conc_por_empresa`. Qualquer novo KPI deve ser auditado para não usar valor global quando empresa filtrada. **Não usar `state.empresa` (removido) — usar sempre `state.empresas`**
