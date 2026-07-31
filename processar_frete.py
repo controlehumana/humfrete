@@ -647,6 +647,16 @@ def _carregar_nf_entrada():
         return {}
 
 
+# Entregadores que sao a mesma operacao de entrega, faturando por CNPJs
+# diferentes (confirmado pelo usuario) -- mapeia pro nome combinado, pra
+# aparecerem como um so em toda a aba Delivery (ranking, detalhe, matriz de
+# controle de nota de servico, export). Chave = cnpj_entregador.
+ENTREGADOR_ALIAS_NOME = {
+    "33585276000138": "VLADIMIR / HENRIQUE DEZEMBRO",  # Vladimir Roberto Dezembro
+    "30184082000132": "VLADIMIR / HENRIQUE DEZEMBRO",  # Henrique Pacetti Dezembro
+}
+
+
 def _carregar_nfse_entregadores():
     """Carrega do banco SQLite as NFS-e (notas de serviço) emitidas pelos
     entregadores cadastrados para o grupo Humana. Retorna lista de dicts
@@ -673,7 +683,7 @@ def _carregar_nfse_entregadores():
         resultado = [{
             "id":              r["id"],
             "empresa":         r["empresa"],
-            "entregador_nome": r["nome_entregador"] or r["emit_nome"] or "",
+            "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["emit_cnpj"]) or r["nome_entregador"] or r["emit_nome"] or "",
             "numero":          r["numero"] or "",
             "competencia":     fmt_date(r["competencia"]),
             "data_emissao":    fmt_date(r["dt_emissao"]),
@@ -728,7 +738,7 @@ def _carregar_volumetria_entregadores():
         conn.close()
         resultado = [{
             "empresa":         r["empresa"],
-            "entregador_nome": r["nome_entregador"],
+            "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["cnpj_entregador"]) or r["nome_entregador"],
             "ano":             r["ano"],
             "mes":             r["mes"],
             "qtd_nfe":         r["qtd_nfe"],
@@ -745,7 +755,7 @@ def _carregar_volumetria_entregadores():
         for emit_cnpj, empresa, competencia in nfse_meses:
             if len(competencia) != 7 or (empresa, emit_cnpj, competencia) in cobertos:
                 continue
-            nome = nomes_entregador.get((emit_cnpj, empresa))
+            nome = ENTREGADOR_ALIAS_NOME.get(emit_cnpj) or nomes_entregador.get((emit_cnpj, empresa))
             if not nome:
                 continue
             ano, mes = competencia.split("-")
@@ -781,7 +791,7 @@ def _carregar_volumetria_detalhe():
         # nesse campo — 6 meses reduz a margem de risco. Ver pitfall no CLAUDE.md.
         cutoff = (datetime.now() - timedelta(days=182)).strftime("%Y%m")
         rows = cur.execute("""
-            SELECT v.empresa, e.nome_entregador, v.numero_nfe, v.data_emissao,
+            SELECT v.empresa, e.cnpj_entregador, e.nome_entregador, v.numero_nfe, v.data_emissao,
                    v.canal, v.peso_kg, v.total_nf AS valor_volumetria,
                    n.participante, n.part_cidade, n.part_estado, n.nat_operacao,
                    n.total_nf AS valor_fat
@@ -794,7 +804,7 @@ def _carregar_volumetria_detalhe():
         conn.close()
         resultado = [{
             "empresa":         r["empresa"],
-            "entregador_nome": r["nome_entregador"],
+            "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["cnpj_entregador"]) or r["nome_entregador"],
             "numero":          r["numero_nfe"] or "",
             "data":            r["data_emissao"] or "",
             "canal":           r["canal"] or "",

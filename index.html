@@ -4348,13 +4348,10 @@ function initApp(){
     mkPager(rows.length,dlvPage,PAGE,'dlv_pager',pg=>{dlvPage=pg;renderDelivery();});
     // Controle de NFS-e por Entregador — matriz entregador (linha) x mes (coluna)
     // So respeita o filtro global de empresa, nao o periodo local desta aba
+    // Fusao Vladimir/Henrique Dezembro (mesma operacao, 2 CNPJs) e feita no
+    // backend (ENTREGADOR_ALIAS_NOME em processar_frete.py) -- chega aqui ja
+    // com o mesmo entregador_nome combinado, sem precisar de alias no frontend.
     (function(){
-      // Vladimir Roberto Dezembro e Henrique Pacetti Dezembro sao a mesma
-      // operacao de entrega, faturando por 2 CNPJs diferentes (BRU1+BRU2 nos
-      // dois) -- na pratica, quando um nao emite NFS-e no mes e porque o outro
-      // emitiu. Juntar num unico "entregador" evita falso alerta de mes sem nota.
-      const GAP_ALIAS={'VLADIMIR ROBERTO DEZEMBRO':'VLADIMIR / HENRIQUE DEZEMBRO','HENRIQUE PACETTI DEZEMBRO':'VLADIMIR / HENRIQUE DEZEMBRO'};
-      const gapNome=nome=>GAP_ALIAS[nome]||nome;
       const volAll=(DATA.volumetria_entregadores||[]).filter(v=>!state.empresas.length||state.empresas.includes(v.empresa));
       const gapCard=document.getElementById('dlv_gap_card');
       const gapWrap=document.getElementById('dlv_gap_matrix');
@@ -4363,14 +4360,14 @@ function initApp(){
       gapCard.style.display='';
       const byKey={};
       volAll.forEach(v=>{
-        const k=gapNome(v.entregador_nome)+'|'+v.ano+'-'+v.mes;
+        const k=v.entregador_nome+'|'+v.ano+'-'+v.mes;
         if(!byKey[k]) byKey[k]={temNfse:false,qtd:0,valor:0,empresas:new Set()};
         byKey[k].temNfse=byKey[k].temNfse||v.tem_nfse;
         byKey[k].qtd+=v.qtd_nfe||0;
         byKey[k].valor+=v.valor_nf||0;
         byKey[k].empresas.add(v.empresa);
       });
-      const entregadores=[...new Set(volAll.map(v=>gapNome(v.entregador_nome)))].sort();
+      const entregadores=[...new Set(volAll.map(v=>v.entregador_nome))].sort();
       const mesesCols=[...new Set(volAll.map(v=>v.ano+'-'+v.mes))].sort();
       const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
       const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
