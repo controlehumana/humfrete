@@ -654,6 +654,8 @@ def _carregar_nf_entrada():
 ENTREGADOR_ALIAS_NOME = {
     "33585276000138": "VLADIMIR / HENRIQUE DEZEMBRO",  # Vladimir Roberto Dezembro
     "30184082000132": "VLADIMIR / HENRIQUE DEZEMBRO",  # Henrique Pacetti Dezembro
+    "48361800000164": "MURALHA ENTREGA RAPIDA / MRP ENTREGAS",  # Muralha (identificado na Volumetria) -- CNPJ que entrega
+    "60599335000108": "MURALHA ENTREGA RAPIDA / MRP ENTREGAS",  # MRP Entregas (identificado nas NFS-e) -- CNPJ que fatura
 }
 
 
