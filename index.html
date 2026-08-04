@@ -4582,12 +4582,14 @@ function initApp(){
       const byKey={};
       volAll.forEach(v=>{
         const k=v.entregador_nome+'|'+v.ano+'-'+v.mes;
-        if(!byKey[k]) byKey[k]={temNfse:false,qtd:0,valor:0,empresas:new Set(),semVolumetria:false};
+        if(!byKey[k]) byKey[k]={temNfse:false,qtd:0,valorMerc:0,valorNfse:0,empresas:new Set(),semVolumetria:false};
         byKey[k].temNfse=byKey[k].temNfse||v.tem_nfse;
         byKey[k].qtd+=v.qtd_nfe||0;
-        byKey[k].valor+=v.valor_nf||0;
+        // valor_nf de linha sintetica (sem_volumetria) e valor de NFS-e (servico);
+        // de linha real da Volumetria e valor de mercadoria — nunca somar os dois
+        if(v.sem_volumetria){byKey[k].valorNfse+=v.valor_nf||0;byKey[k].semVolumetria=true;}
+        else byKey[k].valorMerc+=v.valor_nf||0;
         byKey[k].empresas.add(v.empresa);
-        if(v.sem_volumetria) byKey[k].semVolumetria=true;
       });
       const entregadores=[...new Set(volAll.map(v=>v.entregador_nome))].sort();
       const mesesCols=[...new Set(volAll.map(v=>v.ano+'-'+v.mes))].sort();
@@ -4606,12 +4608,12 @@ function initApp(){
           }else{
             const unidades=[...cell.empresas].sort().join(', ');
             if(cell.temNfse){
-              const txt=cell.semVolumetria
-                ?'Unidade(s): '+unidades+' — NFS-e emitida: '+BRL(cell.valor)+' (sem cruzamento de volume na Volumetria)'
-                :'Unidade(s): '+unidades+' — '+N(cell.qtd)+' NF-e entregues, '+BRL(cell.valor);
+              let txt='Unidade(s): '+unidades;
+              if(cell.qtd) txt+=' — '+N(cell.qtd)+' NF-e entregues ('+BRL(cell.valorMerc)+' em mercadoria)';
+              if(cell.valorNfse) txt+=' — NFS-e emitida: '+BRL(cell.valorNfse)+(cell.qtd?' (sem cruzamento de volume na Volumetria para esta parte)':' (sem cruzamento de volume na Volumetria)');
               html+='<td title="'+txt+'" style="text-align:center;padding:5px 8px;background:var(--green2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✓</td>';
             }else{
-              const txt='Unidade(s): '+unidades+' — '+N(cell.qtd)+' NF-e entregues, '+BRL(cell.valor)+' — sem NFS-e neste mes';
+              const txt='Unidade(s): '+unidades+' — '+N(cell.qtd)+' NF-e entregues ('+BRL(cell.valorMerc)+' em mercadoria) — sem NFS-e neste mes';
               html+='<td title="'+txt+'" style="text-align:center;padding:5px 8px;background:var(--red2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✕</td>';
             }
           }
