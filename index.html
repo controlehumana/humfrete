@@ -1316,13 +1316,22 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="card" id="dlv_gap_card" style="display:none">
-    <div class="card-title">Controle de Nota de Servico por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Cada celula e um mes em que o entregador teve entrega registrada (relatorio de Volumetria). Verde com check = tem NFS-e autorizada naquele mes. Vermelho com X = entregou mas nao ha NFS-e no mesmo mes — pode ser atraso na busca da nota via API, ou um gap real de cobranca. Celula cinza (—) = sem entrega registrada naquele mes. Nao respeita o filtro de periodo desta aba (mostra todo o historico), so o filtro global de empresa.</span></span></div>
+    <div class="card-title">Controle de Nota de Servico por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Controle de emissao da NFS-e mensal de cada entregador. Verde com check = NFS-e autorizada naquele mes (o tooltip mostra o valor cobrado). Vermelho com X = a Volumetria registra entregas no mes mas nao ha NFS-e — pode ser atraso na busca da nota via API, ou um gap real de cobranca. Celula cinza (—) = sem registro naquele mes. O volume de entregas cruzado com a Volumetria fica no painel "Entregas Cruzadas com a Volumetria" logo abaixo. Nao respeita o filtro de periodo desta aba (mostra todo o historico), so o filtro global de empresa.</span></span></div>
     <div id="dlv_gap_matrix" style="overflow-x:auto;overflow-y:visible"></div>
     <div style="display:flex;align-items:center;gap:14px;margin-top:12px;font-size:10px;color:var(--text2)">
-      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--green2);color:#fff;text-align:center;line-height:14px;font-size:9px">✓</span> Tem NFS-e no mes</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--green2);color:#fff;text-align:center;line-height:14px;font-size:9px">✓</span> NFS-e emitida no mes</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--red2);color:#fff;text-align:center;line-height:14px;font-size:9px">✕</span> Entregou sem NFS-e</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--input-bg);border:1px solid var(--bd2)"></span> Sem entrega no mes</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--input-bg);border:1px solid var(--bd2)"></span> Sem registro no mes</span>
     </div>
+  </div>
+  <div class="card" id="dlv_vol_card" style="display:none">
+    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. O tooltip de cada barra mostra tambem o valor de mercadoria transportado. Mesmo escopo do painel de controle: historico completo, so respeita o filtro global de empresa.</span></span></div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text2)">
+      <span>NF-e entregues: <b id="dlv_vol_qtd" style="color:var(--text)">--</b></span>
+      <span>Valor em mercadoria: <b id="dlv_vol_valor" style="color:var(--text)">--</b></span>
+      <span>Peso total: <b id="dlv_vol_peso" style="color:var(--text)">--</b></span>
+    </div>
+    <div class="ch-wrap"><canvas id="ch_dlv_vol"></canvas></div>
   </div>
   <div class="card">
     <div class="card-title">NF-e Entregues — Detalhe<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por NF-e efetivamente entregue por um entregador parceiro (relatorio de Volumetria cruzado com o faturamento), com cliente, cidade/UF e natureza da operacao. Complementa a tabela de NFS-e abaixo, que mostra o que foi cobrado, nao o que foi entregue.</span></span></div>
@@ -4576,19 +4585,28 @@ function initApp(){
       const volAll=(DATA.volumetria_entregadores||[]).filter(v=>!state.empresas.length||state.empresas.includes(v.empresa));
       const gapCard=document.getElementById('dlv_gap_card');
       const gapWrap=document.getElementById('dlv_gap_matrix');
+      const volCard=document.getElementById('dlv_vol_card');
       if(!gapCard||!gapWrap) return;
-      if(!volAll.length){gapCard.style.display='none';return;}
+      if(!volAll.length){gapCard.style.display='none';if(volCard)volCard.style.display='none';return;}
       gapCard.style.display='';
+      // Valor de NFS-e por entregador+mes (competencia) — a matriz controla emissao,
+      // entao o valor exibido no check e sempre o da nota de servico, nao mercadoria
+      const nfseByKey={};
+      (DATA.delivery||[]).forEach(d=>{
+        if(!state.empresas.length||state.empresas.includes(d.empresa)){
+          const c=d.competencia||'';
+          if(c.length>=10){
+            const k=(d.entregador_nome||'-')+'|'+c.slice(6,10)+'-'+c.slice(3,5);
+            nfseByKey[k]=(nfseByKey[k]||0)+(d.valor_servico||0);
+          }
+        }
+      });
       const byKey={};
       volAll.forEach(v=>{
         const k=v.entregador_nome+'|'+v.ano+'-'+v.mes;
-        if(!byKey[k]) byKey[k]={temNfse:false,qtd:0,valorMerc:0,valorNfse:0,empresas:new Set(),semVolumetria:false};
+        if(!byKey[k]) byKey[k]={temNfse:false,qtd:0,empresas:new Set()};
         byKey[k].temNfse=byKey[k].temNfse||v.tem_nfse;
         byKey[k].qtd+=v.qtd_nfe||0;
-        // valor_nf de linha sintetica (sem_volumetria) e valor de NFS-e (servico);
-        // de linha real da Volumetria e valor de mercadoria — nunca somar os dois
-        if(v.sem_volumetria){byKey[k].valorNfse+=v.valor_nf||0;byKey[k].semVolumetria=true;}
-        else byKey[k].valorMerc+=v.valor_nf||0;
         byKey[k].empresas.add(v.empresa);
       });
       const entregadores=[...new Set(volAll.map(v=>v.entregador_nome))].sort();
@@ -4608,12 +4626,11 @@ function initApp(){
           }else{
             const unidades=[...cell.empresas].sort().join(', ');
             if(cell.temNfse){
-              let txt='Unidade(s): '+unidades;
-              if(cell.qtd) txt+=' — '+N(cell.qtd)+' NF-e entregues ('+BRL(cell.valorMerc)+' em mercadoria)';
-              if(cell.valorNfse) txt+=' — NFS-e emitida: '+BRL(cell.valorNfse)+(cell.qtd?' (sem cruzamento de volume na Volumetria para esta parte)':' (sem cruzamento de volume na Volumetria)');
+              const vN=nfseByKey[nome+'|'+m]||0;
+              const txt='Unidade(s): '+unidades+' — NFS-e do mes: '+(vN?BRL(vN):'valor nao localizado por competencia');
               html+='<td title="'+txt+'" style="text-align:center;padding:5px 8px;background:var(--green2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✓</td>';
             }else{
-              const txt='Unidade(s): '+unidades+' — '+N(cell.qtd)+' NF-e entregues ('+BRL(cell.valorMerc)+' em mercadoria) — sem NFS-e neste mes';
+              const txt='Unidade(s): '+unidades+' — '+N(cell.qtd)+' NF-e entregues no mes (Volumetria) — sem NFS-e';
               html+='<td title="'+txt+'" style="text-align:center;padding:5px 8px;background:var(--red2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✕</td>';
             }
           }
@@ -4622,6 +4639,39 @@ function initApp(){
       });
       html+='</tbody></table>';
       gapWrap.innerHTML=html;
+      // Painel separado: total mensal de NF-e cruzadas pela Volumetria (volume real de
+      // entregas) — linhas sinteticas (sem_volumetria) ficam de fora, nao tem volume
+      if(volCard){
+        const byMes={};
+        volAll.forEach(v=>{
+          if(v.sem_volumetria) return;
+          const m=v.ano+'-'+v.mes;
+          if(!byMes[m]) byMes[m]={qtd:0,valor:0,peso:0};
+          byMes[m].qtd+=v.qtd_nfe||0;
+          byMes[m].valor+=v.valor_nf||0;
+          byMes[m].peso+=v.peso_kg||0;
+        });
+        const mesesVol=Object.keys(byMes).sort();
+        if(!mesesVol.length){volCard.style.display='none';}
+        else{
+          volCard.style.display='';
+          const totQtd=mesesVol.reduce((s,m)=>s+byMes[m].qtd,0);
+          const totVal=mesesVol.reduce((s,m)=>s+byMes[m].valor,0);
+          const totPeso=mesesVol.reduce((s,m)=>s+byMes[m].peso,0);
+          const elQ=document.getElementById('dlv_vol_qtd'),elV=document.getElementById('dlv_vol_valor'),elP=document.getElementById('dlv_vol_peso');
+          if(elQ) elQ.textContent=N(totQtd);
+          if(elV) elV.textContent=BRL(totVal);
+          if(elP) elP.textContent=totPeso?N(Math.round(totPeso))+' kg':'-';
+          const lbs=mesesVol.map(m=>(MESES[+m.slice(5,7)]||m.slice(5,7))+'/'+m.slice(2,4));
+          const qts=mesesVol.map(m=>byMes[m].qtd);
+          // _chartUpdate reusa as options do 1o render — o callback do tooltip le os
+          // valores deste global (atualizado a cada render), nunca de closure local
+          window._dlvVolVals=mesesVol.map(m=>byMes[m].valor);
+          _chartUpdate('ch_dlv_vol','bar',
+            {labels:lbs,datasets:[{label:'NF-e entregues',data:qts,backgroundColor:'#8B7CF6',borderRadius:5,borderSkipped:false}]},
+            {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+N(c.raw)+' NF-e — '+BRL((window._dlvVolVals||[])[c.dataIndex]||0)+' em mercadoria'}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>N(v),font:{size:10},color:'#8A8F98'}}}});
+        }
+      }
     })();
     // NF-e Entregues — Detalhe (cruza volumetria com faturamento)
     const detRows=(DATA.volumetria_detalhe||[]).filter(d=>{
