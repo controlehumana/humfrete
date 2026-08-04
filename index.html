@@ -1325,7 +1325,8 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="card" id="dlv_vol_card" style="display:none">
-    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. Cada barra e empilhada por entregador (os 8 maiores em volume aparecem individualmente; os demais somam em "Outros"); o tooltip de cada faixa mostra a quantidade de NF-e e o valor de mercadoria daquele entregador no mes. Mesmo escopo do painel de controle: historico completo, so respeita o filtro global de empresa.</span></span></div>
+    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. Cada barra e empilhada por entregador (os 8 maiores em volume aparecem individualmente; os demais somam em "Outros"); o tooltip de cada faixa mostra a quantidade de NF-e e o valor de mercadoria daquele entregador no mes. O seletor acima isola um entregador (grafico, totais e tabela ao mesmo tempo) sem mexer no painel de controle. Fora esse seletor, o escopo e o mesmo do painel de controle: historico completo, so respeita o filtro global de empresa.</span></span></div>
+    <div class="sr" style="margin-bottom:10px"><select id="dlv_vol_sel_ent" style="min-width:340px;max-width:100%"><option value="">Todos os entregadores</option></select></div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text2)">
       <span>NF-e entregues: <b id="dlv_vol_qtd" style="color:var(--text)">--</b></span>
       <span>Valor em mercadoria: <b id="dlv_vol_valor" style="color:var(--text)">--</b></span>
@@ -4419,6 +4420,9 @@ function initApp(){
     const emps=[...new Set((DATA.delivery||[]).map(d=>d.empresa).filter(Boolean))].sort();
     emps.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;dlvSelEmp.appendChild(o);});
   })();
+  // Filtro de entregador do painel "Entregas Cruzadas com a Volumetria" — vale so
+  // para aquele bloco; a matriz de controle acima segue mostrando todo mundo.
+  const dlvVolSelEnt=document.getElementById('dlv_vol_sel_ent');
   let dlvDetPage=0;
   const dlvDetInp=document.getElementById('dlvdet_search');
   const dlvDetSelEmp=document.getElementById('dlvdet_sel_emp');
@@ -4690,8 +4694,24 @@ function initApp(){
       // Painel separado: total mensal de NF-e cruzadas pela Volumetria (volume real de
       // entregas) — linhas sinteticas (sem_volumetria) ficam de fora, nao tem volume
       if(volCard){
+        // Lista de entregadores do select acompanha o filtro global de empresa; a
+        // selecao atual e preservada quando ainda existe no recorte novo
+        let entSel='';
+        if(dlvVolSelEnt){
+          const nomes=[...new Set(volAll.filter(v=>!v.sem_volumetria).map(v=>v.entregador_nome||'-'))].sort();
+          const assinatura=nomes.join('|');
+          if(dlvVolSelEnt._assinatura!==assinatura){
+            const atual=dlvVolSelEnt.value;
+            dlvVolSelEnt._assinatura=assinatura;
+            dlvVolSelEnt.innerHTML='<option value="">Todos os entregadores</option>'
+              +nomes.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+            dlvVolSelEnt.value=nomes.includes(atual)?atual:'';
+          }
+          entSel=dlvVolSelEnt.value;
+        }
+        const volVol=entSel?volAll.filter(v=>(v.entregador_nome||'-')===entSel):volAll;
         const byMes={},byMesEnt={},byEnt={},entInfo={};
-        volAll.forEach(v=>{
+        volVol.forEach(v=>{
           if(v.sem_volumetria) return;
           const m=v.ano+'-'+v.mes,nm=v.entregador_nome||'-';
           if(!byMes[m]) byMes[m]={qtd:0,valor:0,peso:0};
@@ -4838,6 +4858,7 @@ function initApp(){
   dlvSelEmp.addEventListener('change',dlvFilter);
   dlvDetInp.addEventListener('input',dlvDetFilter);
   dlvDetSelEmp.addEventListener('change',dlvDetFilter);
+  if(dlvVolSelEnt) dlvVolSelEnt.addEventListener('change',()=>renderDelivery());
   window._renderDelivery=renderDelivery;
 
   // ABA DEVOLUCAO MARKETPLACE
