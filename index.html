@@ -1325,7 +1325,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="card" id="dlv_vol_card" style="display:none">
-    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. O tooltip de cada barra mostra tambem o valor de mercadoria transportado. Mesmo escopo do painel de controle: historico completo, so respeita o filtro global de empresa.</span></span></div>
+    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. Cada barra e empilhada por entregador (os 8 maiores em volume aparecem individualmente; os demais somam em "Outros"); o tooltip de cada faixa mostra a quantidade de NF-e e o valor de mercadoria daquele entregador no mes. Mesmo escopo do painel de controle: historico completo, so respeita o filtro global de empresa.</span></span></div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text2)">
       <span>NF-e entregues: <b id="dlv_vol_qtd" style="color:var(--text)">--</b></span>
       <span>Valor em mercadoria: <b id="dlv_vol_valor" style="color:var(--text)">--</b></span>
@@ -4642,14 +4642,19 @@ function initApp(){
       // Painel separado: total mensal de NF-e cruzadas pela Volumetria (volume real de
       // entregas) — linhas sinteticas (sem_volumetria) ficam de fora, nao tem volume
       if(volCard){
-        const byMes={};
+        const byMes={},byMesEnt={},byEnt={};
         volAll.forEach(v=>{
           if(v.sem_volumetria) return;
-          const m=v.ano+'-'+v.mes;
+          const m=v.ano+'-'+v.mes,nm=v.entregador_nome||'-';
           if(!byMes[m]) byMes[m]={qtd:0,valor:0,peso:0};
           byMes[m].qtd+=v.qtd_nfe||0;
           byMes[m].valor+=v.valor_nf||0;
           byMes[m].peso+=v.peso_kg||0;
+          byEnt[nm]=(byEnt[nm]||0)+(v.qtd_nfe||0);
+          const k=nm+'|'+m;
+          if(!byMesEnt[k]) byMesEnt[k]={qtd:0,valor:0};
+          byMesEnt[k].qtd+=v.qtd_nfe||0;
+          byMesEnt[k].valor+=v.valor_nf||0;
         });
         const mesesVol=Object.keys(byMes).sort();
         if(!mesesVol.length){volCard.style.display='none';}
@@ -4663,13 +4668,31 @@ function initApp(){
           if(elV) elV.textContent=BRL(totVal);
           if(elP) elP.textContent=totPeso?N(Math.round(totPeso))+' kg':'-';
           const lbs=mesesVol.map(m=>(MESES[+m.slice(5,7)]||m.slice(5,7))+'/'+m.slice(2,4));
-          const qts=mesesVol.map(m=>byMes[m].qtd);
+          // Quebra por entregador: top 8 por volume viram series proprias, o resto e
+          // agrupado em "Outros" pra legenda nao ficar ilegivel com muitos parceiros
+          const TOPN=8;
+          const ordenados=Object.keys(byEnt).sort((a,b)=>byEnt[b]-byEnt[a]);
+          const outros=ordenados.slice(TOPN);
+          const lblOutros=outros.length?'Outros ('+outros.length+')':null;
+          const setOutros=new Set(outros);
+          const series=ordenados.slice(0,TOPN).concat(lblOutros?[lblOutros]:[]);
+          const dsQtd={},dsVal={};
+          series.forEach(s=>{dsQtd[s]=mesesVol.map(()=>0);dsVal[s]=mesesVol.map(()=>0);});
+          mesesVol.forEach((m,i)=>{
+            ordenados.forEach(nm=>{
+              const c=byMesEnt[nm+'|'+m];
+              if(!c) return;
+              const s=setOutros.has(nm)?lblOutros:nm;
+              dsQtd[s][i]+=c.qtd;
+              dsVal[s][i]+=c.valor;
+            });
+          });
           // _chartUpdate reusa as options do 1o render — o callback do tooltip le os
           // valores deste global (atualizado a cada render), nunca de closure local
-          window._dlvVolVals=mesesVol.map(m=>byMes[m].valor);
-          _chartUpdate('ch_dlv_vol','bar',
-            {labels:lbs,datasets:[{label:'NF-e entregues',data:qts,backgroundColor:'#8B7CF6',borderRadius:5,borderSkipped:false}]},
-            {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+N(c.raw)+' NF-e — '+BRL((window._dlvVolVals||[])[c.dataIndex]||0)+' em mercadoria'}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>N(v),font:{size:10},color:'#8A8F98'}}}});
+          window._dlvVolVals=dsVal;
+          const dsets=series.map((s,i)=>({label:s,data:dsQtd[s],backgroundColor:s===lblOutros?'#8A8F98':COLORS[i%COLORS.length],borderRadius:4,borderSkipped:false}));
+          _chartUpdate('ch_dlv_vol','bar',{labels:lbs,datasets:dsets},
+            {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+N(c.raw)+' NF-e — '+BRL(((window._dlvVolVals||{})[c.dataset.label]||[])[c.dataIndex]||0)+' em mercadoria'}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>N(v),font:{size:10},color:'#8A8F98'}}}});
         }
       }
     })();
