@@ -1332,6 +1332,13 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <span>Peso total: <b id="dlv_vol_peso" style="color:var(--text)">--</b></span>
     </div>
     <div class="ch-wrap"><canvas id="ch_dlv_vol"></canvas></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">Clique num nome da legenda para ocultar/mostrar aquele entregador no grafico.</div>
+    <div class="tw dtbl" style="max-height:44vh;overflow-y:auto;margin-top:12px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Unidade(s)</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">NF-e Entregues</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">% do Total</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor em Mercadoria</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Peso</th></tr></thead>
+        <tbody id="dlv_vol_tbody"></tbody>
+      </table>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">NF-e Entregues — Detalhe<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por NF-e efetivamente entregue por um entregador parceiro (relatorio de Volumetria cruzado com o faturamento), com cliente, cidade/UF e natureza da operacao. Complementa a tabela de NFS-e abaixo, que mostra o que foi cobrado, nao o que foi entregue.</span></span></div>
@@ -2130,6 +2137,47 @@ const perL = p => { const [m,y]=p.split('/'); return MESES[+m]+'/'+y; };
 function getWeek(dateStr){if(!dateStr) return '';const parts=dateStr.split('/');if(parts.length<3) return '';const d=new Date(+parts[2],+parts[1]-1,+parts[0]);const jan1=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);return d.getFullYear()+'-W'+String(wk).padStart(2,'0');}
 if(typeof Chart!=='undefined'){Chart.defaults.color='#8A8F98';Chart.defaults.borderColor='rgba(255,255,255,.07)';Chart.defaults.font.family="'Inter','Outfit','Segoe UI',system-ui,sans-serif";}
 const COLORS=['#5E6AD2','#34D399','#F59E0B','#F87171','#A78BFA','#818CF8','#6EE7B7','#FCD34D','#FB923C','#67E8F9','#EC4899','#38BDF8','#C4B5FD','#FBBF24','#4ADE80'];
+// Paleta categorica das faixas por entregador (grafico Entregas Cruzadas com a
+// Volumetria). Ordem validada para daltonismo em pares ADJACENTES (que e o caso de
+// barras empilhadas) e com contraste >= 3:1 sobre as duas superficies do app
+// (card claro #FFFFFF e escuro #131315) — por isso serve aos 2 temas sem troca.
+// Nunca gerar uma 9a cor: o excedente vira "Outros" em cinza neutro.
+const DLV_PAL=['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9','#e66767'];
+const DLV_COR_OUTROS='#898781';
+// Slot de cor por entregador — calculado sempre sobre a base COMPLETA (todas as
+// empresas), nunca sobre o recorte filtrado: mudar o filtro nao pode repintar quem
+// continua na tela. Quem consegue aparecer junto nao divide cor: conflitam os
+// entregadores de uma mesma unidade (visao de 1 empresa) e os 8 maiores do grupo
+// (visao sem filtro) — essas duas visoes ficam sempre sem cor repetida. Numa
+// selecao de varias unidades duas faixas ainda podem repetir hue (sao 15
+// entregadores para 8 cores, e gerar uma 9a cor deixaria as faixas
+// indistinguiveis para daltonicos); por isso a tabela abaixo do grafico, com nome
+// e numero exatos, e a fonte de identidade — a cor sozinha nunca e.
+function _dlvSlotMap(){
+  const all=(DATA.volumetria_entregadores||[]).filter(v=>!v.sem_volumetria);
+  const tot={},emps={};
+  all.forEach(v=>{
+    const n=v.entregador_nome||'-';
+    tot[n]=(tot[n]||0)+(v.qtd_nfe||0);
+    (emps[n]=emps[n]||new Set()).add(v.empresa);
+  });
+  const ordem=Object.keys(tot).sort((a,b)=>(tot[b]-tot[a])||a.localeCompare(b));
+  const top=new Set(ordem.slice(0,DLV_PAL.length));
+  const conflita=(a,b)=>{
+    if(top.has(a)&&top.has(b)) return true;
+    for(const e of emps[a]) if(emps[b].has(e)) return true;
+    return false;
+  };
+  const slot={};
+  ordem.forEach(n=>{
+    const usados=new Set();
+    Object.keys(slot).forEach(m=>{if(conflita(n,m)) usados.add(slot[m]);});
+    let s=0;
+    while(s<DLV_PAL.length&&usados.has(s)) s++;
+    slot[n]=s<DLV_PAL.length?s:null; // sem slot livre -> cai no cinza de "Outros"
+  });
+  return slot;
+}
 const CR={};
 const hasChart=()=>typeof Chart!=='undefined';
 function _chartUpdate(id,type,data,options){
@@ -4642,7 +4690,7 @@ function initApp(){
       // Painel separado: total mensal de NF-e cruzadas pela Volumetria (volume real de
       // entregas) — linhas sinteticas (sem_volumetria) ficam de fora, nao tem volume
       if(volCard){
-        const byMes={},byMesEnt={},byEnt={};
+        const byMes={},byMesEnt={},byEnt={},entInfo={};
         volAll.forEach(v=>{
           if(v.sem_volumetria) return;
           const m=v.ano+'-'+v.mes,nm=v.entregador_nome||'-';
@@ -4651,18 +4699,36 @@ function initApp(){
           byMes[m].valor+=v.valor_nf||0;
           byMes[m].peso+=v.peso_kg||0;
           byEnt[nm]=(byEnt[nm]||0)+(v.qtd_nfe||0);
+          if(!entInfo[nm]) entInfo[nm]={valor:0,peso:0,empresas:new Set()};
+          entInfo[nm].valor+=v.valor_nf||0;
+          entInfo[nm].peso+=v.peso_kg||0;
+          entInfo[nm].empresas.add(v.empresa);
           const k=nm+'|'+m;
           if(!byMesEnt[k]) byMesEnt[k]={qtd:0,valor:0};
           byMesEnt[k].qtd+=v.qtd_nfe||0;
           byMesEnt[k].valor+=v.valor_nf||0;
         });
-        const mesesVol=Object.keys(byMes).sort();
-        if(!mesesVol.length){volCard.style.display='none';}
+        const mesesPresentes=Object.keys(byMes).sort();
+        // Eixo continuo do 1o ao ultimo mes: mes sem entrega vira coluna vazia. Sem
+        // isso a lacuna da Volumetria (ago-dez/2025 nao foi exportado) sumiria e as
+        // barras leriam como serie continua, sugerindo um historico que nao existe.
+        const mesesVol=(()=>{
+          if(!mesesPresentes.length) return [];
+          let [a,m]=mesesPresentes[0].split('-').map(Number);
+          const [aF,mF]=mesesPresentes[mesesPresentes.length-1].split('-').map(Number);
+          const out=[];
+          while(a<aF||(a===aF&&m<=mF)){
+            out.push(a+'-'+String(m).padStart(2,'0'));
+            if(++m>12){m=1;a++;}
+          }
+          return out;
+        })();
+        if(!mesesPresentes.length){volCard.style.display='none';}
         else{
           volCard.style.display='';
-          const totQtd=mesesVol.reduce((s,m)=>s+byMes[m].qtd,0);
-          const totVal=mesesVol.reduce((s,m)=>s+byMes[m].valor,0);
-          const totPeso=mesesVol.reduce((s,m)=>s+byMes[m].peso,0);
+          const totQtd=mesesPresentes.reduce((s,m)=>s+byMes[m].qtd,0);
+          const totVal=mesesPresentes.reduce((s,m)=>s+byMes[m].valor,0);
+          const totPeso=mesesPresentes.reduce((s,m)=>s+byMes[m].peso,0);
           const elQ=document.getElementById('dlv_vol_qtd'),elV=document.getElementById('dlv_vol_valor'),elP=document.getElementById('dlv_vol_peso');
           if(elQ) elQ.textContent=N(totQtd);
           if(elV) elV.textContent=BRL(totVal);
@@ -4687,12 +4753,37 @@ function initApp(){
               dsVal[s][i]+=c.valor;
             });
           });
+          const slotEnt=_dlvSlotMap();
+          const corDe={};
+          series.forEach(s=>{corDe[s]=(s===lblOutros||slotEnt[s]==null)?DLV_COR_OUTROS:DLV_PAL[slotEnt[s]];});
           // _chartUpdate reusa as options do 1o render — o callback do tooltip le os
           // valores deste global (atualizado a cada render), nunca de closure local
           window._dlvVolVals=dsVal;
-          const dsets=series.map((s,i)=>({label:s,data:dsQtd[s],backgroundColor:s===lblOutros?'#8A8F98':COLORS[i%COLORS.length],borderRadius:4,borderSkipped:false}));
+          const surf=document.documentElement.classList.contains('ocean')?'#FFFFFF':'#131315';
+          // 2px na cor da superficie = respiro entre segmentos empilhados (nao e borda
+          // decorativa: e o que separa duas faixas vizinhas de cores proximas)
+          const dsets=series.map(s=>({label:s,data:dsQtd[s],backgroundColor:corDe[s],borderColor:surf,borderWidth:2,borderRadius:4,borderSkipped:false}));
           _chartUpdate('ch_dlv_vol','bar',{labels:lbs,datasets:dsets},
             {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+N(c.raw)+' NF-e — '+BRL(((window._dlvVolVals||{})[c.dataset.label]||[])[c.dataIndex]||0)+' em mercadoria'}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>N(v),font:{size:10},color:'#8A8F98'}}}});
+          // Tabela de identidade: todo entregador aparece com numero exato, inclusive os
+          // que o grafico agrupa em "Outros"
+          const tb=document.getElementById('dlv_vol_tbody');
+          if(tb){
+            tb.innerHTML=ordenados.map(nm=>{
+              const inf=entInfo[nm]||{valor:0,peso:0,empresas:new Set()};
+              // swatch espelha o grafico: quem caiu em "Outros" fica cinza, como a faixa
+              const cor=corDe[nm]||DLV_COR_OUTROS;
+              const pct=totQtd?(byEnt[nm]/totQtd*100):0;
+              return '<tr style="border-bottom:1px solid var(--row-border)">'
+                +'<td style="padding:7px 10px;color:var(--text);font-weight:600;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+cor+';margin-right:7px"></span>'+esc(nm)+'</td>'
+                +'<td style="padding:7px 10px;color:var(--text2);font-size:10px">'+esc([...inf.empresas].sort().join(', '))+'</td>'
+                +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700">'+N(byEnt[nm])+'</td>'
+                +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+pct.toFixed(1)+'%</td>'
+                +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+BRL(inf.valor)+'</td>'
+                +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(inf.peso?N(Math.round(inf.peso))+' kg':'-')+'</td>'
+                +'</tr>';
+            }).join('')||'<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--text3)">Sem entregas cruzadas com a Volumetria</td></tr>';
+          }
         }
       }
     })();
