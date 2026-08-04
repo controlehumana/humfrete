@@ -656,6 +656,10 @@ ENTREGADOR_ALIAS_NOME = {
     "30184082000132": "VLADIMIR / HENRIQUE DEZEMBRO",  # Henrique Pacetti Dezembro
     "48361800000164": "MURALHA ENTREGA RAPIDA / MRP ENTREGAS",  # Muralha (identificado na Volumetria) -- CNPJ que entrega
     "60599335000108": "MURALHA ENTREGA RAPIDA / MRP ENTREGAS",  # MRP Entregas (identificado nas NFS-e) -- CNPJ que fatura
+    # Mesma pessoa (SOR): trocou de CNPJ pra faturar a partir de mar/2026. O antigo
+    # segue sendo o que aparece na Volumetria (quem entrega), o novo emite as NFS-e.
+    "38157789000161": "ALEXANDRE DE OLIVEIRA CAMPOS",  # CNPJ antigo -- entrega (Volumetria)
+    "65641704000199": "ALEXANDRE DE OLIVEIRA CAMPOS",  # CNPJ novo   -- fatura (NFS-e)
 }
 
 
