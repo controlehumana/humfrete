@@ -1317,10 +1317,11 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="card" id="dlv_gap_card" style="display:none">
-    <div class="card-title">Controle de Nota de Servico por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Controle de emissao da NFS-e mensal de cada entregador. Verde com check = NFS-e autorizada naquele mes (o tooltip mostra o valor cobrado). Vermelho com X = a Volumetria registra entregas no mes mas nao ha NFS-e — pode ser atraso na busca da nota via API, ou um gap real de cobranca. Celula cinza (—) = sem registro naquele mes. O volume de entregas cruzado com a Volumetria fica no painel "Entregas Cruzadas com a Volumetria" logo abaixo. Nao respeita o filtro de periodo desta aba (mostra todo o historico), so o filtro global de empresa.</span></span></div>
+    <div class="card-title">Controle de Nota de Servico por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Controle de emissao da NFS-e mensal de cada entregador, organizado pelo MES DE COMPETENCIA da nota (mes em que o servico foi prestado) — nao pelo mes em que a nota foi emitida. Verde com check = NFS-e autorizada com competencia naquele mes (o tooltip mostra o valor cobrado). Vermelho com X = a Volumetria registra entregas no mes mas nao ha NFS-e — pode ser atraso na busca da nota via API, ou um gap real de cobranca. Celula cinza (—) = sem registro naquele mes. O volume de entregas cruzado com a Volumetria fica no painel "Entregas Cruzadas com a Volumetria" logo abaixo. Nao respeita o filtro de periodo desta aba (mostra todo o historico), so o filtro global de empresa.</span></span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5">Cada coluna e um <b>mes de competencia</b> — o mes em que o servico foi prestado, nao o mes em que a nota foi emitida. Uma NFS-e emitida em 03/08 com competencia 31/07 conta em <b>Jul</b>. Nota sem competencia informada entra pelo mes de emissao.</div>
     <div id="dlv_gap_matrix" style="overflow-x:auto;overflow-y:visible"></div>
-    <div style="display:flex;align-items:center;gap:14px;margin-top:12px;font-size:10px;color:var(--text2)">
-      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--green2);color:#fff;text-align:center;line-height:14px;font-size:9px">✓</span> NFS-e emitida no mes</span>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:12px;font-size:10px;color:var(--text2);flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--green2);color:#fff;text-align:center;line-height:14px;font-size:9px">✓</span> NFS-e com competencia nesse mes</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--red2);color:#fff;text-align:center;line-height:14px;font-size:9px">✕</span> Entregou sem NFS-e</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--input-bg);border:1px solid var(--bd2)"></span> Sem registro no mes</span>
     </div>
@@ -4857,8 +4858,8 @@ function initApp(){
       const thBase='padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center;border-bottom:1px solid var(--bd)';
       const stickyBase='position:sticky;left:0;z-index:2;background:var(--sticky-bg)';
       let html='<table style="border-collapse:separate;border-spacing:2px;min-width:100%">';
-      html+='<thead><tr><th style="'+thBase+';text-align:left;'+stickyBase+'">Entregador</th>';
-      mesesCols.forEach(m=>{const mes=m.slice(5,7);html+='<th style="'+thBase+'">'+(MESES[+mes]||mes)+'/'+m.slice(2,4)+'</th>';});
+      html+='<thead><tr><th style="'+thBase+';text-align:left;'+stickyBase+'">Entregador <span style="font-weight:400;color:var(--text3)">/ competencia →</span></th>';
+      mesesCols.forEach(m=>{const mes=m.slice(5,7);html+='<th style="'+thBase+'" title="Competencia '+(MESES[+mes]||mes)+'/'+m.slice(0,4)+'">'+(MESES[+mes]||mes)+'/'+m.slice(2,4)+'</th>';});
       html+='</tr></thead><tbody>';
       entregadores.forEach(nome=>{
         html+='<tr><td style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;'+stickyBase+'">'+esc(nome)+'</td>';
@@ -4870,7 +4871,7 @@ function initApp(){
             const unidades=[...cell.empresas].sort().join(', ');
             if(cell.temNfse){
               const vN=nfseByKey[nome+'|'+m]||0;
-              const txt='Unidade(s): '+unidades+' — NFS-e do mes: '+(vN?BRL(vN):'valor nao localizado por competencia');
+              const txt='Unidade(s): '+unidades+' — NFS-e com competencia neste mes: '+(vN?BRL(vN):'valor nao localizado');
               html+='<td title="'+txt+'" style="text-align:center;padding:5px 8px;background:var(--green2);border-radius:4px;color:#fff;font-size:11px;font-weight:700;cursor:help">✓</td>';
             }else{
               const txt='Unidade(s): '+unidades+' — '+N(cell.qtd)+' NF-e entregues no mes (Volumetria) — sem NFS-e';
