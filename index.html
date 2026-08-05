@@ -1285,9 +1285,10 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <!-- TAB DELIVERY -->
 <div id="tab-delivery" class="tab-panel">
   <div class="sdiv">Delivery - NFS-e dos Entregadores</div>
+  <div style="font-size:11px;color:var(--text2);margin:-4px 0 12px 2px;line-height:1.5">Os filtros de ano e mes desta aba consideram a <b>competencia</b> da NFS-e (mes em que o servico foi prestado), nao a data de emissao — o entregador costuma emitir a nota depois de fechar o mes, e pela emissao o custo cairia num mes diferente do das entregas. Nota sem competencia informada entra pela data de emissao e aparece marcada com <span style="color:var(--orange);font-weight:700">*</span>.</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de notas fiscais de servico (NFS-e) emitidas pelos entregadores parceiros para o grupo Humana no periodo. Cada nota representa um fechamento de servico de entrega, sem referencia direta as NF-e transportadas.</div><div class="kpi-val" id="dlv_qtd">-</div><div class="kpi-lbl">NFS-e Recebidas</div><div class="kpi-sub">notas de servico emitidas</div></div>
-    <div class="kpi-card"><div class="kpi-tooltip">Soma dos valores de servico cobrados pelos entregadores no periodo. Representa o custo com entregadores parceiros (servico de entrega), separado do frete pago a transportadoras via CT-e.</div><div class="kpi-val" id="dlv_total">-</div><div class="kpi-lbl">Valor Total</div><div class="kpi-sub">pago aos entregadores <span id="dlv_total_trend"></span></div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de notas fiscais de servico (NFS-e) dos entregadores parceiros com competencia no periodo selecionado (nao a data de emissao — ver nota no topo da aba). Cada nota representa um fechamento de servico de entrega, sem referencia direta as NF-e transportadas.</div><div class="kpi-val" id="dlv_qtd">-</div><div class="kpi-lbl">NFS-e Recebidas</div><div class="kpi-sub">notas de servico emitidas</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Soma dos valores de servico cobrados pelos entregadores, pelo mes de competencia da nota. Representa o custo com entregadores parceiros (servico de entrega), separado do frete pago a transportadoras via CT-e.</div><div class="kpi-val" id="dlv_total">-</div><div class="kpi-lbl">Valor Total</div><div class="kpi-sub">pago aos entregadores <span id="dlv_total_trend"></span></div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo medio por NFS-e emitida pelos entregadores no periodo. Util para acompanhar a evolucao do ticket medio de cada fechamento de servico.</div><div class="kpi-val" id="dlv_medio">-</div><div class="kpi-lbl">Valor Medio</div><div class="kpi-sub">por NFS-e <span id="dlv_medio_trend"></span></div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Quantidade de entregadores parceiros distintos que emitiram NFS-e para o grupo no periodo selecionado, conforme cadastro de referencia.</div><div class="kpi-val" id="dlv_qtd_entreg">-</div><div class="kpi-lbl">Entregadores Ativos</div><div class="kpi-sub">com notas no periodo</div></div>
   </div>
@@ -1296,7 +1297,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div id="dlv_vs_cte"></div>
   </div>
   <div class="card">
-    <div class="card-title">Evolucao Mensal do Custo com Entregadores<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Soma dos valores das NFS-e emitidas pelos entregadores, agrupados por mes/ano. Permite acompanhar a evolucao do custo com o servico de entrega ao longo do tempo.</span></span></div>
+    <div class="card-title">Evolucao Mensal do Custo com Entregadores<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Soma dos valores das NFS-e dos entregadores, agrupados pelo mes de competencia (nao pelo mes de emissao). Permite acompanhar a evolucao do custo com o servico de entrega ao longo do tempo, alinhada ao mes em que as entregas aconteceram.</span></span></div>
     <div class="ch-wrap"><canvas id="ch_dlv_mensal"></canvas></div>
   </div>
   <div class="card">
@@ -1386,6 +1387,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <div class="card">
     <div class="card-title">Detalhamento por Entregador<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem das NFS-e emitidas por cada entregador parceiro, com numero, competencia, data de emissao, empresa do grupo atendida e valor do servico.</span></span></div>
     <div class="sr"><input type="text" id="dlv_search" placeholder="Buscar entregador, numero da nota..."><select id="dlv_sel_emp"><option value="">Todas as empresas</option></select><button class="btn-xlsx" onclick="if(window.dlvExportXLSX)window.dlvExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button></div>
+    <div id="dlv_comp_legenda" style="display:none;font-size:10px;color:var(--text2);margin-top:8px"><span style="color:var(--orange);font-weight:700">*</span> NFS-e sem competencia informada pelo emitente — considerada no periodo pela data de emissao.</div>
     <div class="tw dtbl" id="dlv_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table id="dlv_table" style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data Emissao</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Competencia</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Numero NFS-e</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor do Servico</th></tr></thead>
@@ -4463,6 +4465,20 @@ function initApp(){
     emps.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;dlvDetSelEmp.appendChild(o);});
   })();
   function dlvFilter(){dlvPage=0;renderDelivery();}
+  // Data de referencia de uma NFS-e para TODO filtro de periodo desta aba: a
+  // COMPETENCIA (mes em que o servico foi prestado), nao a emissao. O entregador
+  // costuma emitir a nota depois de fechar o mes — filtrar pela emissao jogava o
+  // custo para o mes seguinte e descasava do volume de entregas, que e datado pela
+  // NF-e de mercadoria. Fallback para a emissao quando a competencia vier vazia,
+  // para a nota nao sumir do relatorio; nesses casos `_dlvSemComp` marca a linha
+  // com * na tela.
+  function _dlvPer(d){return (d&&d.competencia)||(d&&d.data_emissao)||'';}
+  function _dlvSemComp(d){return !(d&&d.competencia);}
+  const _DLV_NOTA_SEM_COMP='Competencia nao informada na NFS-e — periodo considerado pela data de emissao';
+  // Asterisco discreto ao lado do valor/nome quando a competencia falta
+  function _dlvAst(d){
+    return _dlvSemComp(d)?'<span style="color:var(--orange);font-weight:700;cursor:help" title="'+_DLV_NOTA_SEM_COMP+'">*</span>':'';
+  }
   // Período anterior para comparação de tendência (mesmo padrão de _geoPrevRows)
   function _dlvPrevRows(){
     const MA={1:'Jan',2:'Fev',3:'Mar',4:'Abr',5:'Mai',6:'Jun',7:'Jul',8:'Ago',9:'Set',10:'Out',11:'Nov',12:'Dez'};
@@ -4472,7 +4488,7 @@ function initApp(){
       if(prevM===0){prevM=12;prevY=curY?String(parseInt(curY)-1):'';}
       const prevMStr=String(prevM).padStart(2,'0');
       const rows=(DATA.delivery||[]).filter(d=>{
-        const dt=d.data_emissao||'';
+        const dt=_dlvPer(d);
         if(dt.slice(3,5)!==prevMStr) return false;
         if(prevY&&dt.slice(6,10)!==prevY) return false;
         if(state.empresas.length&&!state.empresas.includes(d.empresa)) return false;
@@ -4484,7 +4500,7 @@ function initApp(){
     if(state.ano&&!state.meses.length){
       const prevY=String(parseInt(state.ano)-1);
       const rows=(DATA.delivery||[]).filter(d=>{
-        const dt=d.data_emissao||'';
+        const dt=_dlvPer(d);
         if(dt.slice(6,10)!==prevY) return false;
         if(state.empresas.length&&!state.empresas.includes(d.empresa)) return false;
         return true;
@@ -4530,8 +4546,8 @@ function initApp(){
     // da volumetria e so conhece empresa/ano/mes.
     const nfseGlobal=(DATA.delivery||[]).filter(d=>
       (!state.empresas.length||state.empresas.includes(d.empresa))
-      &&(!state.ano||(d.data_emissao||'').slice(6,10)===state.ano)
-      &&(!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5))));
+      &&(!state.ano||_dlvPer(d).slice(6,10)===state.ano)
+      &&(!state.meses.length||state.meses.includes(_dlvPer(d).slice(3,5))));
     const custo=nfseGlobal.reduce((s,d)=>s+(d.valor_servico||0),0);
     document.getElementById('dlv_loc_rentrega').textContent=tot?BRL(custo/tot):'-';
     // Mostra a conta, nao so o resultado: quando o recorte pega um entregador que
@@ -4634,8 +4650,9 @@ function initApp(){
     const rows=(DATA.delivery||[]).filter(d=>{
       const empOk=(!dlvSelEmp.value||d.empresa===dlvSelEmp.value)
                  &&(!state.empresas.length||state.empresas.includes(d.empresa));
-      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
-      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const per=_dlvPer(d);
+      const anoOk=!state.ano||per.slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes(per.slice(3,5));
       const q=(dlvInp.value||'').toLowerCase();
       const qOk=!q||(d.entregador_nome||'').toLowerCase().includes(q)
         ||(d.numero||'').toLowerCase().includes(q);
@@ -4662,8 +4679,9 @@ function initApp(){
     (function(){
       const dlvGlobalRows=(DATA.delivery||[]).filter(d=>{
         const empOk=!state.empresas.length||state.empresas.includes(d.empresa);
-        const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
-        const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+        const per=_dlvPer(d);
+        const anoOk=!state.ano||per.slice(6,10)===state.ano;
+        const mesOk=!state.meses.length||state.meses.includes(per.slice(3,5));
         return empOk&&anoOk&&mesOk;
       });
       const dlvVal=dlvGlobalRows.reduce((s,d)=>s+(d.valor_servico||0),0);
@@ -4695,10 +4713,10 @@ function initApp(){
         +'A cada R$100 gastos com logistica de saida (CT-e + entregadores autonomos) no periodo e empresas filtrados, <strong style="color:var(--text)">R$'+pctDlv.toFixed(0)+'</strong> ficam com entregadores parceiros e <strong style="color:var(--text)">R$'+pctCte.toFixed(0)+'</strong> com transportadoras via CT-e.'
         +'</div>';
     })();
-    // Evolucao mensal (AAAA-MM -> total)
+    // Evolucao mensal (AAAA-MM -> total), pelo mes de competencia
     const porMes={};
     rows.forEach(d=>{
-      const dt=d.data_emissao||'';
+      const dt=_dlvPer(d);
       if(dt.length<10) return;
       const key=dt.slice(6,10)+'-'+dt.slice(3,5);
       porMes[key]=(porMes[key]||0)+(d.valor_servico||0);
@@ -4736,12 +4754,13 @@ function initApp(){
     const porEntreg={};
     rows.forEach(d=>{
       const key=d.entregador_nome||'-';
-      if(!porEntreg[key]) porEntreg[key]={nome:d.entregador_nome||'-',empresas:new Set(),qtd:0,total:0,minDt:null,maxDt:null};
+      if(!porEntreg[key]) porEntreg[key]={nome:d.entregador_nome||'-',empresas:new Set(),qtd:0,total:0,minDt:null,maxDt:null,semComp:0};
       const e=porEntreg[key];
       e.empresas.add(d.empresa||'?');
       e.qtd++;
       e.total+=(d.valor_servico||0);
-      const dt=_dlvDt(d.competencia);
+      if(_dlvSemComp(d)) e.semComp++;
+      const dt=_dlvDt(_dlvPer(d));
       if(dt!==null){
         if(e.minDt===null||dt<e.minDt) e.minDt=dt;
         if(e.maxDt===null||dt>e.maxDt) e.maxDt=dt;
@@ -4772,7 +4791,8 @@ function initApp(){
       const rKg=e.volPeso?BRL(e.total/e.volPeso):'-';
       return '<tr style="border-bottom:1px solid var(--row-border)">'
         +'<td style="padding:7px 10px;color:var(--text3)">'+(i+1)+'</td>'
-        +'<td style="padding:7px 10px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(e.nome)+'">'+esc(e.nome)+'</td>'
+        +'<td style="padding:7px 10px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(e.nome)+'">'+esc(e.nome)
+          +(e.semComp?'<span style="color:var(--orange);font-weight:700;cursor:help" title="'+e.semComp+' NFS-e sem competencia informada — contadas no periodo pela data de emissao">*</span>':'')+'</td>'
         +'<td style="padding:7px 10px;color:var(--text2);font-size:10px">'+esc(emps)+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(e.qtd)+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+BRL(e.total)+'</td>'
@@ -4787,13 +4807,17 @@ function initApp(){
     document.getElementById('dlv_tbody').innerHTML=slice.map(d=>{
       return '<tr style="border-bottom:1px solid var(--row-border)">'
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+(fmtDate(d.data_emissao)||'--')+'</td>'
-        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+(fmtDate(d.competencia)||'--')+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'
+          +(_dlvSemComp(d)?'<span style="color:var(--orange);font-weight:700;cursor:help" title="'+_DLV_NOTA_SEM_COMP+'">* nao informada</span>':fmtDate(d.competencia))+'</td>'
         +'<td style="padding:7px 10px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(d.entregador_nome||'')+'">'+esc(d.entregador_nome||'-')+'</td>'
         +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa||'?')+'</span></td>'
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2);font-size:10px">'+esc(d.numero||'--')+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_servico||0)+'</td>'
         +'</tr>';
     }).join('');
+    // Legenda do * so aparece quando ha de fato nota sem competencia no recorte
+    const _elLeg=document.getElementById('dlv_comp_legenda');
+    if(_elLeg) _elLeg.style.display=rows.some(_dlvSemComp)?'':'none';
     mkPager(rows.length,dlvPage,PAGE,'dlv_pager',pg=>{dlvPage=pg;renderDelivery();});
     // Controle de NFS-e por Entregador — matriz entregador (linha) x mes (coluna)
     // So respeita o filtro global de empresa, nao o periodo local desta aba
@@ -4813,7 +4837,7 @@ function initApp(){
       const nfseByKey={};
       (DATA.delivery||[]).forEach(d=>{
         if(!state.empresas.length||state.empresas.includes(d.empresa)){
-          const c=d.competencia||'';
+          const c=_dlvPer(d); // competencia, ou emissao quando ela nao vier
           if(c.length>=10){
             const k=(d.entregador_nome||'-')+'|'+c.slice(6,10)+'-'+c.slice(3,5);
             nfseByKey[k]=(nfseByKey[k]||0)+(d.valor_servico||0);
@@ -5144,13 +5168,17 @@ function initApp(){
     const q=(dlvInp.value||'').toLowerCase();
     const rows=(DATA.delivery||[]).filter(d=>{
       const empOk=(!dlvSelEmp.value||d.empresa===dlvSelEmp.value)&&(!state.empresas.length||state.empresas.includes(d.empresa));
-      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
-      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const per=_dlvPer(d);
+      const anoOk=!state.ano||per.slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes(per.slice(3,5));
       const qOk=!q||(d.entregador_nome||'').toLowerCase().includes(q)||(d.numero||'').toLowerCase().includes(q);
       return empOk&&anoOk&&mesOk&&qOk;
     });
     if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
-    const data=rows.map(d=>({'Data Emissao':fmtDate(d.data_emissao)||'','Competencia':d.competencia||'','Entregador':d.entregador_nome||'','Empresa':d.empresa||'','Numero NFS-e':d.numero||'','Valor Servico (R$)':+(d.valor_servico||0).toFixed(2)}));
+    // "Mes de Referencia" e o que o filtro usou: competencia, ou a emissao com *
+    const data=rows.map(d=>({'Data Emissao':fmtDate(d.data_emissao)||'','Competencia':d.competencia||'',
+      'Mes de Referencia':_dlvPer(d).slice(3,10)+(_dlvSemComp(d)?' *':''),
+      'Entregador':d.entregador_nome||'','Empresa':d.empresa||'','Numero NFS-e':d.numero||'','Valor Servico (R$)':+(d.valor_servico||0).toFixed(2)}));
     const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
     const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
     const ci=hdr.indexOf('Valor Servico (R$)');if(ci>=0)for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}

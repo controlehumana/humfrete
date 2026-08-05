@@ -931,6 +931,16 @@ Usuário reportou que não conseguia diferenciar entregadores no empilhado. Corr
 - **Excedente vira "Outros (N)"** em cinza neutro (`DLV_COR_OUTROS`), e no swatch da tabela esses entregadores aparecem **cinza também**, espelhando a faixa do gráfico
 - **Ao criar qualquer gráfico novo neste projeto:** carregar a skill `dataviz` e rodar o validador contra as superfícies reais acima; máx. 8 cores categóricas
 
+### Período do módulo Delivery = COMPETÊNCIA da NFS-e, não data de emissão (ago/2026)
+
+Todo filtro de ano/mês da aba Delivery usa `_dlvPer(d)` = `d.competencia || d.data_emissao`. **Não voltar a filtrar por `data_emissao` direto** — o entregador emite a nota depois de fechar o mês, e pela emissão o custo caía num mês diferente do das entregas, que são datadas pela NF-e de mercadoria.
+
+**O sintoma que revelou isso:** com o filtro em ago/2026 o ranking mostrava 1 NFS-e do Simaura (nº 17, R$11.000, emitida 03/08 com competência 31/07) e a tabela "NF-e Entregues — Detalhe" ficava vazia — porque as entregas dela são de julho. Havia ainda uma inconsistência interna: a matriz "Controle de Nota de Serviço" **já** usava competência, enquanto KPIs/ranking/gráfico usavam emissão.
+
+**Pontos convertidos** (todos em `index.html`): `rows` de `renderDelivery`, `dlvGlobalRows` (card Delivery vs. Frete), `nfseGlobal` (custo médio por entrega do card Raio), `_dlvPrevRows` (tendência), gráfico `ch_dlv_mensal`, `_dlvDt` do "Valor Médio/Dia", `nfseByKey` da matriz e `dlvExportXLSX`. Efeito medido: jul/2026 foi de 12 para 14 NFS-e (entram Simaura R$11.000 e Vladimir/Henrique R$1.365, ambas emitidas em 03/08), e o custo médio por entrega passa a bater com o volume do mês (R$58,78 / 885 entregas).
+
+**Fallback e marcação:** nota sem competência entra pela emissão e é marcada com `*` laranja — na coluna Competência (`* nao informada`), ao lado do nome no ranking (com a contagem no `title`) e numa legenda (`dlv_comp_legenda`) que só aparece quando há caso no recorte. O export ganhou a coluna "Mês de Referência" com ` *` no valor. Hoje **nenhuma NFS-e da base está sem competência** — a marcação é preventiva, para o número nunca mudar de mês em silêncio.
+
 ### Raio de Entrega — dentro x fora da cidade (ago/2026)
 
 Card `dlv_loc_card` na aba Delivery. Nasceu de uma conferência do usuário: o R$/entrega em torno de R$55 não dizia nada sozinho, porque entrega urbana e entrega para outro município têm custo estruturalmente diferente. Separa as duas coisas e usa o % fora como explicação para um custo médio mais alto.
