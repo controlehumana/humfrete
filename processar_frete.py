@@ -11,6 +11,7 @@ import json
 import re
 import csv
 import sqlite3
+import unicodedata
 from html.parser import HTMLParser
 from xml.etree import ElementTree as ET
 from collections import defaultdict
@@ -702,6 +703,79 @@ def _carregar_nfse_entregadores():
         return []
 
 
+def _norm_cidade(s):
+    """Normaliza nome de cidade para comparacao: maiusculas, sem acento, sem espaco
+    duplicado. A Volumetria grava 'CAMPO GRANDE' e o faturamento 'Campo Grande';
+    fora isso ha acentuacao inconsistente entre as duas fontes ('UBERLANDIA' x
+    'Uberlândia'), entao comparar string crua daria falso 'fora da cidade'."""
+    if not s:
+        return ""
+    txt = unicodedata.normalize("NFKD", str(s))
+    txt = "".join(c for c in txt if not unicodedata.combining(c))
+    return " ".join(txt.upper().split())
+
+
+_CIDADE_MINUSCULAS = {"DE", "DA", "DO", "DAS", "DOS", "E"}
+
+
+def _cidade_exib(s):
+    """Grafia unica para exibicao. As duas fontes divergem no mesmo municipio -- a
+    Volumetria grava 'VOTORANTIM' e o faturamento 'Votorantim' -- e sem padronizar
+    a mesma cidade aparece como duas linhas no ranking."""
+    txt = " ".join(str(s or "").split())
+    if not txt:
+        return ""
+    palavras = []
+    for i, p in enumerate(txt.split(" ")):
+        alto = p.upper()
+        palavras.append(alto.lower() if i > 0 and alto in _CIDADE_MINUSCULAS else alto.capitalize())
+    return " ".join(palavras)
+
+
+def _sedes_por_empresa(conn):
+    """Cidade-sede de cada unidade, derivada dos proprios dados (cidade do emitente
+    mais frequente nas NF-e daquela empresa na Volumetria) -- evita hardcode de
+    endereco de filial, que sairia de sincronia numa mudanca ou unidade nova.
+    Retorna {empresa: {"cod": codigo IBGE, "nome": nome normalizado, "exib": nome}}."""
+    try:
+        rows = conn.execute("""
+            SELECT empresa, emit_cidade, emit_uf, emit_cod_cidade, COUNT(*) n
+            FROM volumetria_nfe
+            WHERE emit_cidade IS NOT NULL AND emit_cidade != ''
+            GROUP BY empresa, emit_cod_cidade
+            ORDER BY empresa, n DESC
+        """).fetchall()
+    except sqlite3.OperationalError:
+        return {}  # banco ainda sem as colunas de cidade
+    sedes = {}
+    for r in rows:
+        if r["empresa"] in sedes:
+            continue  # primeira linha da empresa = cidade mais frequente
+        sedes[r["empresa"]] = {
+            "cod":  (r["emit_cod_cidade"] or "").strip(),
+            "nome": _norm_cidade(r["emit_cidade"]),
+            "exib": _cidade_exib(r["emit_cidade"]),
+            "uf":   (r["emit_uf"] or "").strip(),
+        }
+    return sedes
+
+
+def _classificar_local(sede, cod_dest, cidade_dest):
+    """'dentro' / 'fora' / '' (sem dado) comparando a cidade de destino com a sede da
+    unidade. Prefere o codigo IBGE (exato); cai no nome normalizado quando a linha
+    nao tem codigo -- caso das NF-e importadas antes das colunas de cidade, em que a
+    cidade vem do faturamento (vw_nf_saida) e nao traz codigo."""
+    if not sede:
+        return ""
+    cod_dest = (cod_dest or "").strip()
+    if cod_dest and sede.get("cod"):
+        return "dentro" if cod_dest == sede["cod"] else "fora"
+    nome = _norm_cidade(cidade_dest)
+    if not nome or not sede.get("nome"):
+        return ""
+    return "dentro" if nome == sede["nome"] else "fora"
+
+
 def _carregar_volumetria_entregadores():
     """Carrega do banco SQLite o volume real de NF-e/peso entregues por cada
     entregador cadastrado (tabela volumetria_nfe, importada de QUIVE/importar_volumetria.py
@@ -747,18 +821,52 @@ def _carregar_volumetria_entregadores():
                 "SELECT cnpj_entregador, empresa, nome_entregador FROM entregadores"
             ).fetchall()
         }
+        # Entrega dentro x fora da cidade da unidade, agregado no mesmo grao das linhas
+        # acima. Fica aqui (e nao so no detalhe por NF-e, que tem janela de 6 meses)
+        # para os KPIs responderem a qualquer periodo filtrado no dashboard. Agrupa
+        # por cidade antes de contar: reduz 21k linhas a algumas centenas de grupos.
+        sedes = _sedes_por_empresa(conn)
+        local_por_chave = defaultdict(lambda: {"dentro": 0, "fora": 0, "indef": 0})
+        if sedes:
+            try:
+                loc_rows = conn.execute("""
+                    SELECT v.empresa, e.cnpj_entregador,
+                           substr(v.data_emissao,7,4) AS ano, substr(v.data_emissao,4,2) AS mes,
+                           v.dest_cod_cidade, v.dest_cidade, n.part_cidade, COUNT(*) AS qtd
+                    FROM volumetria_nfe v
+                    JOIN entregadores e ON e.cnpj_entregador = v.transp_cnpj AND e.empresa = v.empresa
+                    LEFT JOIN vw_nf_saida n ON n.chave = v.chave_acesso
+                    WHERE length(v.data_emissao) = 10
+                    GROUP BY v.empresa, e.cnpj_entregador, ano, mes,
+                             v.dest_cod_cidade, v.dest_cidade, n.part_cidade
+                """).fetchall()
+            except sqlite3.OperationalError:
+                loc_rows = []
+            for lr in loc_rows:
+                cidade = (lr["dest_cidade"] or "").strip() or (lr["part_cidade"] or "")
+                cls = _classificar_local(sedes.get(lr["empresa"]), lr["dest_cod_cidade"], cidade)
+                k = (lr["empresa"], lr["cnpj_entregador"], lr["ano"], lr["mes"])
+                local_por_chave[k][cls or "indef"] += lr["qtd"]
         conn.close()
-        resultado = [{
-            "empresa":         r["empresa"],
-            "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["cnpj_entregador"]) or r["nome_entregador"],
-            "ano":             r["ano"],
-            "mes":             r["mes"],
-            "qtd_nfe":         r["qtd_nfe"],
-            "peso_kg":         round(r["peso_kg"] or 0, 2),
-            "valor_nf":        round(r["valor_nf"] or 0, 2),
-            "tem_nfse":        (r["cnpj_entregador"], r["empresa"], f'{r["ano"]}-{r["mes"]}') in nfse_meses,
-            "sem_volumetria":  False,
-        } for r in rows]
+        resultado = []
+        for r in rows:
+            loc = local_por_chave.get(
+                (r["empresa"], r["cnpj_entregador"], r["ano"], r["mes"]),
+                {"dentro": 0, "fora": 0, "indef": 0})
+            resultado.append({
+                "empresa":         r["empresa"],
+                "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["cnpj_entregador"]) or r["nome_entregador"],
+                "ano":             r["ano"],
+                "mes":             r["mes"],
+                "qtd_nfe":         r["qtd_nfe"],
+                "peso_kg":         round(r["peso_kg"] or 0, 2),
+                "valor_nf":        round(r["valor_nf"] or 0, 2),
+                "tem_nfse":        (r["cnpj_entregador"], r["empresa"], f'{r["ano"]}-{r["mes"]}') in nfse_meses,
+                "sem_volumetria":  False,
+                "qtd_dentro":      loc["dentro"],
+                "qtd_fora":        loc["fora"],
+                "qtd_local_indef": loc["indef"],
+            })
         # Entregador+mes com NFS-e emitida mas SEM nenhuma linha na Volumetria (o relatorio
         # do ERP nao identifica esse CNPJ como transportadora naquele mes) fica invisivel na
         # matriz "Controle de Nota de Servico" sem isso, mesmo tendo faturado (ex.: Henrique
@@ -777,6 +885,7 @@ def _carregar_volumetria_entregadores():
                 "empresa": empresa, "entregador_nome": nome, "ano": ano, "mes": mes,
                 "qtd_nfe": 0, "peso_kg": 0.0, "valor_nf": valor_faturado, "tem_nfse": True,
                 "sem_volumetria": True,
+                "qtd_dentro": 0, "qtd_fora": 0, "qtd_local_indef": 0,
             })
         print(f"   Volumetria Entregadores: {len(resultado)} combinacoes empresa/entregador/mes")
         return resultado
@@ -805,36 +914,70 @@ def _carregar_volumetria_detalhe():
         # completo medido, UBE/SOR (mais entregadores) chegaram a ~500-540 KB só
         # nesse campo — 6 meses reduz a margem de risco. Ver pitfall no CLAUDE.md.
         cutoff = (datetime.now() - timedelta(days=182)).strftime("%Y%m")
-        rows = cur.execute("""
-            SELECT v.empresa, e.cnpj_entregador, e.nome_entregador, v.numero_nfe, v.data_emissao,
-                   v.canal, v.peso_kg, v.total_nf AS valor_volumetria,
-                   n.participante, n.part_cidade, n.part_estado, n.nat_operacao,
-                   n.total_nf AS valor_fat
-            FROM volumetria_nfe v
-            JOIN entregadores e ON e.cnpj_entregador = v.transp_cnpj AND e.empresa = v.empresa
-            LEFT JOIN vw_nf_saida n ON n.chave = v.chave_acesso
-            WHERE length(v.data_emissao) = 10
-              AND (substr(v.data_emissao,7,4) || substr(v.data_emissao,4,2)) >= ?
-        """, (cutoff,)).fetchall()
+        sedes = _sedes_por_empresa(conn)
+        # dest_cidade/dest_cod_cidade vem da Volumetria; nas linhas importadas antes
+        # dessas colunas existirem, cai no part_cidade do faturamento (mesma origem:
+        # endereco do destinatario, so que sem o codigo IBGE)
+        try:
+            rows = cur.execute("""
+                SELECT v.empresa, e.cnpj_entregador, e.nome_entregador, v.numero_nfe, v.data_emissao,
+                       v.canal, v.peso_kg, v.total_nf AS valor_volumetria,
+                       v.dest_cidade, v.dest_uf, v.dest_cod_cidade,
+                       n.participante, n.part_cidade, n.part_estado, n.nat_operacao,
+                       n.total_nf AS valor_fat
+                FROM volumetria_nfe v
+                JOIN entregadores e ON e.cnpj_entregador = v.transp_cnpj AND e.empresa = v.empresa
+                LEFT JOIN vw_nf_saida n ON n.chave = v.chave_acesso
+                WHERE length(v.data_emissao) = 10
+                  AND (substr(v.data_emissao,7,4) || substr(v.data_emissao,4,2)) >= ?
+            """, (cutoff,)).fetchall()
+        except sqlite3.OperationalError:
+            conn.close(); return []
         conn.close()
-        resultado = [{
-            "empresa":         r["empresa"],
-            "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["cnpj_entregador"]) or r["nome_entregador"],
-            "numero":          r["numero_nfe"] or "",
-            "data":            r["data_emissao"] or "",
-            "canal":           r["canal"] or "",
-            "peso_kg":         round(r["peso_kg"] or 0, 2),
-            "valor_nf":        round(r["valor_fat"] if r["valor_fat"] is not None else (r["valor_volumetria"] or 0), 2),
-            "cliente":         r["participante"] or "",
-            "cidade":          r["part_cidade"] or "",
-            "estado":          r["part_estado"] or "",
-            "nat_operacao":    r["nat_operacao"] or "",
-        } for r in rows]
+        resultado = []
+        for r in rows:
+            cidade = (r["dest_cidade"] or "").strip() or (r["part_cidade"] or "")
+            uf     = (r["dest_uf"] or "").strip() or (r["part_estado"] or "")
+            sede   = sedes.get(r["empresa"])
+            resultado.append({
+                "empresa":         r["empresa"],
+                "entregador_nome": ENTREGADOR_ALIAS_NOME.get(r["cnpj_entregador"]) or r["nome_entregador"],
+                "numero":          r["numero_nfe"] or "",
+                "data":            r["data_emissao"] or "",
+                "canal":           r["canal"] or "",
+                "peso_kg":         round(r["peso_kg"] or 0, 2),
+                "valor_nf":        round(r["valor_fat"] if r["valor_fat"] is not None else (r["valor_volumetria"] or 0), 2),
+                "cliente":         r["participante"] or "",
+                "cidade":          _cidade_exib(cidade),
+                "estado":          uf,
+                "nat_operacao":    r["nat_operacao"] or "",
+                # a cidade-sede NAO vai por linha (seria a mesma string repetida
+                # milhares de vezes, ~39 KB so no doc da CGR): vai uma vez em
+                # resumo.sedes_unidades e o frontend cruza por empresa
+                "local":           _classificar_local(sede, r["dest_cod_cidade"], cidade),
+            })
         print(f"   Volumetria Detalhe: {len(resultado)} NF-e de entregadores")
         return resultado
     except Exception as e:
         print(f"   [AVISO] Não foi possível carregar detalhe de volumetria_nfe: {e}")
         return []
+
+
+def _carregar_sedes_unidades():
+    """{empresa: {"cidade": ..., "uf": ...}} — cidade-sede de cada unidade, para o
+    frontend rotular o que e "dentro da cidade" em cada filial. Dict minusculo (8
+    entradas), vai global no resumo em vez de repetido em cada linha de entrega."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        sedes = _sedes_por_empresa(conn)
+        conn.close()
+        return {e: {"cidade": s["exib"], "uf": s["uf"]} for e, s in sedes.items()}
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar sedes das unidades: {e}")
+        return {}
 
 
 def _carregar_volumetria_lookup():
@@ -1140,6 +1283,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     delivery = _carregar_nfse_entregadores()         # NFS-e dos entregadores (módulo Delivery)
     volumetria_entregadores = _carregar_volumetria_entregadores()  # NF-e/peso entregues por entregador (módulo Delivery)
     volumetria_detalhe = _carregar_volumetria_detalhe()  # detalhe por NF-e (cliente/cidade/UF) das entregas de entregadores
+    sedes_unidades = _carregar_sedes_unidades()      # cidade-sede de cada unidade (base do "dentro x fora da cidade")
     separacao_detalhe, produtos_desc = _calcular_separacao() # Produtividade de separação por empresa (módulo Separação)
     # Versão leve (sem por_canal/por_dow) para embutir sem filtro em todo doc de empresa —
     # permite ranking cruzando todas as empresas mesmo para usuário restrito a 1 empresa.
@@ -1447,6 +1591,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "nfe_fat_por_emp_ano":nfe_fat_por_emp_ano,
             "nfe_fat_por_emp_ano_mes":nfe_fat_por_emp_ano_mes,
             "separacao_por_emp_ano_mes":separacao_por_emp_ano_mes,
+            "sedes_unidades":sedes_unidades,
             "cte_conc_por_empresa":cte_conc_por_empresa,
             "cte_conc_por_emp_ano_mes":cte_conc_por_emp_ano_mes,
             "nfe_sem_cte":len(nfe_sem_cte),"nfe_sem_cte_por_empresa":nfe_sem_cte_por_empresa,"cte_sem_fat":cte_sem_fat,

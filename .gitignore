@@ -14,3 +14,9 @@ tmp_*.py
 teste_*.html
 test_*.js
 *.json.bak
+
+# Prints de tela — o repo é público e qualquer captura do dashboard mostra
+# cliente, entregador e valor reais (ex.: simaura.png, usado numa investigação)
+*.png
+*.jpg
+*.jpeg

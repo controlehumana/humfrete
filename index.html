@@ -1325,7 +1325,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
   </div>
   <div class="card" id="dlv_vol_card" style="display:none">
-    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. Cada barra e empilhada por entregador (os 8 maiores em volume aparecem individualmente; os demais somam em "Outros"); o tooltip de cada faixa mostra a quantidade de NF-e e o valor de mercadoria daquele entregador no mes. O seletor acima isola um entregador (grafico, totais e tabela ao mesmo tempo) sem mexer no painel de controle. Fora esse seletor, o escopo e o mesmo do painel de controle: historico completo, so respeita o filtro global de empresa.</span></span></div>
+    <div class="card-title">Entregas Cruzadas com a Volumetria<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Total mensal de NF-e de mercadoria efetivamente entregues por entregadores parceiros, segundo o relatorio de Volumetria do ERP. E o volume real de entregas — nao confundir com o valor cobrado pelos entregadores (NFS-e), que fica no painel de controle acima. Cada barra e empilhada por entregador (os 8 maiores em volume aparecem individualmente; os demais somam em "Outros"); o tooltip de cada faixa mostra a quantidade de NF-e e o valor de mercadoria daquele entregador no mes. O seletor acima isola um entregador (grafico, totais e tabela ao mesmo tempo) sem mexer no painel de controle. Diferente do painel de controle acima (que sempre mostra o historico completo), este card respeita os filtros globais de empresa, ano e mes do topo da tela.</span></span></div>
     <div class="sr" style="margin-bottom:10px"><select id="dlv_vol_sel_ent" style="min-width:340px;max-width:100%"><option value="">Todos os entregadores</option></select></div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--text2)">
       <span>NF-e entregues: <b id="dlv_vol_qtd" style="color:var(--text)">--</b></span>
@@ -1341,12 +1341,43 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       </table>
     </div>
   </div>
+  <div class="card" id="dlv_loc_card" style="display:none">
+    <div class="card-title">Raio de Entrega — Dentro x Fora da Cidade<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Separa as entregas feitas na propria cidade da unidade das que sairam para outros municipios. Serve para julgar o valor cobrado por entrega: um R$/entrega que parece alto pode ser normal se boa parte das entregas for para fora da cidade (mais km rodado), e vice-versa. A cidade-sede de cada unidade e deduzida das proprias notas (cidade do emitente mais frequente), nao e cadastrada a mao.</span></span></div>
+    <div id="dlv_loc_aviso" class="alert a-yellow" style="margin-bottom:12px;font-size:11px"></div>
+    <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi-card"><div class="kpi-tooltip">NF-e entregues no mesmo municipio da unidade que faturou. E a entrega urbana tipica do entregador parceiro: menor distancia por rota e maior numero de paradas por dia.</div><div class="kpi-val" id="dlv_loc_dentro">-</div><div class="kpi-lbl">Entregas na Cidade</div><div class="kpi-sub"><span id="dlv_loc_dentro_pct">-</span> do total</div></div>
+      <div class="kpi-card"><div class="kpi-tooltip">NF-e entregues em municipio diferente do da unidade. Sao as rotas que justificam custo maior por entrega — se esse percentual sobe, o R$/entrega tende a subir junto sem que isso signifique cobranca indevida.</div><div class="kpi-val" id="dlv_loc_fora">-</div><div class="kpi-lbl">Entregas Fora da Cidade</div><div class="kpi-sub"><span id="dlv_loc_fora_pct">-</span> do total</div></div>
+      <div class="kpi-card"><div class="kpi-tooltip">Valor total das NFS-e dos entregadores dividido pelo total de NF-e que eles entregaram no periodo. A NFS-e e mensal e nao discrimina rota, por isso nao existe custo separado para entrega dentro e fora da cidade — o percentual de entregas fora e que ajuda a explicar um custo medio mais alto. Atencao ao filtrar uma unidade isolada: entregador que atende mais de uma unidade as vezes fatura numa e entrega pela outra, e ai a conta abaixo fica desproporcional (poucas entregas para um valor alto de nota).</div><div class="kpi-val" id="dlv_loc_rentrega">-</div><div class="kpi-lbl">Custo Medio por Entrega</div><div class="kpi-sub" id="dlv_loc_rentrega_sub">NFS-e / NF-e entregues</div></div>
+      <div class="kpi-card"><div class="kpi-tooltip">Quantidade de municipios distintos atendidos fora da cidade-sede no periodo. Muitas cidades com poucas entregas cada indica rota pulverizada, que encarece a entrega individual.</div><div class="kpi-val" id="dlv_loc_cidades">-</div><div class="kpi-lbl">Cidades Fora da Sede</div><div class="kpi-sub">municipios atendidos</div></div>
+    </div>
+    <div class="ch-wrap" style="margin-top:4px"><canvas id="ch_dlv_loc"></canvas></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px" class="dlv-loc-grid">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">POR ENTREGADOR</div>
+        <div class="tw dtbl" style="max-height:42vh;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Sede</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Na Cidade</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Fora</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">% Fora</th></tr></thead>
+            <tbody id="dlv_loc_ent_tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">CIDADES ATENDIDAS FORA DA SEDE <span style="font-weight:400;letter-spacing:0;text-transform:none">(ultimos 6 meses)</span></div>
+        <div class="tw dtbl" style="max-height:42vh;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Cidade/UF</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Unidade</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Entregas</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor em Mercadoria</th></tr></thead>
+            <tbody id="dlv_loc_cid_tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="card">
-    <div class="card-title">NF-e Entregues — Detalhe<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por NF-e efetivamente entregue por um entregador parceiro (relatorio de Volumetria cruzado com o faturamento), com cliente, cidade/UF e natureza da operacao. Complementa a tabela de NFS-e abaixo, que mostra o que foi cobrado, nao o que foi entregue.</span></span></div>
-    <div class="sr"><input type="text" id="dlvdet_search" placeholder="Buscar entregador, NF-e, cliente, cidade..."><select id="dlvdet_sel_emp"><option value="">Todas as empresas</option></select><button class="btn-xlsx" onclick="if(window.dlvDetExportXLSX)window.dlvDetExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button></div>
+    <div class="card-title">NF-e Entregues — Detalhe<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Uma linha por NF-e efetivamente entregue por um entregador parceiro (relatorio de Volumetria cruzado com o faturamento), com cliente, cidade/UF e natureza da operacao. A coluna Raio mostra se a entrega foi na cidade da unidade ou fora dela. Complementa a tabela de NFS-e abaixo, que mostra o que foi cobrado, nao o que foi entregue.</span></span></div>
+    <div class="sr"><input type="text" id="dlvdet_search" placeholder="Buscar entregador, NF-e, cliente, cidade..."><select id="dlvdet_sel_emp"><option value="">Todas as empresas</option></select><select id="dlvdet_sel_loc"><option value="">Dentro e fora da cidade</option><option value="dentro">So entregas na cidade</option><option value="fora">So entregas fora da cidade</option></select><button class="btn-xlsx" onclick="if(window.dlvDetExportXLSX)window.dlvDetExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button></div>
     <div class="tw dtbl" id="dlvdet_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">NF-e</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Cliente</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Cidade/UF</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Natureza</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Peso</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor NF</th></tr></thead>
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">NF-e</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Entregador</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Cliente</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Cidade/UF</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Raio</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Natureza</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Peso</th><th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap">Valor NF</th></tr></thead>
         <tbody id="dlvdet_tbody"></tbody>
       </table>
     </div>
@@ -4426,6 +4457,7 @@ function initApp(){
   let dlvDetPage=0;
   const dlvDetInp=document.getElementById('dlvdet_search');
   const dlvDetSelEmp=document.getElementById('dlvdet_sel_emp');
+  const dlvDetSelLoc=document.getElementById('dlvdet_sel_loc');
   (()=>{
     const emps=[...new Set((DATA.volumetria_detalhe||[]).map(d=>d.empresa).filter(Boolean))].sort();
     emps.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;dlvDetSelEmp.appendChild(o);});
@@ -4461,6 +4493,141 @@ function initApp(){
       return{rows,label:prevY};
     }
     return null;
+  }
+  // Chip da coluna "Raio" da tabela de detalhe. Fica em funcao propria porque a
+  // mesma marcacao e usada na tabela e (como legenda) no card do raio de entrega.
+  function _dlvChipLocal(loc){
+    // classes .chip-* ja tem override para o tema ocean — nunca hardcode de cor aqui
+    if(loc==='dentro') return '<span class="chip chip-green" style="font-size:10px;font-weight:700">Na cidade</span>';
+    if(loc==='fora')   return '<span class="chip chip-amber" style="font-size:10px;font-weight:700">Fora</span>';
+    return '<span style="color:var(--text3);font-size:10px">-</span>';
+  }
+  // Raio de Entrega — dentro x fora da cidade da unidade.
+  // Duas fontes por proposito: os KPIs e a tabela por entregador leem o agregado
+  // (volumetria_entregadores, historico completo, ja com qtd_dentro/qtd_fora do
+  // backend); o ranking de cidades le o detalhe por NF-e (volumetria_detalhe), que
+  // e o unico com o nome do municipio — e por isso limitado aos ultimos 6 meses,
+  // conforme rotulado no titulo da tabela.
+  function _dlvRenderRaio(nfseRows){
+    const card=document.getElementById('dlv_loc_card');
+    if(!card) return;
+    const agg=(DATA.volumetria_entregadores||[]).filter(v=>
+      (!state.empresas.length||state.empresas.includes(v.empresa))
+      &&(!state.ano||v.ano===state.ano)
+      &&(!state.meses.length||state.meses.includes(v.mes)));
+    const dentro=agg.reduce((s,v)=>s+(v.qtd_dentro||0),0);
+    const fora=agg.reduce((s,v)=>s+(v.qtd_fora||0),0);
+    const tot=dentro+fora;
+    if(!tot){card.style.display='none';return;}
+    card.style.display='';
+    const sedes=(DATA.resumo||{}).sedes_unidades||{};
+    document.getElementById('dlv_loc_dentro').textContent=N(dentro);
+    document.getElementById('dlv_loc_fora').textContent=N(fora);
+    document.getElementById('dlv_loc_dentro_pct').textContent=(dentro/tot*100).toFixed(1)+'%';
+    document.getElementById('dlv_loc_fora_pct').textContent=(fora/tot*100).toFixed(1)+'%';
+    // Custo medio por entrega: NFS-e do mesmo recorte / NF-e entregues. Usa os
+    // filtros globais (nao os locais da aba) para casar com o denominador, que vem
+    // da volumetria e so conhece empresa/ano/mes.
+    const nfseGlobal=(DATA.delivery||[]).filter(d=>
+      (!state.empresas.length||state.empresas.includes(d.empresa))
+      &&(!state.ano||(d.data_emissao||'').slice(6,10)===state.ano)
+      &&(!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5))));
+    const custo=nfseGlobal.reduce((s,d)=>s+(d.valor_servico||0),0);
+    document.getElementById('dlv_loc_rentrega').textContent=tot?BRL(custo/tot):'-';
+    // Mostra a conta, nao so o resultado: quando o recorte pega um entregador que
+    // fatura numa unidade e entrega por outra, os dois lados nao batem e o numero
+    // sai distorcido — exibir numerador e denominador deixa isso obvio na hora
+    const _elSub=document.getElementById('dlv_loc_rentrega_sub');
+    if(_elSub) _elSub.textContent=BRL(custo)+' / '+N(tot)+' entregas';
+    // Cidades e ranking vem do detalhe (unico com nome de municipio)
+    const det=(DATA.volumetria_detalhe||[]).filter(d=>
+      (!state.empresas.length||state.empresas.includes(d.empresa))
+      &&(!state.ano||(d.data||'').slice(6,10)===state.ano)
+      &&(!state.meses.length||state.meses.includes((d.data||'').slice(3,5))));
+    const porCidade={};
+    det.forEach(d=>{
+      if(d.local!=='fora') return;
+      const k=(d.cidade||'-')+'|'+(d.estado||'')+'|'+(d.empresa||'');
+      if(!porCidade[k]) porCidade[k]={cidade:d.cidade||'-',uf:d.estado||'',emp:d.empresa||'',qtd:0,valor:0};
+      porCidade[k].qtd++;
+      porCidade[k].valor+=d.valor_nf||0;
+    });
+    const cidades=Object.values(porCidade).sort((a,b)=>b.qtd-a.qtd);
+    document.getElementById('dlv_loc_cidades').textContent=N(new Set(cidades.map(c=>c.cidade+'|'+c.uf)).size);
+    // Aviso de origem do dado: a cidade vem do endereco do destinatario na nota, que
+    // pode diferir do local onde a mercadoria foi de fato entregue
+    const sedesTxt=[...new Set(agg.map(v=>v.empresa))].sort()
+      .map(e=>e+' = '+((sedes[e]||{}).cidade||'?')).join(' · ');
+    // .alert e flex: o texto precisa ir num unico filho, senao o <b> inicial vira
+    // uma coluna estreita propria e a frase quebra em duas colunas
+    document.getElementById('dlv_loc_aviso').innerHTML='<div>'
+      +'<b>Como esta classificacao e feita:</b> compara a cidade do destinatario da NF-e com a cidade da unidade que faturou ('
+      +esc(sedesTxt||'sede nao identificada')+'). '
+      +'Quando o cliente e cadastrado numa cidade mas pede entrega em outra, a nota traz um endereco de entrega diferente do cadastro — '
+      +'esse campo nao vem no relatorio de Volumetria do ERP nem esta disponivel na API, entao essas entregas aparecem aqui pela cidade do cadastro. '
+      +'Trate a lista de "fora da cidade" como pauta de conferencia, nao como numero fechado.</div>';
+    // Grafico: dentro x fora por mes, para ver se o raio esta se expandindo
+    const porMes={};
+    agg.forEach(v=>{
+      const k=v.ano+'-'+v.mes;
+      if(!porMes[k]) porMes[k]={d:0,f:0};
+      porMes[k].d+=v.qtd_dentro||0;
+      porMes[k].f+=v.qtd_fora||0;
+    });
+    // Mes sem nenhuma entrega classificada aparece em `agg` quando ha so NFS-e
+    // sintetica (entregador que faturou mas nao tem volumetria). No meio da serie
+    // a coluna vazia e informacao — a lacuna e real; nas pontas e so uma barra
+    // vazia no comeco/fim do grafico, entao apara as bordas.
+    const mesesTodos=Object.keys(porMes).sort();
+    let ini=0,fim=mesesTodos.length-1;
+    while(ini<=fim&&!(porMes[mesesTodos[ini]].d+porMes[mesesTodos[ini]].f)) ini++;
+    while(fim>=ini&&!(porMes[mesesTodos[fim]].d+porMes[mesesTodos[fim]].f)) fim--;
+    const meses=mesesTodos.slice(ini,fim+1);
+    const lbs=meses.map(m=>(MESES[+m.slice(5,7)]||m.slice(5,7))+'/'+m.slice(2,4));
+    _chartUpdate('ch_dlv_loc','bar',{labels:lbs,datasets:[
+      {label:'Na cidade da unidade',data:meses.map(m=>porMes[m].d),backgroundColor:'#199e70',borderRadius:4},
+      {label:'Fora da cidade',data:meses.map(m=>porMes[m].f),backgroundColor:'#d95926',borderRadius:4},
+    ]},{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:9,color:'#8A8F98'}},
+        tooltip:{callbacks:{label:c=>{
+          const t=porMes[meses[c.dataIndex]];const soma=t.d+t.f;
+          return ' '+c.dataset.label+': '+N(c.raw)+' NF-e ('+(soma?(c.raw/soma*100).toFixed(1):'0')+'% do mes)';
+        }}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#8A8F98'}},
+        y:{stacked:true,grid:{color:'rgba(255,255,255,.07)'},ticks:{callback:v=>N(v),font:{size:10},color:'#8A8F98'}}}});
+    // Tabela por entregador
+    const porEnt={};
+    agg.forEach(v=>{
+      const n=v.entregador_nome||'-';
+      if(!porEnt[n]) porEnt[n]={d:0,f:0,emps:new Set()};
+      porEnt[n].d+=v.qtd_dentro||0;
+      porEnt[n].f+=v.qtd_fora||0;
+      if((v.qtd_dentro||0)+(v.qtd_fora||0)>0) porEnt[n].emps.add(v.empresa);
+    });
+    const ents=Object.entries(porEnt).filter(([,x])=>x.d+x.f>0)
+      .sort((a,b)=>(b[1].d+b[1].f)-(a[1].d+a[1].f));
+    document.getElementById('dlv_loc_ent_tbody').innerHTML=ents.map(([nome,x])=>{
+      const t=x.d+x.f,pct=t?x.f/t*100:0;
+      // >30% fora do municipio ja e uma operacao majoritariamente rodoviaria: e o
+      // ponto em que o R$/entrega deixa de ser comparavel com o de entrega urbana
+      const cor=pct>=30?'var(--red2)':(pct>=15?'var(--orange)':'var(--text2)');
+      const sede=[...x.emps].sort().map(e=>(sedes[e]||{}).cidade||e).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+      return '<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:7px 10px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(nome)+'">'+esc(nome)+'</td>'
+        +'<td style="padding:7px 10px;color:var(--text3);font-size:10px;white-space:nowrap">'+esc(sede||'-')+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(x.d)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+N(x.f)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;font-weight:700;color:'+cor+'">'+pct.toFixed(1)+'%</td>'
+        +'</tr>';
+    }).join('')||'<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--text3)">Sem entregas classificadas no periodo</td></tr>';
+    // Ranking de cidades fora da sede
+    document.getElementById('dlv_loc_cid_tbody').innerHTML=cidades.slice(0,60).map(c=>
+      '<tr style="border-bottom:1px solid var(--row-border)">'
+      +'<td style="padding:7px 10px;color:var(--text);font-weight:600;white-space:nowrap">'+esc(c.cidade)+(c.uf?'/'+esc(c.uf):'')+'</td>'
+      +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(c.emp)+'</span></td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700">'+N(c.qtd)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+BRL(c.valor)+'</td>'
+      +'</tr>').join('')||'<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--text3)">Nenhuma entrega fora da cidade no periodo</td></tr>';
   }
   function renderDelivery(){
     dlvPage=0;
@@ -4694,11 +4861,17 @@ function initApp(){
       // Painel separado: total mensal de NF-e cruzadas pela Volumetria (volume real de
       // entregas) — linhas sinteticas (sem_volumetria) ficam de fora, nao tem volume
       if(volCard){
-        // Lista de entregadores do select acompanha o filtro global de empresa; a
-        // selecao atual e preservada quando ainda existe no recorte novo
+        // Este card (diferente da matriz de controle acima) respeita os filtros
+        // globais de ano/mes: e uma leitura de volume do periodo analisado, nao um
+        // painel de conferencia de emissao de nota — sem isso o total exibido era
+        // sempre o historico inteiro, mesmo com um mes selecionado no topo.
+        const volPer=volAll.filter(v=>(!state.ano||v.ano===state.ano)
+                                    &&(!state.meses.length||state.meses.includes(v.mes)));
+        // Lista de entregadores do select acompanha os filtros globais; a selecao
+        // atual e preservada quando ainda existe no recorte novo
         let entSel='';
         if(dlvVolSelEnt){
-          const nomes=[...new Set(volAll.filter(v=>!v.sem_volumetria).map(v=>v.entregador_nome||'-'))].sort();
+          const nomes=[...new Set(volPer.filter(v=>!v.sem_volumetria).map(v=>v.entregador_nome||'-'))].sort();
           const assinatura=nomes.join('|');
           if(dlvVolSelEnt._assinatura!==assinatura){
             const atual=dlvVolSelEnt.value;
@@ -4709,7 +4882,7 @@ function initApp(){
           }
           entSel=dlvVolSelEnt.value;
         }
-        const volVol=entSel?volAll.filter(v=>(v.entregador_nome||'-')===entSel):volAll;
+        const volVol=entSel?volPer.filter(v=>(v.entregador_nome||'-')===entSel):volPer;
         const byMes={},byMesEnt={},byEnt={},entInfo={};
         volVol.forEach(v=>{
           if(v.sem_volumetria) return;
@@ -4807,10 +4980,12 @@ function initApp(){
         }
       }
     })();
+    _dlvRenderRaio(rows);
     // NF-e Entregues — Detalhe (cruza volumetria com faturamento)
     const detRows=(DATA.volumetria_detalhe||[]).filter(d=>{
       const empOk=(!dlvDetSelEmp.value||d.empresa===dlvDetSelEmp.value)
                  &&(!state.empresas.length||state.empresas.includes(d.empresa));
+      const locOk=!dlvDetSelLoc||!dlvDetSelLoc.value||d.local===dlvDetSelLoc.value;
       const anoOk=!state.ano||(d.data||'').slice(6,10)===state.ano;
       const mesOk=!state.meses.length||state.meses.includes((d.data||'').slice(3,5));
       const q=(dlvDetInp.value||'').toLowerCase();
@@ -4818,7 +4993,7 @@ function initApp(){
         ||(d.numero||'').toLowerCase().includes(q)
         ||(d.cliente||'').toLowerCase().includes(q)
         ||(d.cidade||'').toLowerCase().includes(q);
-      return empOk&&anoOk&&mesOk&&qOk;
+      return empOk&&locOk&&anoOk&&mesOk&&qOk;
     });
     _dlvDetRowsFiltered=detRows;
     mkPager(detRows.length,dlvDetPage,PAGE,'dlvdet_pager',pg=>{dlvDetPage=pg;renderDelivery();});
@@ -4831,10 +5006,11 @@ function initApp(){
       +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa||'?')+'</span></td>'
       +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font-size:10px" title="'+esc(d.cliente||'')+'">'+esc(d.cliente||'-')+'</td>'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2);font-size:10px">'+esc(d.cidade||'-')+(d.estado?'/'+esc(d.estado):'')+'</td>'
+      +'<td style="padding:7px 10px;white-space:nowrap">'+_dlvChipLocal(d.local)+'</td>'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+esc(d.nat_operacao||'-')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text2)">'+(d.peso_kg?N(d.peso_kg)+' kg':'-')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_nf)+'</td>'
-      +'</tr>').join('')||'<tr><td colspan="9" style="padding:14px;text-align:center;color:var(--text3)">Sem entregas no periodo selecionado</td></tr>';
+      +'</tr>').join('')||'<tr><td colspan="10" style="padding:14px;text-align:center;color:var(--text3)">Sem entregas no periodo selecionado</td></tr>';
   }
   let _dlvDetRowsFiltered=[];
   function dlvDetFilter(){dlvDetPage=0;renderDelivery();}
@@ -4843,7 +5019,9 @@ function initApp(){
     if(!_dlvDetRowsFiltered.length) return alert('Nenhum registro para exportar com os filtros atuais.');
     const data=_dlvDetRowsFiltered.map(d=>({
       'Data':d.data||'','NF-e':d.numero||'','Entregador':d.entregador_nome||'','Empresa':d.empresa||'',
-      'Cliente':d.cliente||'','Cidade':d.cidade||'','UF':d.estado||'','Natureza':d.nat_operacao||'',
+      'Cliente':d.cliente||'','Cidade':d.cidade||'','UF':d.estado||'',
+      'Raio':d.local==='dentro'?'Na cidade da unidade':(d.local==='fora'?'Fora da cidade':''),
+      'Natureza':d.nat_operacao||'',
       'Peso (kg)':+(d.peso_kg||0).toFixed(2),'Valor NF (R$)':+(d.valor_nf||0).toFixed(2),
     }));
     const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
@@ -4858,6 +5036,7 @@ function initApp(){
   dlvSelEmp.addEventListener('change',dlvFilter);
   dlvDetInp.addEventListener('input',dlvDetFilter);
   dlvDetSelEmp.addEventListener('change',dlvDetFilter);
+  if(dlvDetSelLoc) dlvDetSelLoc.addEventListener('change',dlvDetFilter);
   if(dlvVolSelEnt) dlvVolSelEnt.addEventListener('change',()=>renderDelivery());
   window._renderDelivery=renderDelivery;
 
