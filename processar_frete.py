@@ -1194,6 +1194,188 @@ def _calcular_separacao():
     return resultado, produtos_desc
 
 
+def _carregar_cobertura_volumetria():
+    """Cobertura de CUSTO por empresa/ano/mês, a partir do relatório de Volumetria.
+
+    A Volumetria diz quem ENTREGOU cada NF-e; cruzando com `cte_nf` e com o cadastro
+    de `entregadores` sabemos de quais entregas existe documento de custo:
+      - CT-e vinculado          -> custo conhecido
+      - entregador cadastrado   -> custo conhecido pela NFS-e (nunca emite CT-e)
+      - nenhum dos dois         -> entrega aconteceu e o frete não aparece em lugar nenhum
+    `peso_doc` (peso só das entregas com custo conhecido) é o denominador do R$/kg —
+    usar o peso total daria um R$/kg artificialmente baixo. O peso NÃO pode sair de
+    `detalhes`: lá há uma linha por NF-e×CT-e e o peso do CT-e se repetiria no rateio.
+    """
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB, timeout=30)
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volumetria_nfe'")
+        if not cur.fetchone():
+            conn.close(); return {}
+        cad = set(r[0] for r in conn.execute("SELECT DISTINCT cnpj_entregador FROM entregadores"))
+        conn.execute("CREATE TEMP TABLE _kdre AS SELECT DISTINCT chave_nfe FROM cte_nf")
+        conn.execute("CREATE INDEX _kdre_i ON _kdre(chave_nfe)")
+        out = {}
+        for emp, ano, mes, cnpj, nome, peso, tem in conn.execute("""
+            SELECT v.empresa, substr(v.data_emissao,7,4), substr(v.data_emissao,4,2),
+                   v.transp_cnpj, v.transp_nome, v.peso_kg,
+                   CASE WHEN x.chave_nfe IS NULL THEN 0 ELSE 1 END
+            FROM volumetria_nfe v LEFT JOIN _kdre x ON x.chave_nfe = v.chave_acesso
+            WHERE length(v.data_emissao)=10
+        """):
+            if not (emp and ano and mes):
+                continue
+            d = out.setdefault(f"{emp}|{ano}|{mes}",
+                               {"entregas": 0, "com_cte": 0, "com_nfse": 0,
+                                "buraco": 0, "sem_transp": 0, "peso_doc": 0.0})
+            d["entregas"] += 1
+            if tem:
+                d["com_cte"] += 1; d["peso_doc"] += peso or 0
+            elif (cnpj or "") in cad:
+                d["com_nfse"] += 1; d["peso_doc"] += peso or 0
+            elif not (nome or "").strip():
+                d["sem_transp"] += 1
+            else:
+                d["buraco"] += 1
+        conn.close()
+        for d in out.values():
+            d["peso_doc"] = round(d["peso_doc"], 1)
+        print(f"   Cobertura de custo: {len(out)} combinações empresa/ano/mês")
+        return out
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível calcular cobertura de volumetria: {e}")
+        return {}
+
+
+def montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados, cobertura):
+    """Agrega o DRE Logístico — custo de frete por empresa/ano/mês, canal e transportadora.
+
+    Reusa a classificação de CT-e que `cruzar()` já fez (`detalhes`, `compras`,
+    `devolucoes_mkt`, `ctes_nao_vinculados`) — não reclassifica nada por conta própria.
+
+    HIERARQUIA, não soma: `cte_mkt` e `cte_transf` são SUBCONJUNTOS de `cte_saida`.
+    O total de distribuição é `cte_saida + delivery + dev_mkt + sem_vinculo`; somar
+    marketplace/transferência por fora contaria o mesmo frete duas vezes.
+
+    Contagem de documentos usa CT-e DISTINTOS (`cte_chave`), não linhas de `detalhes`:
+    um CT-e que cobre 5 NF-e vira 5 linhas lá, mas é 1 documento e 1 frete rateado.
+    """
+    dre, canal_ag, transp_ag = {}, {}, {}
+    vistos = {}   # chave emp|ano|mes -> set de cte_chave por modalidade
+    # `frete_cobrado`/`gratis` são atributos da NF-e, não do CT-e: 4.275 NF-e têm mais de
+    # um CT-e (uma chega a ter 84) e viram várias linhas em `detalhes`. Sem este set o
+    # valor cobrado do cliente seria contado uma vez por linha, inflando o repasse.
+    nfe_cobr_vista = set()
+
+    def _slot(emp, ano, mes):
+        k = f"{emp}|{ano}|{mes}"
+        if k not in dre:
+            dre[k] = {"cte_saida": 0.0, "cte_mkt": 0.0, "cte_transf": 0.0, "delivery": 0.0,
+                      "dev_mkt": 0.0, "sem_vinculo": 0.0, "compras": 0.0,
+                      "frete_cobrado": 0.0, "gratis": 0.0, "gratis_qtd": 0,
+                      "cte_saida_n": 0, "cte_mkt_n": 0, "cte_transf_n": 0,
+                      "delivery_n": 0, "dev_mkt_n": 0, "sem_vinculo_n": 0}
+            vistos[k] = {"cte_saida": set(), "cte_mkt": set(), "cte_transf": set()}
+        return dre[k], vistos[k]
+
+    for d in detalhes:
+        emp = d.get("empresa") or ""
+        data = d.get("data") or ""
+        ano, mes = data[-4:], data[3:5]
+        if not (emp and len(ano) == 4 and len(mes) == 2):
+            continue
+        s, v = _slot(emp, ano, mes)
+        fr = d.get("valor_frete") or 0
+        ch = d.get("cte_chave") or ""
+        s["cte_saida"] += fr
+        if ch not in v["cte_saida"]:
+            v["cte_saida"].add(ch); s["cte_saida_n"] += 1
+        if d.get("is_marketplace"):
+            s["cte_mkt"] += fr
+            if ch not in v["cte_mkt"]:
+                v["cte_mkt"].add(ch); s["cte_mkt_n"] += 1
+        if "TRANSFERENCIA" in (d.get("nat_operacao") or "").upper():
+            s["cte_transf"] += fr
+            if ch not in v["cte_transf"]:
+                v["cte_transf"].add(ch); s["cte_transf_n"] += 1
+        nfe_ch = d.get("chave_nfe") or ""
+        if nfe_ch not in nfe_cobr_vista:
+            nfe_cobr_vista.add(nfe_ch)
+            s["frete_cobrado"] += d.get("frete_cobrado") or 0
+            # Frete grátis: teve custo e nada foi cobrado. Política comercial deliberada —
+            # medida à parte, NUNCA somada ao saldo de repasse (mesmo motivo difCom×difTot).
+            # Conta a NF-e uma vez; o valor é o frete TOTAL dela, somando os rateios.
+            if (d.get("frete_cobrado") or 0) <= 0:
+                s["gratis_qtd"] += 1
+        if (d.get("frete_cobrado") or 0) <= 0:
+            s["gratis"] += fr
+        ck = f"{emp}|{ano}|{d.get('canal') or 'SEM CANAL'}"
+        c = canal_ag.setdefault(ck, {"frete": 0.0, "nfe": 0})
+        c["frete"] += fr; c["nfe"] += 1
+        b8 = (d.get("transp_cnpj") or "")[:8]
+        if b8:
+            tk = f"{emp}|{ano}|{b8}"
+            t = transp_ag.setdefault(tk, {"frete": 0.0, "qtd": 0, "nome": d.get("transportadora") or b8})
+            t["frete"] += fr; t["qtd"] += 1
+
+    for d in delivery:
+        emp = d.get("empresa") or ""
+        comp = d.get("competencia") or ""
+        ano, mes = comp[-4:], comp[3:5]
+        if not (emp and len(ano) == 4 and len(mes) == 2):
+            continue
+        s, _ = _slot(emp, ano, mes)
+        s["delivery"] += d.get("valor_servico") or 0
+        s["delivery_n"] += 1
+
+    for d in devolucoes_mkt:
+        emp = d.get("empresa_dest") or ""
+        data = d.get("data_emissao") or ""
+        ano, mes = data[-4:], data[3:5]
+        if not (emp and len(ano) == 4 and len(mes) == 2):
+            continue
+        s, _ = _slot(emp, ano, mes)
+        s["dev_mkt"] += d.get("valor_frete") or 0
+        s["dev_mkt_n"] += 1
+
+    for d in compras:
+        emp = d.get("empresa_dest") or ""
+        data = d.get("data_emissao") or ""
+        ano, mes = data[-4:], data[3:5]
+        if not (emp and len(ano) == 4 and len(mes) == 2):
+            continue
+        s, _ = _slot(emp, ano, mes)
+        s["compras"] += d.get("valor_frete") or 0
+
+    for d in ctes_nao_vinculados:
+        emp = CNPJ_MAP.get(d.get("dest_cnpj") or "") or CNPJ_MAP.get(d.get("rem_cnpj") or "") or ""
+        data = d.get("data_emissao") or ""
+        ano, mes = data[-4:], data[3:5]
+        if not (emp and len(ano) == 4 and len(mes) == 2):
+            continue
+        s, _ = _slot(emp, ano, mes)
+        s["sem_vinculo"] += d.get("valor_frete") or 0
+        s["sem_vinculo_n"] += 1
+
+    for k, s in dre.items():
+        cob = cobertura.get(k) or {}
+        s.update({"entregas": cob.get("entregas", 0), "com_cte": cob.get("com_cte", 0),
+                  "com_nfse": cob.get("com_nfse", 0), "buraco": cob.get("buraco", 0),
+                  "sem_transp": cob.get("sem_transp", 0), "peso_doc": cob.get("peso_doc", 0)})
+        for c in ("cte_saida", "cte_mkt", "cte_transf", "delivery", "dev_mkt",
+                  "sem_vinculo", "compras", "frete_cobrado", "gratis"):
+            s[c] = round(s[c], 2)
+    for v in canal_ag.values():
+        v["frete"] = round(v["frete"], 2)
+    for v in transp_ag.values():
+        v["frete"] = round(v["frete"], 2)
+    print(f"   DRE Logístico: {len(dre)} períodos, {len(canal_ag)} canais, "
+          f"{len(transp_ag)} transportadoras")
+    return {"dre": dre, "dre_canal": canal_ag, "dre_transp": transp_ag}
+
+
 def cruzar(nfe_map, cte_list, nfe_to_cte):
     print("\n[OK] Cruzando dados...")
     # Marketplace detectado pelo nome da transportadora OU pelo canal de venda
@@ -1201,8 +1383,9 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     ML_TR      = {"EBAZARCOMBR LTDA","MERCADO LIVRE"}
     TIKTOK_TR  = {"TIKTOK LOGISTICS BRAZIL LTDA"}
     SHOPEE_CH  = {"SHOPPE","SHOPEE"}
-    ML_CH      = {"MERCADO LIVRE"}
+    ML_CH      = {"MERCADO LIVRE","MERCADO_LIVRE"}
     TIKTOK_CH  = {"TIKTOSHOP","TIKTOKSHOP","TIKTOK SHOP"}
+    AMAZON_CH  = {"AMAZON"}
     def _marketplace_type(tr, canal):
         tr_up = (tr or "").upper().strip()
         ch_up = (canal or "").upper().strip()
@@ -1212,6 +1395,12 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             return "ml"
         if "TIKTOK" in tr_up or ch_up in TIKTOK_CH:
             return "tiktok"
+        # Amazon incluída em ago/2026 por decisão do usuário. Reconhecida pelo canal
+        # AMAZON (7.815 NF-e) e pela transportadora AMAZON LOGISTICA DO BRASIL LTDA
+        # (CNPJ 28.387.734/0002-75, 6.503 CT-e) — os dois sinais são independentes:
+        # nem toda venda do canal Amazon é entregue pela logística dela.
+        if "AMAZON" in tr_up or ch_up in AMAZON_CH:
+            return "amazon"
         return None
     def _is_marketplace(tr, canal):
         return _marketplace_type(tr, canal) is not None
@@ -1351,6 +1540,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if any(s in t for s in ["SHPS","SHOPEE"]): return "shopee"
         if any(s in t for s in ["EBAZAR","MERCADO LIVRE"]): return "ml"
         if "TIKTOK" in t: return "tiktok"
+        if "AMAZON" in t: return "amazon"   # manter em sincronia com _marketplace_type
         return None
     compras=[]; devolucoes_mkt=[]
     # Compras via NF de Entrada (fonte primária — mais completa)
@@ -1582,8 +1772,11 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         k: {"total": _cte_tot_eam[k], "nao_vinculados": _cte_nv_eam.get(k, 0)}
         for k in _cte_tot_eam
     }
+    _dre = montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados,
+                      _carregar_cobertura_volumetria())
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),
+        **_dre,
         "resumo":{"total_cte":len(cte_list),"total_nfe_fat":len(nfe_map),"nfe_com_cte":qtd_com,
             "nfe_fat_periodo":nfe_fat_periodo,
             "nfe_fat_por_empresa":nfe_fat_por_empresa,
@@ -4543,6 +4736,12 @@ def split_by_empresa(dados):
             "volumetria_entregadores": [d for d in dados.get("volumetria_entregadores",[]) if d.get("empresa")==emp],
             "volumetria_detalhe": [d for d in dados.get("volumetria_detalhe",[]) if d.get("empresa")==emp],
             "separacao_detalhe": {k:v for k,v in dados.get("separacao_detalhe",{}).items() if k.startswith(emp+"|")},
+            # DRE: publicado FILTRADO por empresa (não vai em `resumo`, que é global e
+            # replicaria o dict inteiro em todo doc — o de BRU1 já opera perto de 1MB).
+            # `_mergeData` reagrupa via Object.assign; cada empresa só emite suas chaves.
+            "dre":        {k:v for k,v in dados.get("dre",{}).items()        if k.startswith(emp+"|")},
+            "dre_canal":  {k:v for k,v in dados.get("dre_canal",{}).items()  if k.startswith(emp+"|")},
+            "dre_transp": {k:v for k,v in dados.get("dre_transp",{}).items() if k.startswith(emp+"|")},
             "transf_sem_cte": [d for d in dados.get("transf_sem_cte",[]) if d.get("empresa")==emp],
             "transf_espelho": [d for d in dados.get("transf_espelho",[]) if d.get("empresa")==emp],
             "transf_fat": {k:v for k,v in dados.get("transf_fat",{}).items() if k.startswith(emp+"||")},
@@ -4599,8 +4798,15 @@ def upload_to_firestore(empresa_data, dados_completos):
             esp_chunks = [espelhos[i:i+CHUNK_SIZE] for i in range(0, len(espelhos), CHUNK_SIZE)]
             n_esp_chunks = len(esp_chunks)
 
-            # Documento principal: tudo menos os campos chunked (detalhes, transf_espelho)
-            main_doc = {k: v for k, v in data.items() if k not in ("detalhes", "transf_espelho")}
+            # O DRE vai em documento PRÓPRIO: o doc principal de BRU1 já operava a
+            # ~986 KB do teto de 1 MB do Firestore e estourou ao embutir o DRE
+            # ("payload is longer than 1048487 bytes"). Doc separado também evita
+            # pagar a leitura do DRE para quem nunca abre a aba.
+            dre_doc = {k: data.get(k, {}) for k in ("dre", "dre_canal", "dre_transp")}
+
+            # Documento principal: tudo menos os campos chunked (detalhes, transf_espelho, dre*)
+            main_doc = {k: v for k, v in data.items()
+                        if k not in ("detalhes", "transf_espelho", "dre", "dre_canal", "dre_transp")}
             main_doc["det_chunks"] = n_chunks
             main_doc["espelho_chunks"] = n_esp_chunks
             main_doc["gerado_em"] = data.get("gerado_em", "")
@@ -4617,6 +4823,13 @@ def upload_to_firestore(empresa_data, dados_completos):
                 doc_id = f"{emp}_det_{i:03d}"
                 db.collection("dados").document(doc_id).set({"payload": chunk_json, "size_kb": round(chunk_kb, 1)})
                 print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB, {len(chunk)} itens)")
+
+            # DRE Logístico (doc próprio, carregado sob demanda ao abrir a aba)
+            dre_json = json.dumps(dre_doc, ensure_ascii=False)
+            dre_kb = len(dre_json.encode("utf-8")) / 1024
+            db.collection("dados").document(f"{emp}_dre").set(
+                {"payload": dre_json, "size_kb": round(dre_kb, 1)})
+            print(f"       dados/{emp}_dre  ({dre_kb:.0f} KB, {len(dre_doc['dre'])} períodos)")
 
             # Chunks de espelho de NF-e (itens/transporte das transferencias sem CTe)
             for i, chunk in enumerate(esp_chunks):

@@ -540,6 +540,93 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 .nv-esp-btn{padding:7px 18px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit}
 .nv-esp-btn-print{background:#1a3a5c;color:#fff}
 .nv-esp-btn-close{background:#e2e8f0;color:#374151}
+
+/* ─── DRE Logistico ─────────────────────────────────────────────────────── */
+.dre-cols{display:grid;grid-template-columns:minmax(380px,1fr) minmax(400px,1.05fr);gap:12px}
+@media(max-width:1080px){.dre-cols{grid-template-columns:1fr}}
+.dre-desc{font-size:12px;color:var(--text3);margin:-6px 0 12px;line-height:1.5}
+.dre-fonte{font-size:11px;color:var(--text3);background:var(--card-bg);border:1px solid var(--bd);
+  border-radius:6px;padding:5px 9px;margin-bottom:12px;display:inline-block}
+.dre-fonte b{color:var(--text2)}
+.dre-leia{font-size:12.5px;color:var(--text2);background:var(--card-bg);border-left:2px solid var(--accent);
+  border-radius:0 6px 6px 0;padding:8px 12px;margin-bottom:12px;line-height:1.55}
+.dre-leia b{color:var(--text)}
+.dre-nota{font-size:11.5px;color:var(--text3);margin-top:12px;line-height:1.55;
+  padding-top:10px;border-top:1px solid var(--row-border)}
+.dre-tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.dre-tbl td{padding:8px 0;border-bottom:1px solid var(--row-border);font-size:13px}
+.dre-tbl td.v{text-align:right;font-weight:600;white-space:nowrap;padding-left:10px}
+.dre-tbl td.p{text-align:right;color:var(--text3);font-size:11px;width:52px;white-space:nowrap}
+.dre-tbl tr.sum td{border-top:1px solid var(--bd2);border-bottom:none;font-weight:700;padding-top:10px}
+.dre-tbl tr.res td{background:var(--s3);font-weight:700;font-size:14px}
+.dre-tbl tr.res td:first-child{border-radius:6px 0 0 6px;padding-left:10px}
+.dre-tbl tr.res td:last-child{border-radius:0 6px 6px 0;padding-right:10px}
+.dre-tbl .ind{padding-left:16px;color:var(--text2);font-size:12.5px}
+.dre-tbl .ind2{padding-left:30px;color:var(--text3);font-size:12px}
+.dre-tbl .cr{color:var(--green)}
+.dre-bar{height:4px;border-radius:2px;background:var(--heatmap-empty);overflow:hidden;margin-top:5px}
+.dre-bar i{display:block;height:100%;border-radius:2px}
+.dre-stack{display:flex;height:36px;border-radius:7px;overflow:hidden;gap:2px;margin-bottom:16px}
+.dre-stack i{display:block;height:100%;cursor:default;transition:filter .15s}
+.dre-stack i:hover{filter:brightness(1.18)}
+.dre-mod{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.dre-mod th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);
+  font-weight:700;text-align:right;padding:0 0 7px;border-bottom:1px solid var(--bd)}
+.dre-mod th:first-child{text-align:left}
+.dre-mod td{padding:8px 0;font-size:13px;text-align:right;border-bottom:1px solid var(--row-border)}
+.dre-mod td:first-child{text-align:left}
+.dre-dot{display:inline-block;width:9px;height:9px;border-radius:2.5px;margin-right:8px;vertical-align:-1px}
+.dre-qt{color:var(--text3);font-size:11.5px}
+.dre-dlt{font-size:11.5px;font-weight:700;padding:1.5px 6px;border-radius:5px;white-space:nowrap}
+.dre-dlt.up{background:rgba(248,113,113,.14);color:var(--red)}
+.dre-dlt.dn{background:rgba(52,211,153,.14);color:var(--green)}
+.dre-hm{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabular-nums}
+.dre-hm th{font-size:11px;color:var(--text2);font-weight:600;padding:4px 6px;text-align:center}
+.dre-hm th.emp{text-align:left;font-size:12px;color:var(--text);width:64px}
+.dre-hm td{text-align:center;font-size:12px;padding:7px 5px;border-radius:5px;cursor:help;
+  color:var(--text);min-width:52px;white-space:nowrap}
+.dre-hm td.na{color:var(--text3);background:var(--heatmap-empty)!important}
+.dre-hm td.parc{outline:1px dashed var(--bd2);outline-offset:-2px}
+.dre-hm td sup{font-size:9px;opacity:.7}
+.dre-hm tr.tot th,.dre-hm tr.tot td{font-weight:700;border-top:1px solid var(--bd2)}
+.dre-escala{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--text3)}
+.dre-escala i{display:block;width:120px;height:8px;border-radius:4px;
+  background:linear-gradient(90deg,rgba(57,135,229,.10),rgba(57,135,229,.80))}
+.dre-legenda{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}
+.dre-legenda span{display:inline-flex;align-items:center;font-size:12px;color:var(--text2)}
+.dre-evo{display:flex;align-items:flex-end;gap:10px;height:230px;padding-top:8px}
+.dre-evocol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0;cursor:help}
+.dre-evobars{display:flex;flex-direction:column-reverse;gap:2px}
+.dre-evobars i{display:block;border-radius:2px;min-height:2px}
+.dre-evocol .tot{font-size:11.5px;font-weight:700;text-align:center;margin-bottom:5px;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.dre-evocol .mes{font-size:11.5px;color:var(--text2);text-align:center;margin-top:7px;
+  padding-top:7px;border-top:1px solid var(--bd)}
+.dre-evocol.parc .mes{color:var(--yellow)}
+.dre-hbar{display:grid;grid-template-columns:1fr 80px 62px;gap:10px;align-items:center;padding:6px 0;
+  border-bottom:1px solid var(--row-border);font-size:12.5px;cursor:help}
+.dre-hbar:last-child{border-bottom:none}
+.dre-hbar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dre-hbar .track{height:5px;background:var(--heatmap-empty);border-radius:3px;margin-top:5px;overflow:hidden}
+.dre-hbar .track i{display:block;height:100%;border-radius:3px}
+.dre-hbar .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.dre-hbar .pc{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3);font-size:11.5px}
+.dre-prov{width:100%;border-collapse:collapse;font-size:12.5px}
+.dre-prov th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);
+  font-weight:700;padding:0 12px 8px 0;border-bottom:1px solid var(--bd)}
+.dre-prov td{padding:9px 12px 9px 0;border-bottom:1px solid var(--row-border);vertical-align:top;color:var(--text2)}
+.dre-prov td:first-child{color:var(--text);font-weight:600;white-space:nowrap}
+.dre-prov code{background:var(--s3);padding:1px 5px;border-radius:4px;font-size:11.5px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--text)}
+.dre-prov .dre-auto{color:var(--green);font-weight:600}
+.dre-prov .dre-manual{color:var(--yellow);font-weight:600}
+#dre_tip{position:fixed;z-index:1000;background:var(--tooltip-bg);border:1px solid var(--bd2);border-radius:9px;
+  padding:10px 13px;font-size:12.5px;pointer-events:none;opacity:0;transition:opacity .12s;
+  box-shadow:var(--shadow-md);max-width:300px;line-height:1.6}
+#dre_tip.on{opacity:1}
+#dre_tip b{color:var(--text)}
+#dre_tip .r{display:flex;justify-content:space-between;gap:16px;color:var(--text2)}
+#dre_tip .r span:last-child{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
 </style>
 
 <script src="https://unpkg.com/lucide@0.471.0/dist/umd/lucide.min.js"></script>
@@ -601,6 +688,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <nav class="sb-nav">
     <div class="sb-section">Principais</div>
     <button class="tab-btn tab-highlight active" data-tab="visao-geral"><i data-lucide="bar-chart-2"></i><span class="sb-label">Visao Geral</span><span class="tab-badge" id="tb_vinc">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="dre"><i data-lucide="receipt"></i><span class="sb-label">DRE Logístico</span><span class="tab-badge" id="tb_dre">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span class="sb-label">Marketplace</span><span class="tab-badge" id="tb_mkt">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="compras"><i data-lucide="package"></i><span class="sb-label">Frete Compras</span><span class="tab-badge" id="tb_comp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="delivery"><i data-lucide="truck"></i><span class="sb-label">Delivery</span><span class="tab-badge" id="tb_dlv">-</span></button>
@@ -875,6 +963,112 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 </div>
 
 <!-- TAB MARKETPLACE -->
+<!-- TAB DRE LOGISTICO -->
+<div id="tab-dre" class="tab-panel">
+  <div class="kpi-row" style="grid-template-columns:1.25fr .85fr .85fr .95fr 1fr">
+    <div class="kpi-card" style="border-top:3px solid var(--blue)">
+      <div class="kpi-tooltip">Soma de todo o custo de distribuicao no filtro atual: frete de saida (CT-e), delivery de entregadores autonomos, devolucoes de marketplace e CT-e sem identificacao. Frete de compras aparece a parte, pois e custo de aquisicao.</div>
+      <div class="kpi-lbl">Custo Total de Frete</div><div class="kpi-val" id="dre_k_tot">-</div>
+      <div class="kpi-sub" id="dre_k_tot_sub">-</div><div id="dre_k_tot_tr"></div></div>
+    <div class="kpi-card">
+      <div class="kpi-tooltip">Custo total dividido pelo numero de entregas com custo documentado. Responde: quanto custa, em media, colocar uma nota na porta do cliente.</div>
+      <div class="kpi-lbl">Custo por Entrega</div><div class="kpi-val" id="dre_k_ent">-</div>
+      <div class="kpi-sub" id="dre_k_ent_sub">-</div></div>
+    <div class="kpi-card">
+      <div class="kpi-tooltip">Custo total dividido pelo peso transportado nas entregas com custo documentado. Compare com o custo por entrega: uma unidade cara por entrega mas normal por quilo tem carga pesada, nao preco ruim.</div>
+      <div class="kpi-lbl">Custo por Quilo</div><div class="kpi-val" id="dre_k_kg">-</div>
+      <div class="kpi-sub" id="dre_k_kg_sub">-</div></div>
+    <div class="kpi-card">
+      <div class="kpi-tooltip">Percentual das entregas do relatorio de Volumetria para as quais existe documento de custo (CT-e ou NFS-e de entregador). O que falta sao entregas sem frete de terceiro capturado.</div>
+      <div class="kpi-lbl">Cobertura do Custo</div><div class="kpi-val" id="dre_k_cob">-</div>
+      <div class="kpi-sub" id="dre_k_cob_sub">-</div></div>
+    <div class="kpi-card">
+      <div class="kpi-tooltip">Quanto do custo de frete voltou como receita, cobrado do cliente na nota. O restante foi absorvido pela empresa — em boa parte por politica de frete gratis.</div>
+      <div class="kpi-lbl">Quem Pagou o Frete</div><div class="kpi-val" id="dre_k_rec">-</div>
+      <div class="kpi-sub" id="dre_k_rec_sub">-</div></div>
+  </div>
+
+  <div class="dre-cols">
+    <div class="card">
+      <div class="card-title">Composicao do Custo de Frete<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Todo custo de frete da operacao por modalidade. As linhas sao hierarquicas: Marketplace e Transferencia estao DENTRO do frete de saida, nunca somadas por fora.</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="dre-fonte" style="margin:0"><b>Fontes:</b> CT-e e NFS-e via API Qive &middot; frete cobrado via relatorio de Faturamento do ERP</div>
+        <button class="btn-xlsx" style="margin-left:auto" onclick="if(window.dreExportXLSX)window.dreExportXLSX()" title="Exportar o DRE do filtro atual para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+      </div>
+      <table class="dre-tbl" id="dre_casc"></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Onde o Dinheiro Vai<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Peso de cada modalidade no custo total de distribuicao, com a variacao contra o periodo anterior — mostra onde o custo mexeu, nao so que o total subiu.</span></span></div>
+      <div class="dre-stack" id="dre_stack"></div>
+      <table class="dre-mod" id="dre_modtab"></table>
+      <p class="dre-nota" id="dre_nota_mod"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span id="dre_hm_titulo">Custo Medio de Frete por Entrega — em R$</span>
+      <span style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
+        <button class="cat-btn active" id="dre_hm_e" onclick="dreSetHm('entrega')">por entrega</button>
+        <button class="cat-btn" id="dre_hm_k" onclick="dreSetHm('kg')">por quilo</button>
+      </span>
+    </div>
+    <p class="dre-desc" id="dre_hm_desc"></p>
+    <div class="dre-leia"><b>Como ler:</b> <span id="dre_leia_hm">-</span></div>
+    <div class="tw"><table class="dre-hm" id="dre_hm"></table></div>
+    <div class="dre-escala"><span>mais barato</span><i></i><span>mais caro</span></div>
+    <p class="dre-nota" id="dre_nota_hm"></p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Evolucao Mensal do Custo de Frete — em R$<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Cada barra e um mes; a altura e o custo total e as faixas coloridas sao as modalidades. Mostra se o custo esta subindo e de que esse crescimento e feito.</span></span></div>
+    <div class="dre-leia"><b>Como ler:</b> <span id="dre_leia_ev">-</span></div>
+    <div class="dre-legenda" id="dre_legenda"></div>
+    <div class="dre-evo" id="dre_evo"></div>
+  </div>
+
+  <div class="dre-cols">
+    <div class="card">
+      <div class="card-title">Por Canal de Venda<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Onde o frete e gerado. A coluna da direita mostra quanto custou o frete de cada nota daquele canal.</span></span></div>
+      <div id="dre_canais"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por Transportadora<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Top 15 no filtro atual, agrupadas por raiz de CNPJ (grupo economico). A coluna da direita e a fatia de cada uma no frete total.</span></span></div>
+      <div id="dre_transps"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">De onde vem cada numero<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Proveniencia de cada linha do modelo: qual fonte alimenta, por qual script, e se a captura e automatica ou depende de exportacao manual do ERP.</span></span></div>
+    <div class="tw"><table class="dre-prov">
+      <thead><tr><th>Linha</th><th>Fonte</th><th>Como entra</th><th>Captura</th></tr></thead>
+      <tbody>
+      <tr><td>Frete de Saida (CT-e)</td><td>CT-e emitido pela transportadora — <b>API Qive/Arquivei</b></td>
+          <td><code>buscar_cte.py</code> + <code>buscar_cte_por_nfe.py</code> &rarr; <code>cte_campos</code></td>
+          <td class="dre-auto">automatica, diaria</td></tr>
+      <tr><td>&rsaquo; Marketplace</td><td>mesmo CT-e, separado pelo canal da NF-e ou pelo emitente</td>
+          <td>subconjunto do acima — nao soma por fora</td><td class="dre-auto">automatica</td></tr>
+      <tr><td>&rsaquo; Transferencia</td><td>mesmo CT-e, quando a NF-e e TRANSFERENCIA SAIDA</td>
+          <td>subconjunto do acima — nao soma por fora</td><td class="dre-auto">automatica</td></tr>
+      <tr><td>Delivery (entregadores)</td><td>NFS-e do entregador autonomo — <b>API Qive/Arquivei</b></td>
+          <td><code>buscar_nfse_entregadores.py</code> &rarr; <code>nfse_entregadores</code></td>
+          <td class="dre-manual">automatica, depende do cadastro</td></tr>
+      <tr><td>Frete de Compras</td><td>CT-e de entrada + frete destacado na NF de compra</td>
+          <td><code>buscar_nf_entrada.py</code> &rarr; <code>nf_entrada</code></td>
+          <td class="dre-auto">automatica, diaria</td></tr>
+      <tr><td>Recuperado do cliente</td><td><b>Relatorio de Faturamento do ERP</b></td>
+          <td><code>importar_faturamento.py</code> &rarr; <code>nf_saida_items.vlr_frete</code></td>
+          <td class="dre-manual">export do ERP</td></tr>
+      <tr><td>Entregas realizadas</td><td><b>Relatorio de Volumetria do ERP</b> — quem entregou cada NF-e</td>
+          <td><code>importar_volumetria.py</code> &rarr; <code>volumetria_nfe</code></td>
+          <td class="dre-manual">export manual do ERP</td></tr>
+      </tbody></table></div>
+    <p class="dre-nota">O <b>relatorio de faturamento sozinho nao fecha o custo</b>: ele traz o frete que foi
+      <i>cobrado</i> do cliente, nao o que foi <i>pago</i> a transportadora. Todo o custo vem de documento
+      fiscal de terceiro (CT-e / NFS-e), capturado por API.</p>
+  </div>
+</div>
+
 <div id="tab-marketplace" class="tab-panel">
   <div class="mkt-kpi-row">
     <div class="mkt-card" style="border-top:3px solid #FF6900"><div class="kpi-tooltip">Total pago a transportadora pelas entregas realizadas via Shopee no periodo. Inclui vendas normais. Devolucoes da Shopee aparecem separadas na aba Devoluções Marketplace.</div><div class="mkt-lbl">Total Frete Shopee</div><div class="mkt-val" id="mkt_shopee_frete">-</div><div class="mkt-sub" id="mkt_shopee_qtd">-</div></div>
@@ -883,6 +1077,8 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Shopee. Se este valor estiver subindo, pode indicar que os pedidos estao indo para regioes mais distantes ou que a Shopee ajustou suas tarifas de envio.</div><div class="mkt-lbl">Frete Medio Shopee</div><div class="mkt-val" id="mkt_shopee_med">-</div><div class="mkt-sub">por entrega</div></div>
     <div class="mkt-card" style="border-top:3px solid var(--green2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Mercado Livre. Comparar este valor ao da Shopee ajuda a entender qual plataforma tem o custo logistico mais eficiente para o perfil de pedidos da empresa.</div><div class="mkt-lbl">Frete Medio Mercado Livre</div><div class="mkt-val" id="mkt_ml_med">-</div><div class="mkt-sub">por entrega</div></div>
     <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="kpi-tooltip">Custo medio por entrega realizada via TikTok Shop. Comparar este valor aos das demais plataformas ajuda a entender qual canal tem o custo logistico mais eficiente.</div><div class="mkt-lbl">Frete Medio TikTok Shop</div><div class="mkt-val" id="mkt_tiktok_med">-</div><div class="mkt-sub">por entrega</div></div>
+    <div class="mkt-card" style="border-top:3px solid #00A8E1"><div class="kpi-tooltip">Total pago pela logistica das entregas realizadas via Amazon no periodo. Reconhecida pelo canal de venda AMAZON e pela transportadora AMAZON LOGISTICA DO BRASIL.</div><div class="mkt-lbl">Total Frete Amazon</div><div class="mkt-val" id="mkt_amazon_frete">-</div><div class="mkt-sub" id="mkt_amazon_qtd">-</div></div>
+    <div class="mkt-card" style="border-top:3px solid var(--blue2)"><div class="kpi-tooltip">Custo medio por entrega realizada via Amazon. Comparar este valor aos das demais plataformas ajuda a entender qual canal tem o custo logistico mais eficiente.</div><div class="mkt-lbl">Frete Medio Amazon</div><div class="mkt-val" id="mkt_amazon_med">-</div><div class="mkt-sub">por entrega</div></div>
   </div>
   <div class="card"><div class="card-title">Shopee vs Mercado Livre vs TikTok Shop - Frete Mensal<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Comparativo mes a mes do custo de frete entre Shopee, Mercado Livre e TikTok Shop. Ajuda a identificar em quais periodos cada canal teve mais peso nos custos logisticos. Devolucoes nao estao incluidas aqui.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_mkt_timeline"></canvas></div></div>
   <div class="card">
@@ -895,6 +1091,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
         <button class="cat-btn" id="mkt_f_shopee" onclick="setMktFilter('SHOPEE')"><span style="color:#FF6900;font-size:9px">●</span> Shopee</button>
         <button class="cat-btn" id="mkt_f_ml" onclick="setMktFilter('MERCADO LIVRE')"><span style="color:#FFE600;font-size:9px">●</span> Mercado Livre</button>
         <button class="cat-btn" id="mkt_f_tiktok" onclick="setMktFilter('TIKTOK SHOP')"><span style="color:#FF0050;font-size:9px">●</span> TikTok Shop</button>
+        <button class="cat-btn" id="mkt_f_amazon" onclick="setMktFilter('AMAZON')"><span style="color:#00A8E1;font-size:9px">●</span> Amazon</button>
       </div>
       <input type="text" id="mkt_search" placeholder="Buscar NF, transportadora, destino..." class="hd-filter-item" style="flex:1;min-width:160px;cursor:text">
     </div>
@@ -1423,11 +1620,18 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via TikTok Shop, em quilogramas. Ajuda a dimensionar o volume fisico do fluxo reverso deste canal.</div><div class="kpi-val" id="dm_tk_peso">-</div><div class="kpi-lbl">Peso Total TikTok</div><div class="kpi-sub">kg devolvidos</div></div>
     <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via TikTok Shop. Comparar com o frete medio de venda mostra o impacto financeiro de cada produto retornado.</div><div class="kpi-val" id="dm_tk_medio">-</div><div class="kpi-lbl">Frete Medio TikTok</div><div class="kpi-sub">por CTe</div></div>
   </div>
+  <div class="dm-lbl-amazon" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#00A8E1;margin-bottom:6px;padding-left:2px">AMAZON</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Quantidade de devolucoes de clientes recebidas via Amazon no periodo. Hoje zerado: nao ha nenhum CT-e da Amazon com destino a Humana — mesmo comportamento do TikTok Shop, e o esperado enquanto a plataforma nao emitir CT-e de logistica reversa.</div><div class="kpi-val" id="dm_az_qtd">-</div><div class="kpi-lbl">CTe Devolucoes Amazon</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total pago pelo transporte reverso das devolucoes da Amazon. Custo separado do frete de vendas, representa o impacto financeiro dos retornos deste canal.</div><div class="kpi-val" id="dm_az_frete">-</div><div class="kpi-lbl">Frete Total Amazon</div><div class="kpi-sub">logistica da Amazon</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Peso total das mercadorias devolvidas via Amazon, em quilogramas. Ajuda a dimensionar o volume fisico do fluxo reverso deste canal.</div><div class="kpi-val" id="dm_az_peso">-</div><div class="kpi-lbl">Peso Total Amazon</div><div class="kpi-sub">kg devolvidos</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolucao recebida via Amazon. Comparar com o frete medio de venda mostra o impacto financeiro de cada produto retornado.</div><div class="kpi-val" id="dm_az_medio">-</div><div class="kpi-lbl">Frete Medio Amazon</div><div class="kpi-sub">por CTe</div></div>
+  </div>
   <div class="card">
-    <div class="card-title">Detalhamento por CTe de Devolucao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada devolucao de cliente recebida via Shopee, Mercado Livre ou TikTok Shop com o custo de frete reverso. Use o filtro de plataforma para analisar cada canal separadamente.</span></span></div>
+    <div class="card-title">Detalhamento por CTe de Devolucao<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada devolucao de cliente recebida via Shopee, Mercado Livre, TikTok Shop ou Amazon com o custo de frete reverso. Use o filtro de plataforma para analisar cada canal separadamente.</span></span></div>
     <div class="sr">
       <input type="text" id="dm_search" placeholder="Buscar remetente, origem, empresa, NF-e...">
-      <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option><option value="tiktok">TikTok Shop</option></select>
+      <select id="dm_sel_plat"><option value="">Todas as plataformas</option><option value="ml">Mercado Livre</option><option value="shopee">Shopee</option><option value="tiktok">TikTok Shop</option><option value="amazon">Amazon</option></select>
       <select id="dm_sel_emp"><option value="">Todas as empresas</option></select>
       <button class="btn-xlsx" onclick="if(window.dmExportXLSX)window.dmExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
@@ -1836,6 +2040,14 @@ async function _loadData(empresas) {
         .filter(r => r.status === 'fulfilled' && r.value.exists)
         .flatMap(r => { try { return JSON.parse(r.value.data().payload).items || []; } catch(e){ return []; } });
     }
+    // DRE Logístico: doc próprio ({emp}_dre) porque o doc principal do BRU1 opera perto
+    // do teto de 1MB do Firestore. Falha aqui não pode derrubar o dashboard inteiro —
+    // sem ele a aba DRE fica vazia, o resto segue funcionando.
+    try {
+      const dreDoc = await _db.collection('dados').doc(emp + '_dre').get();
+      if (dreDoc.exists) Object.assign(data, JSON.parse(dreDoc.data().payload));
+    } catch(e) { console.warn(emp + ': DRE não carregado — ' + e.message); }
+
     const nEspChunks = data.espelho_chunks || 0;
     if (nEspChunks > 0) {
       const espChunkIds = Array.from({length: nEspChunks}, (_, i) => emp + '_esp_' + String(i).padStart(3, '0'));
@@ -1868,6 +2080,11 @@ function _mergeData(datas) {
     || (datas[0]?.resumo?.nfe_fat_periodo||0);
   return {
     gerado_em: datas[0]?.gerado_em || '',
+    // dicts de chave flat "emp|ano|mes" — cada empresa só emite as próprias chaves,
+    // então Object.assign mescla sem conflito (mesmo padrão de nfe_fat_por_emp_ano_mes)
+    dre:        Object.assign({}, ...datas.map(d=>d.dre||{})),
+    dre_canal:  Object.assign({}, ...datas.map(d=>d.dre_canal||{})),
+    dre_transp: Object.assign({}, ...datas.map(d=>d.dre_transp||{})),
     cnpj_map: Object.assign({}, ...datas.map(d=>d.cnpj_map||{})),
     produtos_desc: Object.assign({}, ...datas.map(d=>d.produtos_desc||{})),
     por_nat_op: datas[0]?.por_nat_op || [],
@@ -2125,10 +2342,10 @@ function showToast(msg,type='ok',dur=2800){const t=document.getElementById('toas
 const BRL  = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const N    = (v,d=0) => v.toLocaleString('pt-BR',{maximumFractionDigits:d});
 const MESES= ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const TR_ALIAS={'SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','SHPS TECNOLOGIA E SERVIÇO LTDA':'SHOPEE','EBAZARCOMBR LTDA':'MERCADO LIVRE','TIKTOK LOGISTICS BRAZIL LTDA':'TIKTOK SHOP'};
-const MARKETPLACE_TR=new Set(['SHPS TECNOLOGIA E SERVICO LTDA','SHPS TECNOLOGIA E SERVIÇO LTDA','EBAZARCOMBR LTDA','TIKTOK LOGISTICS BRAZIL LTDA']);
+const TR_ALIAS={'SHPS TECNOLOGIA E SERVICO LTDA':'SHOPEE','SHPS TECNOLOGIA E SERVIÇO LTDA':'SHOPEE','EBAZARCOMBR LTDA':'MERCADO LIVRE','TIKTOK LOGISTICS BRAZIL LTDA':'TIKTOK SHOP','AMAZON LOGISTICA DO BRASIL LTDA':'AMAZON'};
+const MARKETPLACE_TR=new Set(['SHPS TECNOLOGIA E SERVICO LTDA','SHPS TECNOLOGIA E SERVIÇO LTDA','EBAZARCOMBR LTDA','TIKTOK LOGISTICS BRAZIL LTDA','AMAZON LOGISTICA DO BRASIL LTDA']);
 function trName(raw){if(!raw||raw==='-') return raw||'-';const clean=raw.replace(/^.*? - /,'').trim();return TR_ALIAS[clean.toUpperCase()]||clean;}
-function isMarketplace(tr){if(!tr) return false;const clean=tr.replace(/^.*? - /,'').trim().toUpperCase();if(MARKETPLACE_TR.has(clean)) return true;if(clean.includes('SHPS TECNOLOGIA')) return true;if(clean.includes('EBAZARCOMBR')) return true;if(clean.includes('TIKTOK LOGISTICS')) return true;return false;}
+function isMarketplace(tr){if(!tr) return false;const clean=tr.replace(/^.*? - /,'').trim().toUpperCase();if(MARKETPLACE_TR.has(clean)) return true;if(clean.includes('SHPS TECNOLOGIA')) return true;if(clean.includes('EBAZARCOMBR')) return true;if(clean.includes('TIKTOK LOGISTICS')) return true;if(clean.includes('AMAZON LOGISTICA')) return true;return false;}
 // Agrupamento por grupo econômico (base 8 dígitos do CNPJ)
 function trKey(d){if(!d) return '?';if(!groupByEconGroup||!d.transp_cnpj) return d.transportadora||'?';const b=d.transp_cnpj.slice(0,8);return b||d.transportadora||'?';}
 function trDisp(key){if(!key||key==='?') return '-';if(!groupByEconGroup) return trName(key);return trName(trGroupMap[key]||key);}
@@ -2763,7 +2980,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='transferencias')renderTransferencias();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='transferencias')renderTransferencias();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();else if(tab==='dre'&&window._renderDRE)window._renderDRE();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -2990,6 +3207,7 @@ function setMktFilter(val){
   document.getElementById('mkt_f_shopee').classList.toggle('active',val==='SHOPEE');
   document.getElementById('mkt_f_ml').classList.toggle('active',val==='MERCADO LIVRE');
   document.getElementById('mkt_f_tiktok').classList.toggle('active',val==='TIKTOK SHOP');
+  document.getElementById('mkt_f_amazon').classList.toggle('active',val==='AMAZON');
   mktPage=0;renderMktTable();
 }
 let mktSearchQ='';
@@ -2998,6 +3216,7 @@ function renderMarketplace(){
   const shopee=mktRows.filter(d=>d.marketplace_type==='shopee');
   const ml=mktRows.filter(d=>d.marketplace_type==='ml');
   const tiktok=mktRows.filter(d=>d.marketplace_type==='tiktok');
+  const amazon=mktRows.filter(d=>d.marketplace_type==='amazon');
   const sumF=arr=>arr.reduce((s,d)=>s+d.valor_frete,0);
   document.getElementById('mkt_shopee_frete').textContent=BRL(sumF(shopee));
   document.getElementById('mkt_shopee_qtd').textContent=N(shopee.length)+' CTe';
@@ -3008,6 +3227,9 @@ function renderMarketplace(){
   document.getElementById('mkt_tiktok_frete').textContent=BRL(sumF(tiktok));
   document.getElementById('mkt_tiktok_qtd').textContent=N(tiktok.length)+' CTe';
   document.getElementById('mkt_tiktok_med').textContent=tiktok.length?BRL(sumF(tiktok)/tiktok.length):'-';
+  document.getElementById('mkt_amazon_frete').textContent=BRL(sumF(amazon));
+  document.getElementById('mkt_amazon_qtd').textContent=N(amazon.length)+' CTe';
+  document.getElementById('mkt_amazon_med').textContent=amazon.length?BRL(sumF(amazon)/amazon.length):'-';
   document.getElementById('tb_mkt').textContent=N(mktRows.length);
   // Alertas automáticos: compara mes atual vs anterior
   const mktAlerts=document.getElementById('mkt_alerts');
@@ -3019,7 +3241,7 @@ function renderMarketplace(){
       const [lM,lY]=lastPer.split('/');const [pM,pY]=prevPer.split('/');
       const inLastPer=d=>per(d.data)===lastPer;const inPrevPer=d=>per(d.data)===prevPer;
       const alerts=[];
-      [['shopee','#FF6900','Shopee'],['ml','#FFE600','Mercado Livre'],['tiktok','#FF0050','TikTok Shop']].forEach(([type,color,lbl])=>{
+      [['shopee','#FF6900','Shopee'],['ml','#FFE600','Mercado Livre'],['tiktok','#FF0050','TikTok Shop'],['amazon','#00A8E1','Amazon']].forEach(([type,color,lbl])=>{
         const cur=sumF(mktRows.filter(d=>d.marketplace_type===type&&inLastPer(d)));
         const prev=sumF(mktRows.filter(d=>d.marketplace_type===type&&inPrevPer(d)));
         if(prev>0&&cur>0){const chg=(cur-prev)/prev*100;if(Math.abs(chg)>=15){const up=chg>0;
@@ -3030,14 +3252,16 @@ function renderMarketplace(){
     }else{mktAlerts.innerHTML='';}
   }
   const allPers=[...new Set(DATA.detalhes.map(d=>per(d.data)).filter(Boolean))].sort();
-  const byPerSh={},byPerMl={},byPerTk={};
+  const byPerSh={},byPerMl={},byPerTk={},byPerAz={};
   shopee.forEach(d=>{const p=per(d.data);if(p) byPerSh[p]=(byPerSh[p]||0)+d.valor_frete;});
   ml.forEach(d=>{const p=per(d.data);if(p) byPerMl[p]=(byPerMl[p]||0)+d.valor_frete;});
   tiktok.forEach(d=>{const p=per(d.data);if(p) byPerTk[p]=(byPerTk[p]||0)+d.valor_frete;});
+  amazon.forEach(d=>{const p=per(d.data);if(p) byPerAz[p]=(byPerAz[p]||0)+d.valor_frete;});
   mkLine('ch_mkt_timeline',allPers.map(p=>perL(p)),[
     {label:'Shopee',data:allPers.map(p=>byPerSh[p]||0),borderColor:'#FF6900',backgroundColor:'#FF690022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FF6900',pointBorderColor:'#fff',pointBorderWidth:2},
     {label:'Mercado Livre',data:allPers.map(p=>byPerMl[p]||0),borderColor:'#FFE600',backgroundColor:'#FFE60022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FFE600',pointBorderColor:'#fff',pointBorderWidth:2},
     {label:'TikTok Shop',data:allPers.map(p=>byPerTk[p]||0),borderColor:'#FF0050',backgroundColor:'#FF005022',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#FF0050',pointBorderColor:'#fff',pointBorderWidth:2},
+    {label:'Amazon',data:allPers.map(p=>byPerAz[p]||0),borderColor:'#00A8E1',backgroundColor:'#00A8E122',fill:false,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2,pointBackgroundColor:'#00A8E1',pointBorderColor:'#fff',pointBorderWidth:2},
   ]);
   mktPage=0;renderMktTable();
   const mktSrch=document.getElementById('mkt_search');
@@ -3045,7 +3269,7 @@ function renderMarketplace(){
 }
 function renderMktTable(){
   const tbody=document.getElementById('mkt_tbody');
-  let filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktFilterVal==='TIKTOK SHOP'?mktRows.filter(d=>d.marketplace_type==='tiktok'):mktRows;
+  let filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktFilterVal==='TIKTOK SHOP'?mktRows.filter(d=>d.marketplace_type==='tiktok'):mktFilterVal==='AMAZON'?mktRows.filter(d=>d.marketplace_type==='amazon'):mktRows;
   if(mktSearchQ){const q=mktSearchQ;filtered=filtered.filter(d=>{
     return(d.numero||'').toLowerCase().includes(q)
       ||(d.transportadora||'').toLowerCase().includes(q)
@@ -5098,6 +5322,7 @@ function initApp(){
     const ml=allBase.filter(d=>d.mkt_type==='ml');
     const sh=allBase.filter(d=>d.mkt_type==='shopee');
     const tk=allBase.filter(d=>d.mkt_type==='tiktok');
+    const az=allBase.filter(d=>d.mkt_type==='amazon');
     const kpi=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
     kpi('dm_ml_qtd',N(ml.length));
     kpi('dm_ml_frete',BRL(ml.reduce((s,d)=>s+d.valor_frete,0)));
@@ -5111,12 +5336,17 @@ function initApp(){
     kpi('dm_tk_frete',BRL(tk.reduce((s,d)=>s+d.valor_frete,0)));
     kpi('dm_tk_peso',N(Math.round(tk.reduce((s,d)=>s+d.peso_kg,0)))+' kg');
     kpi('dm_tk_medio',tk.length?BRL(tk.reduce((s,d)=>s+d.valor_frete,0)/tk.length):'R$ 0');
+    kpi('dm_az_qtd',N(az.length));
+    kpi('dm_az_frete',BRL(az.reduce((s,d)=>s+d.valor_frete,0)));
+    kpi('dm_az_peso',N(Math.round(az.reduce((s,d)=>s+d.peso_kg,0)))+' kg');
+    kpi('dm_az_medio',az.length?BRL(az.reduce((s,d)=>s+d.valor_frete,0)/az.length):'R$ 0');
     const slice=base.slice(dmPage*PAGE,(dmPage+1)*PAGE);
     const isOc=document.documentElement.classList.contains('ocean');
     const platChip=t=>{
       if(t==='ml') return '<span class="chip" style="background:'+(isOc?'#FEF9C3':'#FFE60022')+';color:'+(isOc?'#854D0E':'#FFE600')+';border:1px solid '+(isOc?'#FDE047':'transparent')+';font-size:9px;font-weight:700">ML</span>';
       if(t==='shopee') return '<span class="chip" style="background:'+(isOc?'#FFEDD5':'#FF690022')+';color:'+(isOc?'#9A3412':'#FF6900')+';border:1px solid '+(isOc?'#FDBA74':'transparent')+';font-size:9px;font-weight:700">Shopee</span>';
       if(t==='tiktok') return '<span class="chip" style="background:'+(isOc?'#FFE4EC':'rgba(255,0,80,.18)')+';color:'+(isOc?'#9D174D':'#FF0050')+';border:1px solid '+(isOc?'#FECDD3':'transparent')+';font-size:9px;font-weight:700">TikTok</span>';
+      if(t==='amazon') return '<span class="chip" style="background:'+(isOc?'#E0F2FE':'rgba(0,168,225,.18)')+';color:'+(isOc?'#075985':'#00A8E1')+';border:1px solid '+(isOc?'#7DD3FC':'transparent')+';font-size:9px;font-weight:700">Amazon</span>';
       return '<span class="chip chip-gray" style="font-size:9px;font-weight:700">'+esc(t||'?')+'</span>';
     };
     document.getElementById('dm_tbody').innerHTML=slice.map(d=>{
@@ -5188,9 +5418,452 @@ function initApp(){
   }
   window.dlvExportXLSX=dlvExportXLSX;
 
+  // ─── DRE LOGISTICO ────────────────────────────────────────────────────────
+  // Le DATA.dre / dre_canal / dre_transp (dicts de chave flat "emp|ano|mes"),
+  // publicados em doc Firestore proprio por empresa. Toda agregacao daqui e soma
+  // simples desses dicts — nenhuma reclassificacao de CT-e acontece no frontend.
+  //
+  // Paleta: DLV_PAL na ordem NATIVA, validada com validate_palette.js (skill dataviz)
+  // nas 2 superficies reais do app. Reordenar quebra: rosa adjacente ao verde cai
+  // para dE 1,6 em deuteranopia. O par mais justo (#c98500 x #199e70, dE 8,4) exige
+  // encoding secundario — dai a tabela com nome+valor abaixo da barra e o gap de 2px.
+  const DRE_PAL={cte_venda:'#3987e5',cte_mkt:'#d95926',delivery:'#199e70',
+                 cte_transf:'#c98500',dev_mkt:'#d55181',sem_vinculo:'#9085e9'};
+  const DRE_MODS=[
+    ['cte_venda','Frete de Saída — Venda','CT-e de transportadora em venda a cliente'],
+    ['cte_mkt','Marketplace','CT-e da logística Shopee / Mercado Livre / TikTok / Amazon'],
+    ['delivery','Delivery — Entregadores','NFS-e de entregador autônomo cadastrado'],
+    ['cte_transf','Transferência entre Unidades','CT-e de remessa entre filiais do grupo'],
+    ['dev_mkt','Devoluções Marketplace','Logística reversa dos marketplaces'],
+    ['sem_vinculo','Sem Identificação','CT-e ativo que não casou com nenhuma NF-e']
+  ];
+  let dreHmModo='entrega';
+  const _dreB=v=>'R$ '+(v||0).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const _dreB2=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const _dreP=(a,b)=>!b?'—':(a/b*100).toFixed(1).replace('.',',')+'%';
+  const _dreFmtHm=v=>'R$ '+(dreHmModo==='kg'?v.toFixed(2).replace('.',','):v.toFixed(0));
+
+  function _dreKeys(ano,meses,emps){
+    return Object.keys(DATA.dre||{}).filter(k=>{
+      const [e,a,m]=k.split('|');
+      if(ano&&a!==ano) return false;
+      if(emps&&emps.length&&!emps.includes(e)) return false;
+      if(meses&&meses.length&&!meses.includes(m)) return false;
+      return true;
+    });
+  }
+  function _dreAgg(keys){
+    const o={cte_saida:0,cte_mkt:0,cte_transf:0,delivery:0,dev_mkt:0,sem_vinculo:0,
+             compras:0,frete_cobrado:0,gratis:0,gratis_qtd:0,entregas:0,com_cte:0,
+             com_nfse:0,buraco:0,sem_transp:0,peso_doc:0,
+             cte_saida_n:0,cte_mkt_n:0,cte_transf_n:0,delivery_n:0,dev_mkt_n:0,sem_vinculo_n:0};
+    keys.forEach(k=>{const r=DATA.dre[k]||{};for(const c in o) if(typeof r[c]==='number') o[c]+=r[c];});
+    // cte_venda = saida menos os subconjuntos; total NAO soma mkt/transf por fora
+    o.cte_venda=Math.max(0,o.cte_saida-o.cte_mkt-o.cte_transf);
+    o.cte_venda_n=Math.max(0,o.cte_saida_n-o.cte_mkt_n-o.cte_transf_n);
+    o.log=o.cte_saida+o.delivery+o.dev_mkt+o.sem_vinculo;
+    o.doc=o.com_cte+o.com_nfse;
+    return o;
+  }
+  const _dreMesesDisp=()=>[...new Set(Object.keys(DATA.dre||{})
+    .filter(k=>k.split('|')[1]===(state.ano||_dreAnoAtual())).map(k=>k.split('|')[2]))].sort();
+  const _dreAnos=()=>[...new Set(Object.keys(DATA.dre||{}).map(k=>k.split('|')[1]))].sort();
+  const _dreAnoAtual=()=>{const a=_dreAnos();return a[a.length-1]||'';};
+  function _drePeriodoParcial(){
+    const t=Object.keys(DATA.dre||{}).map(k=>{const p=k.split('|');return p[1]+p[2];}).sort().pop()||'';
+    return {ano:t.slice(0,4),mes:t.slice(4)};
+  }
+  let _dreParc={ano:'',mes:''};
+  const _dreEhParc=(a,m)=>a===_dreParc.ano&&m===_dreParc.mes;
+
+  function _drePrev(ano){
+    const pa=String(+ano-1);
+    if(!_dreAnos().includes(pa)) return null;
+    // YTD x YTD: comparar ano parcial com ano anterior inteiro inverte o sinal
+    const meses=state.meses.length?state.meses:_dreMesesDisp();
+    const ks=_dreKeys(pa,meses,state.empresas);
+    if(!ks.length) return null;
+    return {a:_dreAgg(ks),lbl:state.meses.length?pa:(meses.length<12?'mesmo período de '+pa:'ano '+pa)};
+  }
+
+  let _dreTip=null;
+  function _dreTipOn(e,html){
+    if(!_dreTip){_dreTip=document.createElement('div');_dreTip.id='dre_tip';document.body.appendChild(_dreTip);}
+    _dreTip.innerHTML=html;_dreTip.classList.add('on');_dreTipMove(e);
+  }
+  function _dreTipMove(e){
+    if(!_dreTip) return;
+    const r=_dreTip.getBoundingClientRect();
+    let x=e.clientX+14,y=e.clientY+14;
+    if(x+r.width>innerWidth-10)x=e.clientX-r.width-14;
+    if(y+r.height>innerHeight-10)y=e.clientY-r.height-14;
+    _dreTip.style.left=x+'px';_dreTip.style.top=y+'px';
+  }
+  const _dreTipOff=()=>{if(_dreTip)_dreTip.classList.remove('on');};
+  const _dreRow=(l,v)=>`<div class="r"><span>${esc(l)}</span><span>${v}</span></div>`;
+
+  function dreSetHm(m){dreHmModo=m;renderDRE();}
+  window.dreSetHm=dreSetHm;
+
+  function renderDRE(){
+    if(!DATA.dre||!Object.keys(DATA.dre).length){
+      const c=document.getElementById('dre_casc');
+      if(c) c.innerHTML='<tr><td style="color:var(--text3)">Sem dados de DRE publicados. '
+        +'Rode <code>processar_frete.py</code> para gerar.</td></tr>';
+      return;
+    }
+    _dreParc=_drePeriodoParcial();
+    const ano=state.ano||_dreAnoAtual();
+    const A=_dreAgg(_dreKeys(ano,state.meses,state.empresas)), P=_drePrev(ano);
+
+    const S=(id,txt,html)=>{const el=document.getElementById(id);if(el){if(html)el.innerHTML=txt;else el.textContent=txt;}};
+    S('dre_k_tot',_dreB(A.log));
+    S('dre_k_tot_sub','distribuição · mais '+_dreB(A.compras)+' de frete sobre compras');
+    S('dre_k_tot_tr',P&&P.a.log?(()=>{const d=(A.log-P.a.log)/P.a.log*100;
+      return `<span class="dre-dlt ${d>0?'up':'dn'}" style="margin-top:6px;display:inline-block">${
+        d>0?'▲':'▼'} ${Math.abs(d).toFixed(1).replace('.',',')}% vs ${esc(P.lbl)}</span>`;})():'',true);
+    S('dre_k_ent',A.doc?_dreB2(A.log/A.doc):'—');
+    S('dre_k_ent_sub',A.doc?N(A.doc)+' entregas com custo documentado':'sem volumetria no período');
+    S('dre_k_kg',A.peso_doc?_dreB2(A.log/A.peso_doc):'—');
+    S('dre_k_kg_sub',A.peso_doc?N(Math.round(A.peso_doc))+' kg transportados':'sem peso informado');
+    S('dre_k_cob',A.entregas?_dreP(A.doc,A.entregas):'—');
+    S('dre_k_cob_sub',A.entregas?N(A.doc)+' de '+N(A.entregas)+' entregas com transportadora no ERP'
+      :'sem dados de volumetria no período');
+    S('dre_k_rec',`<span style="color:var(--green)">${_dreP(A.frete_cobrado,A.log)}</span>`
+      +`<span style="font-size:15px;color:var(--text3)"> cliente</span>`,true);
+    S('dre_k_rec_sub',`${_dreB(A.frete_cobrado)} repassados · <b style="color:var(--yellow)">`
+      +`${_dreP(A.gratis,A.log)}</b> saiu com frete grátis (${N(A.gratis_qtd)} notas)`,true);
+
+    const L=(nm,v,base,cls,ind,bar,cred)=>`<tr class="${cls||''}"><td class="${
+        ind===2?'ind2':ind?'ind':''}">${nm}${
+        bar?`<div class="dre-bar"><i style="width:${Math.min(100,Math.abs(v)/(base||1)*100)}%;background:${bar}"></i></div>`:''
+      }</td><td class="v ${cred?'cr':''}">${cred?'(':''}${_dreB(v)}${cred?')':''}</td>`
+      +`<td class="p">${base?_dreP(Math.abs(v),base):''}</td></tr>`;
+    S('dre_casc',
+      L('Frete de Saída — total CT-e',A.cte_saida,A.log,'',0,DRE_PAL.cte_venda)
+     +L('› Venda a cliente',A.cte_venda,A.log,'',2)
+     +L('› Marketplace',A.cte_mkt,A.log,'',2)
+     +L('› Transferência entre unidades',A.cte_transf,A.log,'',2)
+     +L('Delivery — entregadores autônomos',A.delivery,A.log,'',0,DRE_PAL.delivery)
+     +L('Devoluções Marketplace',A.dev_mkt,A.log,'',0)
+     +L('CT-e sem identificação',A.sem_vinculo,A.log,'',0)
+     +L('= Custo de Distribuição',A.log,A.log,'sum')
+     +L('Frete sobre compras (entra no CMV)',A.compras,A.log,'',1)
+     +L('Recuperado do cliente',A.frete_cobrado,A.log,'',1,null,1)
+     +L('= Custo Líquido de Frete',A.log+A.compras-A.frete_cobrado,null,'res')
+     +`<tr><td colspan="3" style="padding-top:12px;border:none"><div class="dre-leia" style="margin:0">`
+     +`<b>Frete grátis:</b> ${_dreB(A.gratis)} do custo acima (<b>${_dreP(A.gratis,A.log)}</b>) veio de `
+     +`${N(A.gratis_qtd)} entregas em que <b>nada foi cobrado</b> do cliente. É política comercial, `
+     +`não falha de cobrança — mas é o motivo de só ${_dreP(A.frete_cobrado,A.log)} do frete voltar `
+     +`como receita.</div></td></tr>`,true);
+
+    const stack=document.getElementById('dre_stack');
+    if(stack){
+      stack.innerHTML='';
+      DRE_MODS.forEach(([k,nm,desc])=>{
+        if(!(A[k]>0)) return;
+        const i=document.createElement('i');
+        i.style.width=(A[k]/A.log*100)+'%';i.style.background=DRE_PAL[k];
+        i.onmouseenter=e=>_dreTipOn(e,`<b>${esc(nm)}</b><br><span style="color:var(--text3);font-size:11.5px">`
+          +`${esc(desc)}</span><br>`+_dreRow('Valor',_dreB2(A[k]))
+          +_dreRow('% do custo',_dreP(A[k],A.log))
+          +(A[k+'_n']?_dreRow('Documentos',N(A[k+'_n'])):''));
+        i.onmousemove=_dreTipMove;i.onmouseleave=_dreTipOff;
+        stack.appendChild(i);
+      });
+    }
+    const dlt=k=>{
+      if(!P||!P.a[k]) return '<span class="dre-qt">—</span>';
+      const d=(A[k]-P.a[k])/P.a[k]*100;
+      if(Math.abs(d)<0.5) return '<span class="dre-qt">estável</span>';
+      return `<span class="dre-dlt ${d>0?'up':'dn'}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(0)}%</span>`;
+    };
+    let mt='<tr><th>Modalidade</th><th>Valor</th><th>% do custo</th><th>Custo médio</th>'
+          +`<th>vs ${P?esc(P.lbl):'—'}</th></tr>`;
+    DRE_MODS.slice().sort((a,b)=>A[b[0]]-A[a[0]]).forEach(([k,nm])=>{
+      if(!(A[k]>0)) return;
+      mt+=`<tr><td><span class="dre-dot" style="background:${DRE_PAL[k]}"></span>${esc(nm)}`
+        +(A[k+'_n']?`<div class="dre-qt" style="margin-left:17px">${N(A[k+'_n'])} documentos</div>`:'')
+        +`</td><td>${_dreB(A[k])}</td><td>${_dreP(A[k],A.log)}</td>`
+        +`<td>${A[k+'_n']?_dreB2(A[k]/A[k+'_n']):'—'}</td><td>${dlt(k)}</td></tr>`;
+    });
+    mt+=`<tr style="border-top:1px solid var(--bd2)"><td><b>Total distribuição</b></td>`
+       +`<td><b>${_dreB(A.log)}</b></td><td><b>100%</b></td><td></td><td>${dlt('log')}</td></tr>`;
+    S('dre_modtab',mt,true);
+    S('dre_nota_mod',P?`Última coluna: variação de cada modalidade contra o <b>${esc(P.lbl)}</b>. `
+      +`Vermelho = custo subiu. O total pode subir enquanto uma modalidade cai — é onde a seta mostra `
+      +`onde agir.`:'Sem período anterior comparável no filtro atual.',true);
+
+    _dreRenderHeat(ano);_dreRenderEvo(ano);_dreRenderCanais(ano);_dreRenderTransps(ano);
+  }
+
+  function _dreRenderHeat(ano){
+    const kg=dreHmModo==='kg';
+    const be=document.getElementById('dre_hm_e'),bk=document.getElementById('dre_hm_k');
+    if(be)be.className='cat-btn'+(kg?'':' active');
+    if(bk)bk.className='cat-btn'+(kg?' active':'');
+    const S=(id,t,h)=>{const el=document.getElementById(id);if(el){if(h)el.innerHTML=t;else el.textContent=t;}};
+    S('dre_hm_titulo',kg?'Custo Médio de Frete por Quilo — em R$':'Custo Médio de Frete por Entrega — em R$');
+    S('dre_hm_desc',kg
+      ?'Cada célula responde: <b>quanto custou o frete de cada quilo transportado</b>. Compare com a visão '
+       +'por entrega — se uma unidade é cara por entrega mas normal por quilo, o problema é carga pesada, '
+       +'não preço ruim.'
+      :'Cada célula responde: <b>quanto custou, em média, entregar uma nota</b> daquela unidade naquele mês.',true);
+
+    const meses=_dreMesesDisp();
+    const emps=state.empresas.length?state.empresas.slice().sort()
+      :[...new Set(Object.keys(DATA.dre||{}).map(k=>k.split('|')[0]))].sort();
+    const cel={},vals=[];
+    emps.forEach(e=>meses.forEach(m=>{
+      const a=_dreAgg(_dreKeys(ano,[m],[e]));
+      const base=kg?a.peso_doc:a.doc;
+      const v=base>0?a.log/base:null;
+      cel[e+m]={v,a};if(v!=null)vals.push(v);
+    }));
+    const max=Math.max(0.01,...vals);
+    const cor=v=>v==null?'var(--heatmap-empty)'
+      :`rgba(57,135,229,${(Math.max(.06,Math.min(1,v/max))*.80).toFixed(3)})`;
+    let h='<tr><th class="emp">Unidade</th>'+meses.map(m=>`<th>${MESES[+m]}</th>`).join('')+'<th>Ano</th></tr>';
+    emps.forEach(e=>{
+      h+=`<tr><th class="emp">${esc(e)}</th>`;
+      meses.forEach(m=>{
+        const c=cel[e+m];
+        if(!c||c.v==null){h+='<td class="na">—</td>';return;}
+        h+=`<td${_dreEhParc(ano,m)?' class="parc"':''} data-e="${esc(e)}" data-m="${m}" `
+          +`style="background:${cor(c.v)}">${_dreFmtHm(c.v)}${_dreEhParc(ano,m)?'<sup>*</sup>':''}</td>`;
+      });
+      const ay=_dreAgg(_dreKeys(ano,[],[e])),ab=kg?ay.peso_doc:ay.doc;
+      h+=`<td style="background:var(--s3);font-weight:600">${ab?_dreFmtHm(ay.log/ab):'—'}</td></tr>`;
+    });
+    const tg=_dreAgg(_dreKeys(ano,[],emps)),tb=kg?tg.peso_doc:tg.doc;
+    h+='<tr class="tot"><th class="emp">Grupo</th>';
+    meses.forEach(m=>{const a=_dreAgg(_dreKeys(ano,[m],emps)),b=kg?a.peso_doc:a.doc;
+      h+=`<td>${b?_dreFmtHm(a.log/b):'—'}</td>`;});
+    h+=`<td style="background:var(--s3)">${tb?_dreFmtHm(tg.log/tb):'—'}</td></tr>`;
+    const t=document.getElementById('dre_hm');if(!t)return;
+    t.innerHTML=h;
+
+    // frase "como ler" com uma celula REAL da grade, nunca exemplo inventado
+    const ex=emps[0],exm=meses.find(m=>cel[ex+m]&&cel[ex+m].v!=null&&!_dreEhParc(ano,m))||meses[0];
+    const exc=cel[ex+exm];
+    S('dre_leia_hm',exc&&exc.v!=null
+      ?(kg
+        ?`a célula <b>${esc(ex)} / ${MESES[+exm]}</b> mostra <b>${_dreFmtHm(exc.v)}</b> — em `
+         +`${MESES[+exm]}/${ano} a unidade ${esc(ex)} pagou ${_dreFmtHm(exc.v)} de frete por `
+         +`<b>cada quilo</b> despachado (${_dreB(exc.a.log)} ÷ ${N(Math.round(exc.a.peso_doc))} kg). `
+         +`Não é quantidade — é dinheiro por quilo.`
+        :`a célula <b>${esc(ex)} / ${MESES[+exm]}</b> mostra <b>${_dreFmtHm(exc.v)}</b> — em `
+         +`${MESES[+exm]}/${ano} a unidade ${esc(ex)} pagou, em média, ${_dreFmtHm(exc.v)} de frete para `
+         +`entregar <b>cada uma</b> das ${N(exc.a.doc)} notas com custo documentado `
+         +`(${_dreB(exc.a.log)} ÷ ${N(exc.a.doc)} entregas). Não é quantidade — é dinheiro por entrega.`)
+      :'sem dados suficientes no filtro atual.',true);
+    S('dre_nota_hm','Coluna <b>Ano</b> = média do ano inteiro; linha <b>Grupo</b> = todas as unidades somadas. '
+      +(meses.includes(_dreParc.mes)&&ano===_dreParc.ano
+        ?`<b>*</b> ${MESES[+_dreParc.mes]}/${_dreParc.ano} é mês em andamento: o CT-e já entrou mas a `
+         +`Volumetria do ERP ainda não foi exportada por completo, então o divisor fica pequeno e o valor `
+         +`por entrega estoura. Ignorar essa coluna.`:''),true);
+
+    t.querySelectorAll('td[data-e]').forEach(td=>{
+      const c=cel[td.dataset.e+td.dataset.m];if(!c)return;
+      const a=c.a;
+      td.onmouseenter=ev=>_dreTipOn(ev,`<b>${esc(td.dataset.e)} · ${MESES[+td.dataset.m]}/${ano}</b>`
+        +(_dreEhParc(ano,td.dataset.m)
+          ?'<br><span style="color:var(--yellow);font-size:11.5px">mês em andamento — parcial</span>':'')+'<br>'
+        +_dreRow('Custo total',_dreB(a.log))+_dreRow('Entregas documentadas',N(a.doc))
+        +_dreRow('Custo por entrega',a.doc?_dreB2(a.log/a.doc):'—')
+        +_dreRow('Custo por quilo',a.peso_doc?_dreB2(a.log/a.peso_doc):'—')
+        +_dreRow('Peso transportado',N(Math.round(a.peso_doc))+' kg')
+        +'<div style="border-top:1px solid var(--bd);margin:6px 0 4px"></div>'
+        +DRE_MODS.filter(([k])=>a[k]>0).sort((x,y)=>a[y[0]]-a[x[0]]).slice(0,3)
+             .map(([k,nm])=>_dreRow(nm,_dreB(a[k]))).join(''));
+      td.onmousemove=_dreTipMove;td.onmouseleave=_dreTipOff;
+    });
+  }
+
+  function _dreRenderEvo(ano){
+    const meses=_dreMesesDisp();
+    const emps=state.empresas;
+    const dados=meses.map(m=>({m,a:_dreAgg(_dreKeys(ano,[m],emps))}));
+    const max=Math.max(1,...dados.map(d=>d.a.log));
+    const lg=document.getElementById('dre_legenda');
+    if(lg) lg.innerHTML=DRE_MODS.filter(([k])=>dados.some(d=>d.a[k]>0))
+      .map(([k,nm])=>`<span><i class="dre-dot" style="background:${DRE_PAL[k]}"></i>${esc(nm)}</span>`).join('');
+    const ev=document.getElementById('dre_evo');
+    if(ev) ev.innerHTML=dados.map(d=>{
+      const alt=d.a.log/max*100;
+      const segs=DRE_MODS.filter(([k])=>d.a[k]>0)
+        .map(([k])=>`<i style="height:${d.a.log?d.a[k]/d.a.log*alt*1.62:0}px;background:${DRE_PAL[k]}"></i>`).join('');
+      return `<div class="dre-evocol${_dreEhParc(ano,d.m)?' parc':''}" data-m="${d.m}">`
+        +`<div class="tot">${d.a.log>=1000?(d.a.log/1000).toFixed(0)+'k':d.a.log.toFixed(0)}</div>`
+        +`<div class="dre-evobars">${segs}</div>`
+        +`<div class="mes">${MESES[+d.m]}${_dreEhParc(ano,d.m)?'*':''}</div></div>`;
+    }).join('');
+    const fim=dados.filter(d=>!_dreEhParc(ano,d.m)&&d.a.log>0);
+    const pri=fim[0],ult=fim[fim.length-1];
+    const le=document.getElementById('dre_leia_ev');
+    if(le) le.innerHTML=(pri&&ult&&pri!==ult)
+      ? `a altura da barra é o <b>custo total daquele mês</b> (o número em cima é o valor em milhares de `
+        +`reais). Em ${MESES[+pri.m]} foram <b>${_dreB(pri.a.log)}</b> e em ${MESES[+ult.m]}, `
+        +`<b>${_dreB(ult.a.log)}</b> — variação de <b>${((ult.a.log-pri.a.log)/pri.a.log*100).toFixed(0)}%</b> `
+        +`no período.`
+      : 'a altura da barra é o custo total do mês; as faixas coloridas são as modalidades.';
+    document.querySelectorAll('#dre_evo .dre-evocol').forEach(el=>{
+      const d=dados.find(x=>x.m===el.dataset.m);if(!d)return;
+      el.onmouseenter=e=>_dreTipOn(e,`<b>${MESES[+d.m]}/${ano}</b>`
+        +(_dreEhParc(ano,d.m)?'<br><span style="color:var(--yellow);font-size:11.5px">mês em andamento</span>':'')
+        +'<br>'+_dreRow('Custo total',_dreB2(d.a.log))+_dreRow('Entregas',N(d.a.doc))
+        +_dreRow('Custo por entrega',d.a.doc?_dreB2(d.a.log/d.a.doc):'—')
+        +'<div style="border-top:1px solid var(--bd);margin:6px 0 4px"></div>'
+        +DRE_MODS.filter(([k])=>d.a[k]>0).sort((x,y)=>d.a[y[0]]-d.a[x[0]])
+             .map(([k,nm])=>_dreRow(nm,_dreB(d.a[k]))).join(''));
+      el.onmousemove=_dreTipMove;el.onmouseleave=_dreTipOff;
+    });
+  }
+
+  function _dreCanalRows(ano){
+    const by={};
+    Object.entries(DATA.dre_canal||{}).forEach(([k,v])=>{
+      const p=k.split('|'),e=p[0],a=p[1],canal=p.slice(2).join('|');
+      if(a!==ano) return;
+      if(state.empresas.length&&!state.empresas.includes(e)) return;
+      const o=by[canal]=by[canal]||{frete:0,nfe:0};
+      o.frete+=v.frete||0;o.nfe+=v.nfe||0;
+    });
+    return Object.entries(by).filter(([,o])=>o.frete>0).sort((a,b)=>b[1].frete-a[1].frete);
+  }
+  function _dreRenderCanais(ano){
+    const arr=_dreCanalRows(ano).slice(0,12);
+    const mx=arr.length?arr[0][1].frete:1;
+    const el=document.getElementById('dre_canais');if(!el)return;
+    el.innerHTML=arr.map(([nm,o])=>`
+      <div class="dre-hbar" data-nm="${esc(nm)}">
+        <div><div class="nm">${esc(nm)}</div><div class="track"><i style="width:${o.frete/mx*100}%;background:${DRE_PAL.cte_venda}"></i></div></div>
+        <div class="n">${_dreB(o.frete)}</div>
+        <div class="pc">${o.nfe?'R$ '+(o.frete/o.nfe).toFixed(0):'—'}</div>
+      </div>`).join('')
+      +`<p class="dre-nota"><b>Coluna do meio:</b> quanto o canal gastou de frete no período. `
+      +`<b>Coluna da direita:</b> quanto custou o frete de cada nota daquele canal.</p>`;
+    const map=Object.fromEntries(arr);
+    el.querySelectorAll('.dre-hbar').forEach(b=>{
+      const d=map[b.dataset.nm];if(!d)return;
+      b.onmouseenter=e=>_dreTipOn(e,`<b>${esc(b.dataset.nm)}</b><br>`+_dreRow('Frete',_dreB2(d.frete))
+        +_dreRow('NF-e',N(d.nfe))+_dreRow('Frete por NF-e',d.nfe?_dreB2(d.frete/d.nfe):'—'));
+      b.onmousemove=_dreTipMove;b.onmouseleave=_dreTipOff;
+    });
+  }
+  function _dreTranspRows(ano){
+    const by={};
+    Object.entries(DATA.dre_transp||{}).forEach(([k,v])=>{
+      const [e,a,cnpj]=k.split('|');
+      if(a!==ano) return;
+      if(state.empresas.length&&!state.empresas.includes(e)) return;
+      const o=by[cnpj]=by[cnpj]||{nome:v.nome||cnpj,frete:0,qtd:0};
+      o.frete+=v.frete||0;o.qtd+=v.qtd||0;
+    });
+    return Object.values(by).filter(o=>o.frete>0).sort((a,b)=>b.frete-a.frete);
+  }
+  function _dreRenderTransps(ano){
+    const all=_dreTranspRows(ano), arr=all.slice(0,15);
+    const tot=all.reduce((s,o)=>s+o.frete,0);
+    const mx=arr.length?arr[0].frete:1;
+    const el=document.getElementById('dre_transps');if(!el)return;
+    el.innerHTML=arr.map((o,i)=>`
+      <div class="dre-hbar" data-i="${i}">
+        <div><div class="nm">${esc(trName(o.nome))}</div><div class="track"><i style="width:${o.frete/mx*100}%;background:${DRE_PAL.cte_mkt}"></i></div></div>
+        <div class="n">${_dreB(o.frete)}</div>
+        <div class="pc">${_dreP(o.frete,tot)}</div>
+      </div>`).join('')
+      +`<p class="dre-nota"><b>Coluna do meio:</b> quanto foi pago à transportadora no período. `
+      +`<b>Coluna da direita:</b> a fatia dela no frete total. As 15 maiores somam `
+      +`${_dreP(arr.reduce((s,o)=>s+o.frete,0),tot)} do frete documentado.</p>`;
+    el.querySelectorAll('.dre-hbar').forEach(b=>{
+      const d=arr[+b.dataset.i];if(!d)return;
+      b.onmouseenter=e=>_dreTipOn(e,`<b>${esc(trName(d.nome))}</b><br>`+_dreRow('Frete',_dreB2(d.frete))
+        +_dreRow('CT-e',N(d.qtd))+_dreRow('Frete médio',_dreB2(d.frete/(d.qtd||1))));
+      b.onmousemove=_dreTipMove;b.onmouseleave=_dreTipOff;
+    });
+  }
+  window._renderDRE=renderDRE;
+
+  function dreExportXLSX(){
+    if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+    if(!DATA.dre||!Object.keys(DATA.dre).length) return alert('Sem dados de DRE para exportar.');
+    const ano=state.ano||_dreAnoAtual();
+    const A=_dreAgg(_dreKeys(ano,state.meses,state.empresas));
+    const P=_drePrev(ano);
+    const M=v=>+(v||0).toFixed(2);
+    const varPct=k=>(P&&P.a[k])?+(((A[k]-P.a[k])/P.a[k])*100).toFixed(1):'';
+
+    // 1) Consolidado — mesma cascata da tela, linha a linha
+    const cons=[
+      {Linha:'Frete de Saída — total CT-e',Valor:M(A.cte_saida),'% do custo':_dreP(A.cte_saida,A.log),'vs anterior (%)':varPct('cte_saida')},
+      {Linha:'  › Venda a cliente',Valor:M(A.cte_venda),'% do custo':_dreP(A.cte_venda,A.log),'vs anterior (%)':varPct('cte_venda')},
+      {Linha:'  › Marketplace',Valor:M(A.cte_mkt),'% do custo':_dreP(A.cte_mkt,A.log),'vs anterior (%)':varPct('cte_mkt')},
+      {Linha:'  › Transferência entre unidades',Valor:M(A.cte_transf),'% do custo':_dreP(A.cte_transf,A.log),'vs anterior (%)':varPct('cte_transf')},
+      {Linha:'Delivery — entregadores autônomos',Valor:M(A.delivery),'% do custo':_dreP(A.delivery,A.log),'vs anterior (%)':varPct('delivery')},
+      {Linha:'Devoluções Marketplace',Valor:M(A.dev_mkt),'% do custo':_dreP(A.dev_mkt,A.log),'vs anterior (%)':varPct('dev_mkt')},
+      {Linha:'CT-e sem identificação',Valor:M(A.sem_vinculo),'% do custo':_dreP(A.sem_vinculo,A.log),'vs anterior (%)':varPct('sem_vinculo')},
+      {Linha:'= Custo de Distribuição',Valor:M(A.log),'% do custo':'100%','vs anterior (%)':varPct('log')},
+      {Linha:'Frete sobre compras (entra no CMV)',Valor:M(A.compras),'% do custo':_dreP(A.compras,A.log),'vs anterior (%)':varPct('compras')},
+      {Linha:'Recuperado do cliente',Valor:M(A.frete_cobrado),'% do custo':_dreP(A.frete_cobrado,A.log),'vs anterior (%)':varPct('frete_cobrado')},
+      {Linha:'= Custo Líquido de Frete',Valor:M(A.log+A.compras-A.frete_cobrado),'% do custo':'','vs anterior (%)':''},
+      {Linha:'',Valor:'','% do custo':'','vs anterior (%)':''},
+      {Linha:'Frete grátis (nada cobrado do cliente)',Valor:M(A.gratis),'% do custo':_dreP(A.gratis,A.log),'vs anterior (%)':varPct('gratis')},
+      {Linha:'Entregas com custo documentado',Valor:A.doc,'% do custo':'','vs anterior (%)':''},
+      {Linha:'Entregas na Volumetria do ERP',Valor:A.entregas,'% do custo':'','vs anterior (%)':''},
+      {Linha:'Cobertura do custo',Valor:_dreP(A.doc,A.entregas),'% do custo':'','vs anterior (%)':''},
+      {Linha:'Custo por entrega (R$)',Valor:A.doc?M(A.log/A.doc):'','% do custo':'','vs anterior (%)':''},
+      {Linha:'Custo por quilo (R$)',Valor:A.peso_doc?M(A.log/A.peso_doc):'','% do custo':'','vs anterior (%)':''},
+      {Linha:'Peso transportado (kg)',Valor:M(A.peso_doc),'% do custo':'','vs anterior (%)':''},
+    ];
+
+    // 2) Unidade x Mes — uma linha por periodo, com as modalidades abertas
+    const det=_dreKeys(ano,state.meses,state.empresas).sort().map(k=>{
+      const [e,a,m]=k.split('|'), r=_dreAgg([k]);
+      return {'Unidade':e,'Ano':a,'Mês':MESES[+m],'Frete Saída CT-e':M(r.cte_saida),
+        'Venda a cliente':M(r.cte_venda),'Marketplace':M(r.cte_mkt),'Transferência':M(r.cte_transf),
+        'Delivery':M(r.delivery),'Devoluções MKT':M(r.dev_mkt),'Sem identificação':M(r.sem_vinculo),
+        'Custo de Distribuição':M(r.log),'Frete de Compras':M(r.compras),
+        'Recuperado do cliente':M(r.frete_cobrado),'Frete grátis':M(r.gratis),
+        'Entregas documentadas':r.doc,'Entregas na Volumetria':r.entregas,
+        'Peso (kg)':M(r.peso_doc),
+        'Custo por entrega':r.doc?M(r.log/r.doc):'','Custo por quilo':r.peso_doc?M(r.log/r.peso_doc):''};
+    });
+
+    const canais=_dreCanalRows(ano).map(([nm,o])=>({'Canal':nm,'Frete':M(o.frete),'NF-e':o.nfe,
+      'Frete por NF-e':o.nfe?M(o.frete/o.nfe):''}));
+    const totTr=_dreTranspRows(ano).reduce((s,o)=>s+o.frete,0);
+    const transps=_dreTranspRows(ano).map(o=>({'Transportadora':trName(o.nome),'Frete':M(o.frete),
+      'CT-e':o.qtd,'Frete médio':M(o.frete/(o.qtd||1)),'% do total':_dreP(o.frete,totTr)}));
+
+    const wb=XLSX.utils.book_new();
+    const add=(nome,dados,colsMoeda)=>{
+      const ws=XLSX.utils.json_to_sheet(dados);
+      const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+      (colsMoeda||[]).forEach(c=>{
+        const ci=hdr.indexOf(c);
+        if(ci>=0) for(let ri=1;ri<=dados.length;ri++){
+          const ad=XLSX.utils.encode_cell({r:ri,c:ci});
+          if(ws[ad]&&typeof ws[ad].v==='number') ws[ad].z='"R$"#,##0.00';
+        }
+      });
+      XLSX.utils.book_append_sheet(wb,ws,nome);
+    };
+    add('DRE Consolidado',cons,['Valor']);
+    add('Unidade x Mes',det,['Frete Saída CT-e','Venda a cliente','Marketplace','Transferência','Delivery',
+      'Devoluções MKT','Sem identificação','Custo de Distribuição','Frete de Compras',
+      'Recuperado do cliente','Frete grátis','Custo por entrega','Custo por quilo']);
+    add('Por Canal',canais,['Frete','Frete por NF-e']);
+    add('Por Transportadora',transps,['Frete','Frete médio']);
+    const filtro=[ano,state.meses.length?state.meses.map(m=>MESES[+m]).join('-'):'',
+      state.empresas.length?state.empresas.join('-'):''].filter(Boolean).join('_');
+    XLSX.writeFile(wb,'dre_logistico_'+filtro+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }
+  window.dreExportXLSX=dreExportXLSX;
+
   function dmExportXLSX(){
     if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
-    const platLabel={ml:'Mercado Livre',shopee:'Shopee',tiktok:'TikTok Shop'};
+    const platLabel={ml:'Mercado Livre',shopee:'Shopee',tiktok:'TikTok Shop',amazon:'Amazon'};
     const q=(dmInp.value||'').toLowerCase();
     const rows=(DATA.devolucoes_mkt||[]).filter(d=>{
       const platOk=!dmSelPlat.value||d.mkt_type===dmSelPlat.value;
@@ -5240,7 +5913,7 @@ function initApp(){
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','dre':'DRE Logístico','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -5265,6 +5938,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     else if(tab==='geo') renderGeo();
     else if(tab==='rotas') renderRotas();
     else if(tab==='natop') renderNatOp();
+    else if(tab==='dre'&&window._renderDRE) window._renderDRE();
     else if(tab==='admin') loadAdminData();
   });
 });
@@ -5303,6 +5977,7 @@ function toggleTheme(){
 // ─── ADMIN TAB ──────────────────────────────────────────────────────────────
 const ALL_TABS_INFO=[
   {id:'visao-geral',label:'Visão Geral'},
+  {id:'dre',label:'DRE Logístico'},
   {id:'marketplace',label:'Marketplace'},
   {id:'compras',label:'Frete Compras'},
   {id:'delivery',label:'Delivery'},

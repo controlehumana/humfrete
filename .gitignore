@@ -18,5 +18,12 @@ test_*.js
 # Prints de tela — o repo é público e qualquer captura do dashboard mostra
 # cliente, entregador e valor reais (ex.: simaura.png, usado numa investigação)
 *.png
+
+# Protótipos do DRE Logístico — descartáveis, e o _data.js embute faturamento,
+# margem e frete REAIS num arquivo servido sem autenticação pelo Pages. É o mesmo
+# vetor do vazamento de jun/2026 (test_js.js / teste_relatorio.html). Nunca versionar.
+dre_preview.html
+_dre_preview_data.js
+_dre_preview_gen.py
 *.jpg
 *.jpeg
