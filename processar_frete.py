@@ -1672,6 +1672,34 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             "transp_volumetria": _vol.get("transp_nome") or "",
             "canal_volumetria": _vol.get("canal") or "",
         })
+    # Classifica cada NF-e "sem CT-e" pelo que ela realmente foi. Investigacao de
+    # 2026-08-07 mostrou que ~89% dessa tabela NAO e lacuna de captura -- e a
+    # tabela apresentava tudo como se fosse, sugerindo milhoes de frete perdido.
+    #   balcao  -> canal BALCAO sem transportadora: cliente levou o produto na hora
+    #              (no canal BALCAO, 362 de 369 transferencias de 2026 nao tem CT-e:
+    #              e padrao estrutural). Nao ha transporte a capturar.
+    #   fiscal  -> peso bruto E volumes ZERO no XML da propria NF-e: nota de tramite,
+    #              so roteia o faturamento pelo CNPJ da unidade que tem o contrato
+    #              ("TRAMITE PARA ATENDER O CLIENTE X PELO CNPJ DE Y" no infCpl).
+    #              Mercadoria nao se moveu entre unidades.
+    #   fisico  -> tem peso/volumes: houve carga de verdade. Unico grupo em que
+    #              falta CT-e pode significar frete nao capturado -- e mesmo aqui
+    #              boa parte e entrega triangulada, com o CT-e apontando para a
+    #              nota de VENDA ao cliente final em vez da de transferencia.
+    #   ?       -> sem espelho salvo, nao da pra classificar.
+    for _d in transf_sem_cte_list:
+        _e = _espelho_lookup.get(_d["chave"]) or {}
+        _peso = (_e.get("peso_bruto") or 0)
+        _vols = (_e.get("qtd_volumes") or 0)
+        if (_d.get("canal_volumetria") or "").upper() == "BALCAO" and not _d.get("transp_volumetria"):
+            _d["tipo_mov"] = "balcao"
+        elif not _e:
+            _d["tipo_mov"] = "?"
+        elif _peso == 0 and _vols == 0:
+            _d["tipo_mov"] = "fiscal"
+        else:
+            _d["tipo_mov"] = "fisico"
+
     # Espelho completo (itens, transporte, info complementar) das NF-e de
     # transferencia sem CTe -- lista SEPARADA (nao embutida em transf_sem_cte)
     # porque precisa ser chunked (itens deixam o payload grande demais pra ir

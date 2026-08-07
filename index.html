@@ -943,6 +943,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <button onclick="natopExportXLSX()" title="Exportar para Excel" class="btn-xlsx"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
     <div id="natop_filter_warn" class="alert a-yellow" style="display:none;margin-bottom:12px;font-size:12px"><i class="fa-solid fa-circle-info"></i> Coluna <strong>Sem Frete</strong> exibe contagem global e nao e afetada pelos filtros de empresa / periodo ativos.</div>
+    <div id="natop_transf_nota" class="alert a-blue" style="display:none;margin-bottom:12px;font-size:12px"><i class="fa-solid fa-circle-info"></i> <strong>TRANSFERENCIA SAIDA aparece com cobertura baixa por natureza, nao por falha.</strong> Investigacao de ago/2026 classificou as notas de transferencia sem CT-e: cerca de 9 em cada 10 nao tiveram transporte a capturar — ou o cliente levou o produto no balcao, ou sao notas de tramite fiscal (peso e volumes zerados) que apenas roteiam o faturamento pelo CNPJ da unidade que tem o contrato. Alem disso, o frete das transferencias entre BRU1 e BRU2 e feito por entregador proprio e aparece na aba <strong>Delivery</strong>, nao aqui. Nao ler esta linha como frete perdido — a quebra por tipo esta na aba <strong>Transferencias</strong>.</div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto">
       <table>
         <thead><tr id="nat_thead_row">
@@ -1805,8 +1806,9 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="sdiv" style="margin-top:4px">NF-e de Transferencia Sem CTe Vinculado</div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:10px">NF-e de Transferencia Sem CT-e Vinculado<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">NF-e de transferencia sem CT-e no nosso banco (nao encontrado via API Arquivei/Qive). Quando o relatorio de Volumetria do ERP identifica uma transportadora para essa NF-e, ela aparece na coluna "Transportadora (Volumetria)" — significa que o transporte existiu de verdade, so nao foi baixado pelo buscar_cte.py (possivel lacuna: nosso CNPJ pode nao ser o tomador desse CT-e). Linhas sem transportadora na Volumetria provavelmente sao retirada no balcao, sem transporte formal.</span></span></div>
-    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th>Transportadora (Volumetria)</th><th style="text-align:right">Valor NF</th><th>Ver NF-e</th></tr></thead><tbody id="transf_sem_cte_tbody"></tbody></table></div>
+    <div class="card-title" style="margin-bottom:10px">NF-e de Transferencia Sem CT-e Vinculado<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">NF-e de transferencia sem CT-e no nosso banco. ATENCAO: a maior parte destas notas NAO e falha de captura — a coluna "Tipo" separa. Balcao: o cliente levou o produto na hora, nao houve transporte. Fiscal: nota de tramite com peso e volumes zerados, que so roteia o faturamento pelo CNPJ da unidade que tem o contrato com o cliente; a mercadoria nao se moveu entre unidades. Fisico: houve carga de verdade — e o unico grupo em que a falta de CT-e pode significar frete nao capturado, e mesmo nele boa parte e entrega triangulada, com o CT-e vinculado a nota de venda ao cliente final em vez da de transferencia.</span></span></div>
+    <div id="transf_sem_cte_resumo"></div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>NF-e</th><th>Data</th><th>Empresa</th><th>Destinatario</th><th>Cidade/UF</th><th>Nat. Operacao</th><th>Transportadora (Volumetria)</th><th style="text-align:center">Tipo</th><th style="text-align:right">Valor NF</th><th>Ver NF-e</th></tr></thead><tbody id="transf_sem_cte_tbody"></tbody></table></div>
   </div>
 </div>
 
@@ -3886,6 +3888,14 @@ function _transfRenderHumana(rows,freByEmp){
   }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">Nenhuma transferencia entre unidades no periodo selecionado</td></tr>';
 }
 let _transfSemCteRows=[];
+// Como cada NF-e "sem CT-e" deve ser lida. Classificacao vem do backend (tipo_mov);
+// aqui so o rotulo, a cor e a explicacao. Ver processar_frete.py para o criterio.
+const TIPO_MOV={
+  balcao:{lbl:'Balcao',    cor:'var(--text3)', tip:'Cliente levou o produto na hora, no balcao. Nao houve transporte contratado — nao ha frete a capturar.'},
+  fiscal:{lbl:'Fiscal',    cor:'var(--blue2)', tip:'Nota de tramite: peso e volumes zerados na propria NF-e. So roteia o faturamento pelo CNPJ da unidade que tem o contrato com o cliente. A mercadoria nao se moveu entre unidades.'},
+  fisico:{lbl:'Fisico',    cor:'var(--amber)', tip:'Houve carga de verdade (peso e volumes na NF-e). E o unico grupo em que a falta de CT-e pode significar frete nao capturado — mas boa parte e entrega triangulada, com o CT-e vinculado a nota de venda ao cliente final.'},
+  '?':   {lbl:'Sem dados', cor:'var(--text3)', tip:'Sem espelho da NF-e salvo, nao foi possivel classificar.'}
+};
 function _transfRenderSemCte(){
   const rows=(DATA.transf_sem_cte||[]).filter(d=>{
     if(state.empresas.length&&!state.empresas.includes(d.empresa)) return false;
@@ -3894,6 +3904,7 @@ function _transfRenderSemCte(){
     return true;
   }).sort((a,b)=>a.data.localeCompare(b.data));
   _transfSemCteRows=rows;
+  _transfRenderSemCteResumo(rows);
   document.getElementById('transf_sem_cte_tbody').innerHTML=rows.length
     ?rows.map((d,idx)=>{
       const cnpjRaw=(d.part_cnpj||'').replace(/\D/g,'');
@@ -3916,10 +3927,42 @@ function _transfRenderSemCte(){
         +'<td style="font-size:11px"><span class="chip chip-gray">'+esc(d.cidade)+'/'+esc(d.estado)+'</span></td>'
         +'<td style="font-size:10px;color:var(--text3)">'+esc(d.nat_operacao)+'</td>'
         +'<td style="font-size:11px;line-height:1.4">'+transpHtml+'</td>'
+        +'<td style="text-align:center">'+_tipoMovChip(d.tipo_mov)+'</td>'
         +'<td style="text-align:right;color:var(--text2)">'+BRL(d.total_nf)+'</td>'
         +'<td style="text-align:center"><button onclick="showEspelhoTransfSemCte('+idx+')" title="Ver NF-e" style="background:rgba(94,106,210,.15);border:1px solid rgba(94,106,210,.3);color:var(--blue2);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:10px"><i class="fa-solid fa-file-lines"></i></button></td></tr>';
     }).join('')
-    :'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px">Nenhuma transferencia sem CTe no periodo selecionado</td></tr>';
+    :'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:16px">Nenhuma transferencia sem CTe no periodo selecionado</td></tr>';
+}
+function _tipoMovChip(t){
+  const c=TIPO_MOV[t]||TIPO_MOV['?'];
+  return '<span class="chip" title="'+esc(c.tip)+'" style="background:transparent;border:1px solid '+c.cor
+    +';color:'+c.cor+';font-size:10px;cursor:help">'+esc(c.lbl)+'</span>';
+}
+// Resumo acima da tabela: sem ele o leitor soma R$ milhoes de "sem CT-e" e conclui
+// que ha frete perdido nessa escala. A maior parte nao e lacuna de captura.
+function _transfRenderSemCteResumo(rows){
+  const el=document.getElementById('transf_sem_cte_resumo');
+  if(!el) return;
+  if(!rows.length){ el.innerHTML=''; return; }
+  const ag={};
+  rows.forEach(d=>{const t=d.tipo_mov||'?';(ag[t]=ag[t]||{n:0,v:0}).n++;ag[t].v+=d.total_nf||0;});
+  const naoLacuna=(ag.balcao?.n||0)+(ag.fiscal?.n||0);
+  const pct=Math.round(100*naoLacuna/rows.length);
+  const ordem=['balcao','fiscal','fisico','?'];
+  const cards=ordem.filter(t=>ag[t]).map(t=>{
+    const c=TIPO_MOV[t],a=ag[t];
+    return '<div style="flex:1;min-width:130px;border:1px solid '+c.cor+';border-radius:8px;padding:8px 10px" title="'+esc(c.tip)+'">'
+      +'<div style="font-size:10px;color:'+c.cor+';font-weight:700;text-transform:uppercase;letter-spacing:.04em">'+esc(c.lbl)+'</div>'
+      +'<div style="font-size:16px;font-weight:700;margin-top:2px">'+N(a.n)+' <span style="font-size:10px;font-weight:400;color:var(--text3)">NF-e</span></div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+BRL(a.v)+' em mercadoria</div></div>';
+  }).join('');
+  el.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+cards+'</div>'
+    +'<div class="alert a-blue" style="margin-bottom:12px"><i class="fa-solid fa-circle-info"></i> '
+    +'<b>'+pct+'% destas notas nao sao lacuna de captura.</b> Balcao = o cliente levou o produto na hora. '
+    +'Fiscal = nota de tramite, com peso e volumes zerados, que so roteia o faturamento pelo CNPJ da unidade '
+    +'que tem o contrato — a mercadoria nao se moveu. Somente as marcadas como <b>Fisico</b> tiveram carga, e '
+    +'mesmo entre elas boa parte e entrega triangulada, em que o CT-e existe vinculado a nota de venda ao '
+    +'cliente final. Passe o mouse em cada chip para o criterio.</div>';
 }
 function showEspelhoTransfSemCte(idx){
   const d=_transfSemCteRows[idx];
@@ -5594,7 +5637,20 @@ function initApp(){
      +`<b>Frete grátis:</b> ${_dreB(A.gratis)} do custo acima (<b>${_dreP(A.gratis,A.log)}</b>) veio de `
      +`${N(A.gratis_qtd)} entregas em que <b>nada foi cobrado</b> do cliente. É política comercial, `
      +`não falha de cobrança — mas é o motivo de só ${_dreP(A.frete_cobrado,A.log)} do frete voltar `
-     +`como receita.</div></td></tr>`,true);
+     +`como receita.</div></td></tr>`
+     // Sem esta nota o leitor conclui que transferir custa o valor da linha
+     // "Transferência entre unidades" -- e o maior fluxo de transferencia do
+     // grupo (BRU1<->BRU2) esta contabilizado na linha de Delivery, porque quem
+     // faz e entregador proprio, que emite NFS-e e nunca CT-e.
+     +`<tr><td colspan="3" style="padding-top:8px;border:none"><div class="dre-leia" style="margin:0;border-left-color:${DRE_PAL.cte_transf}">`
+     +`<b>Transferência não é só a linha de Transferência.</b> A linha acima conta apenas o que veio `
+     +`por <b>CT-e de transportadora</b>. O maior fluxo de transferência do grupo — entre <b>BRU1 e BRU2</b> — `
+     +`é feito por <b>entregador próprio</b>, que emite NFS-e e nunca CT-e: esse custo está na linha `
+     +`<b>Delivery — entregadores autônomos</b>. Para ver o custo de transferência completo, somar as duas `
+     +`e usar a aba <b>Transferências</b>, que já separa as colunas. Também não confundir com as NF-e de `
+     +`transferência sem CT-e: cerca de 9 em cada 10 são <b>balcão</b> (cliente levou na hora) ou `
+     +`<b>trâmite fiscal</b> (peso zero, só roteia o faturamento) — não há frete faltando nelas.`
+     +`</div></td></tr>`,true);
 
     const stack=document.getElementById('dre_stack');
     if(stack){
@@ -6561,6 +6617,13 @@ function renderNatOp(){
   const hasFilter=state.ano||state.meses.length||state.empresas.length;
   const warnEl=document.getElementById('natop_filter_warn');
   if(warnEl) warnEl.style.display=(cfg.hasSem&&hasFilter)?'':'none';
+  // Nota da transferencia: so na visao Nat. Operacao (nas visoes Canal/Nicho a
+  // linha nao existe) e so quando ela de fato aparece na tabela renderizada.
+  const transfEl=document.getElementById('natop_transf_nota');
+  if(transfEl){
+    const temTransf=cfg.hasSem&&_natopRows.some(r=>/TRANSFER/i.test(r.nat||''));
+    transfEl.style.display=temTransf?'':'none';
+  }
   // cabeçalho da tabela
   const colSemEl=document.getElementById('nth_sem');
   if(colSemEl) colSemEl.style.display=cfg.hasSem?'':'none';
