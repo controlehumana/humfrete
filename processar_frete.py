@@ -8,6 +8,7 @@ Uso: py processar_frete.py
 import os
 import sys
 import json
+import gzip
 import re
 import csv
 import sqlite3
@@ -4759,12 +4760,112 @@ def split_by_empresa(dados):
     return result
 
 
-CHUNK_SIZE = 800  # itens de detalhes por documento Firestore (~700KB cada)
+CHUNK_SIZE = 800  # fallback: itens por documento quando a estimativa nao se aplica
+
+# O payload vai COMPRIMIDO (gzip) no campo `payload_gz`, em bytes.
+# Medido no dado real: 85,9 MB de detalhes do BRU1 viram 9,1 MB (-89%), e a
+# abertura do dashboard cai de ~115 MB / 163 documentos para ~12 MB / 43.
+# Comprimir tambem devolve folga no teto de 1 MB por documento do Firestore:
+# o doc principal do BRU1 operava a 97% do limite (foi o que estourou quando o
+# DRE tentou entrar nele) e passa a ~14%.
+# Custo medido no Chrome: +645 ms de CPU (gunzip) contra -12 s de rede.
+LIMITE_FIRESTORE = 1_048_487        # teto de um campo/documento, em bytes
+ALVO_CHUNK_GZ    = 800 * 1024       # alvo por chunk ja comprimido (76% do teto)
+
+
+def _gz(texto):
+    """Serializa para bytes gzipados. mtime=0 deixa a saida deterministica --
+    sem isso, dois processamentos do mesmo dado geram bytes diferentes e o
+    Firestore registra escrita (e cobra) mesmo sem nada ter mudado."""
+    return gzip.compress(texto.encode("utf-8"), 6, mtime=0)
+
+
+def _chunks_por_tamanho(items, alvo=ALVO_CHUNK_GZ):
+    """Divide `items` em blocos cujo payload COMPRIMIDO fica abaixo de `alvo`.
+
+    Antes o corte era por contagem fixa (800 itens), calibrada para o JSON cru.
+    Comprimido, 800 itens ocupam ~95 KB -- desperdicaria 90% do documento e
+    manteria as 103 leituras do BRU1.
+
+    Estima primeiro (comprimir a cada item seria O(n^2) em dado desse tamanho) e
+    so entao confere cada bloco, partindo ao meio o que passar do teto real.
+    """
+    if not items:
+        return []
+    amostra = items[:min(2000, len(items))]
+    bytes_amostra = len(_gz(json.dumps({"items": amostra}, ensure_ascii=False)))
+    por_item = max(1, bytes_amostra / len(amostra))
+    n = max(1, int(alvo / por_item))
+
+    blocos = [items[i:i + n] for i in range(0, len(items), n)]
+
+    # Conferencia: a estimativa vem de uma amostra, e um trecho menos repetitivo
+    # comprime pior. Nenhum bloco pode passar do teto do Firestore.
+    final = []
+    for b in blocos:
+        while len(_gz(json.dumps({"items": b}, ensure_ascii=False))) > LIMITE_FIRESTORE and len(b) > 1:
+            meio = len(b) // 2
+            final.append(b[:meio])
+            b = b[meio:]
+        final.append(b)
+    return final
+
+
+def _set_doc(db, doc_id, texto, extra=None):
+    """Grava um documento com o payload comprimido, devolvendo o tamanho em KB."""
+    dados = _gz(texto)
+    if len(dados) > LIMITE_FIRESTORE:
+        raise ValueError(f"{doc_id}: {len(dados)} bytes comprimidos passam do teto do Firestore")
+    doc = {"payload_gz": dados, "size_kb": round(len(dados) / 1024, 1)}
+    if extra:
+        doc.update(extra)
+    db.collection("dados").document(doc_id).set(doc)
+    return len(dados) / 1024
+
+
+def _ler_doc_anterior(db, doc_id):
+    """Le o doc principal ja publicado, aceitando os 2 formatos.
+
+    Serve so para descobrir quantos chunks existiam antes (limpeza de orfaos).
+    Qualquer falha aqui retorna {} -- nao pode impedir a publicacao.
+    """
+    try:
+        snap = db.collection("dados").document(doc_id).get()
+        if not snap.exists:
+            return {}
+        d = snap.to_dict() or {}
+        if d.get("payload_gz"):
+            return json.loads(gzip.decompress(bytes(d["payload_gz"])).decode("utf-8"))
+        if d.get("payload"):
+            return json.loads(d["payload"])
+    except Exception as e:
+        print(f"   [aviso] nao consegui ler o estado anterior de {doc_id}: {e}")
+    return {}
+
+
+def _limpar_chunks_orfaos(db, emp, prefixo, n_novo, n_antigo):
+    """Remove os documentos de chunk que sobraram de um processamento anterior.
+
+    Ao comprimir, o BRU1 sai de 103 para ~12 chunks de detalhes: os documentos
+    de indice 12 a 102 continuariam no Firestore ocupando espaco para sempre.
+    O frontend nunca os leria (usa `det_chunks`), entao isso e limpeza, nao
+    correcao -- mas sem ela a economia de armazenamento nao acontece.
+    """
+    removidos = 0
+    for i in range(n_novo, n_antigo):
+        db.collection("dados").document(f"{emp}_{prefixo}_{i:03d}").delete()
+        removidos += 1
+    return removidos
 
 
 def upload_to_firestore(empresa_data, dados_completos):
     """Faz upload dos dados por empresa para Firebase Firestore.
-    detalhes grandes sao divididos em chunks de CHUNK_SIZE itens cada.
+
+    Todo payload vai gzipado no campo `payload_gz` (bytes); os chunks de
+    `detalhes`/`transf_espelho` sao dimensionados pelo tamanho ja comprimido.
+    O frontend le os dois formatos -- ver `_docPayload` no index.html --, mas
+    publicar dado novo com um index.html antigo QUEBRA o dashboard:
+    **publicar o index.html primeiro, depois rodar este script.**
     """
     try:
         import firebase_admin
@@ -4787,15 +4888,25 @@ def upload_to_firestore(empresa_data, dados_completos):
             firebase_admin.initialize_app(cred)
 
         db = fb_firestore.client()
-        print(f"\n[Firestore] Fazendo upload (chunk={CHUNK_SIZE} itens)...")
+        print(f"\n[Firestore] Fazendo upload (payload gzipado, chunk-alvo {ALVO_CHUNK_GZ//1024} KB comprimidos)...")
+        tot_kb = 0.0
+        tot_docs = 0
 
         for emp, data in empresa_data.items():
+            # Quantos chunks existiam antes: precisa ser lido ANTES de sobrescrever
+            # o doc principal, senao nao ha como saber o que virou orfao.
+            # Le os 2 formatos -- na 1a execucao o doc ainda esta em texto puro,
+            # da 2a em diante ja esta comprimido.
+            _ant = _ler_doc_anterior(db, emp)
+            n_det_antigo = _ant.get("det_chunks", 0)
+            n_esp_antigo = _ant.get("espelho_chunks", 0)
+
             detalhes = data.get("detalhes", [])
-            chunks = [detalhes[i:i+CHUNK_SIZE] for i in range(0, len(detalhes), CHUNK_SIZE)]
+            chunks = _chunks_por_tamanho(detalhes)
             n_chunks = len(chunks)
 
             espelhos = data.get("transf_espelho", [])
-            esp_chunks = [espelhos[i:i+CHUNK_SIZE] for i in range(0, len(espelhos), CHUNK_SIZE)]
+            esp_chunks = _chunks_por_tamanho(espelhos)
             n_esp_chunks = len(esp_chunks)
 
             # O DRE vai em documento PRÓPRIO: o doc principal de BRU1 já operava a
@@ -4812,32 +4923,40 @@ def upload_to_firestore(empresa_data, dados_completos):
             main_doc["gerado_em"] = data.get("gerado_em", "")
 
             main_json = json.dumps(main_doc, ensure_ascii=False)
-            main_kb = len(main_json.encode("utf-8")) / 1024
-            db.collection("dados").document(emp).set({"payload": main_json, "gerado_em": main_doc["gerado_em"], "size_kb": round(main_kb, 1)})
-            print(f"   OK  dados/{emp}  ({main_kb:.0f} KB, {n_chunks} chunks de detalhes, {n_esp_chunks} chunks de espelho)")
+            main_cru_kb = len(main_json.encode("utf-8")) / 1024
+            main_kb = _set_doc(db, emp, main_json, {"gerado_em": main_doc["gerado_em"]})
+            tot_kb += main_kb; tot_docs += 1
+            print(f"   OK  dados/{emp}  ({main_cru_kb:.0f} KB -> {main_kb:.0f} KB gz, "
+                  f"{n_chunks} chunks de detalhes, {n_esp_chunks} chunks de espelho)")
 
             # Chunks de detalhes
             for i, chunk in enumerate(chunks):
                 chunk_json = json.dumps({"items": chunk}, ensure_ascii=False)
-                chunk_kb = len(chunk_json.encode("utf-8")) / 1024
                 doc_id = f"{emp}_det_{i:03d}"
-                db.collection("dados").document(doc_id).set({"payload": chunk_json, "size_kb": round(chunk_kb, 1)})
-                print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB, {len(chunk)} itens)")
+                chunk_kb = _set_doc(db, doc_id, chunk_json)
+                tot_kb += chunk_kb; tot_docs += 1
+                print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB gz, {len(chunk)} itens)")
 
             # DRE Logístico (doc próprio, carregado sob demanda ao abrir a aba)
             dre_json = json.dumps(dre_doc, ensure_ascii=False)
-            dre_kb = len(dre_json.encode("utf-8")) / 1024
-            db.collection("dados").document(f"{emp}_dre").set(
-                {"payload": dre_json, "size_kb": round(dre_kb, 1)})
-            print(f"       dados/{emp}_dre  ({dre_kb:.0f} KB, {len(dre_doc['dre'])} períodos)")
+            dre_kb = _set_doc(db, f"{emp}_dre", dre_json)
+            tot_kb += dre_kb; tot_docs += 1
+            print(f"       dados/{emp}_dre  ({dre_kb:.0f} KB gz, {len(dre_doc['dre'])} períodos)")
 
             # Chunks de espelho de NF-e (itens/transporte das transferencias sem CTe)
             for i, chunk in enumerate(esp_chunks):
                 chunk_json = json.dumps({"items": chunk}, ensure_ascii=False)
-                chunk_kb = len(chunk_json.encode("utf-8")) / 1024
                 doc_id = f"{emp}_esp_{i:03d}"
-                db.collection("dados").document(doc_id).set({"payload": chunk_json, "size_kb": round(chunk_kb, 1)})
-                print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB, {len(chunk)} itens)")
+                chunk_kb = _set_doc(db, doc_id, chunk_json)
+                tot_kb += chunk_kb; tot_docs += 1
+                print(f"       dados/{doc_id}  ({chunk_kb:.0f} KB gz, {len(chunk)} itens)")
+
+            # Sobras do processamento anterior (o chunk comprimido cabe ~8x mais
+            # itens, entao a contagem cai muito na 1a execucao apos a migracao).
+            orf = (_limpar_chunks_orfaos(db, emp, "det", n_chunks, n_det_antigo)
+                   + _limpar_chunks_orfaos(db, emp, "esp", n_esp_chunks, n_esp_antigo))
+            if orf:
+                print(f"       {orf} chunk(s) orfao(s) removido(s) de {emp}")
 
         meta = {
             "gerado_em": dados_completos.get("gerado_em", ""),
@@ -4848,6 +4967,8 @@ def upload_to_firestore(empresa_data, dados_completos):
         db.collection("dados").document("_meta").set(meta)
         print("   OK  dados/_meta")
         print(f"\n[OK] Firestore: {len(empresa_data)} empresa(s) publicadas.")
+        print(f"     {tot_docs} documentos, {tot_kb/1024:.1f} MB comprimidos "
+              f"(e o que o dashboard baixa ao abrir com acesso a todas as empresas).")
         return True
     except Exception as e:
         print(f"\n[ERRO] Upload Firestore falhou: {e}")

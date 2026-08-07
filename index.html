@@ -2024,28 +2024,69 @@ _auth.onAuthStateChanged(async (user) => {
   }
 });
 
+// Le o payload de um documento, aceitando os 2 formatos.
+// `payload_gz` (bytes gzipados) e o formato atual: o dashboard baixava ~115 MB em
+// 163 documentos a cada abertura e passou a baixar ~12 MB em 43. `payload` (string
+// JSON) e o formato antigo -- mantido para nao quebrar caso este index.html rode
+// contra dados ainda nao republicados.
+// ATENCAO a forma de chamar o DecompressionStream: `Response(bytes).body` leva
+// 476 ms nos 82 mil detalhes do BRU1, contra 1.004 ms via `Blob([...]).stream()`.
+// Nao trocar por Blob "porque e mais legivel" -- e 2x mais lento.
+async function _docPayload(doc) {
+  const d = doc.data() || {};
+  if (d.payload_gz) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('Seu navegador nao suporta descompressao nativa. '
+        + 'Atualize o Chrome (80+), Edge (80+), Firefox (113+) ou Safari (16.4+).');
+    }
+    // Firebase v8 devolve bytes como firebase.firestore.Blob
+    const bytes = d.payload_gz.toUint8Array ? d.payload_gz.toUint8Array() : d.payload_gz;
+    const stream = new Response(bytes).body.pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(stream).text();
+  }
+  return d.payload || '';
+}
+
+// Junta os itens de uma lista de chunks. Descomprime todos em paralelo (o gunzip
+// e assincrono, entao nao da pra usar flatMap sincrono como antes) e so depois
+// concatena, preservando a ordem original dos chunks.
+// Um chunk que falhe nao derruba o resto -- vira aviso e dados parciais, mesmo
+// criterio que ja valia para os chunks que falhavam no fetch.
+async function _chunkItems(chunkResults, rotulo) {
+  const ok = chunkResults.filter(r => r.status === 'fulfilled' && r.value.exists).map(r => r.value);
+  const textos = await Promise.all(ok.map(async doc => {
+    try { return await _docPayload(doc); }
+    catch (e) { console.warn(rotulo + ': chunk ilegivel — ' + e.message); return ''; }
+  }));
+  const items = [];
+  for (const t of textos) {
+    if (!t) continue;
+    try { for (const it of (JSON.parse(t).items || [])) items.push(it); }
+    catch (e) { console.warn(rotulo + ': chunk com JSON invalido — ' + e.message); }
+  }
+  return items;
+}
+
 async function _loadData(empresas) {
   if (!empresas.length) throw new Error('Nenhuma empresa autorizada para este usuario.');
   const datas = await Promise.all(empresas.map(async (emp) => {
     const doc = await _db.collection('dados').doc(emp).get();
     if (!doc.exists) throw new Error('Dados de ' + emp + ' nao encontrados. Execute o processamento.');
-    const data = JSON.parse(doc.data().payload);
+    const data = JSON.parse(await _docPayload(doc));
     const nChunks = data.det_chunks || 0;
     if (nChunks > 0) {
       const chunkIds = Array.from({length: nChunks}, (_, i) => emp + '_det_' + String(i).padStart(3, '0'));
       const chunkResults = await Promise.allSettled(chunkIds.map(id => _db.collection('dados').doc(id).get()));
       const failed = chunkResults.filter(r => r.status === 'rejected').length;
       if (failed > 0) console.warn(emp + ': ' + failed + '/' + nChunks + ' chunks falharam — dados parciais');
-      data.detalhes = chunkResults
-        .filter(r => r.status === 'fulfilled' && r.value.exists)
-        .flatMap(r => { try { return JSON.parse(r.value.data().payload).items || []; } catch(e){ return []; } });
+      data.detalhes = await _chunkItems(chunkResults, emp + ' detalhes');
     }
     // DRE Logístico: doc próprio ({emp}_dre) porque o doc principal do BRU1 opera perto
     // do teto de 1MB do Firestore. Falha aqui não pode derrubar o dashboard inteiro —
     // sem ele a aba DRE fica vazia, o resto segue funcionando.
     try {
       const dreDoc = await _db.collection('dados').doc(emp + '_dre').get();
-      if (dreDoc.exists) Object.assign(data, JSON.parse(dreDoc.data().payload));
+      if (dreDoc.exists) Object.assign(data, JSON.parse(await _docPayload(dreDoc)));
     } catch(e) { console.warn(emp + ': DRE não carregado — ' + e.message); }
 
     const nEspChunks = data.espelho_chunks || 0;
@@ -2054,9 +2095,7 @@ async function _loadData(empresas) {
       const espChunkResults = await Promise.allSettled(espChunkIds.map(id => _db.collection('dados').doc(id).get()));
       const espFailed = espChunkResults.filter(r => r.status === 'rejected').length;
       if (espFailed > 0) console.warn(emp + ': ' + espFailed + '/' + nEspChunks + ' chunks de espelho falharam');
-      data.transf_espelho = espChunkResults
-        .filter(r => r.status === 'fulfilled' && r.value.exists)
-        .flatMap(r => { try { return JSON.parse(r.value.data().payload).items || []; } catch(e){ return []; } });
+      data.transf_espelho = await _chunkItems(espChunkResults, emp + ' espelho');
     }
     return data;
   }));
