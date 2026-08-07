@@ -422,11 +422,50 @@ O script mantém uma cópia quase idêntica do HTML/JS do `index.html` em `HTML_
 
 - **GitHub Pages:** https://controlehumana.github.io/humfrete/
 - **Firebase Auth v8.10.1 compat** (v10 causa falha no WebChannel)
-- **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks de 800 itens (`{emp}_det_000`, `{emp}_det_001`, …) + `_meta` global
+- **Firestore `/dados/{empresa}`:** payload sem detalhes + N chunks (`{emp}_det_000`, …) + `{emp}_dre` + `{emp}_esp_NNN` + `_meta` global. **Todo payload vai gzipado no campo `payload_gz` (bytes), não mais em `payload` (string)** — ver "Payload comprimido" abaixo
 - `_mergeData()` soma corretamente: `total_cte`, `ctes_nao_vinculados_count`, `nfe_com_cte`; `nfe_fat_periodo` não é somado (vem global no spread de datas[0])
 - **CDN Chart.js:** primário cdnjs, fallback jsdelivr via `onerror`
 - **CDN Font Awesome:** primário cdnjs, fallback fontawesome.com via `onerror`
 - **CDN SheetJS (xlsx):** primário cdnjs, fallback jsdelivr via `onerror` — necessário para export Excel
+
+## Payload comprimido no Firestore (ago/2026)
+
+O dashboard baixava **115,2 MB em 163 leituras de documento** a cada abertura (só o BRU1: 86 MB em 107 docs). Todo payload passou a ser gravado **gzipado, no campo `payload_gz` (bytes)** — hoje são **12,1 MB em 44 documentos**: −90% de bytes, −73% de leituras.
+
+### Por que comprimir e não fazer lazy-load
+`DATA.detalhes` é usado em **25 lugares** do `index.html`, incluindo os selects de filtro (ano/linha/estado/mês/empresa/nat.op) e os agregados da Visão Geral — a app inteira pressupõe as linhas em memória. Carregar sob demanda seria refatoração ampla; comprimir foi contido e resolveu o gargalo real.
+
+### Medições que embasaram a decisão (Chrome, 82.129 detalhes do BRU1)
+| | Antes | Depois |
+|---|---|---|
+| Documentos | 103 | 12 |
+| Bytes | 81,9 MB | 8,7 MB |
+| gunzip | — | 547 ms |
+| `JSON.parse` | 499 ms | 597 ms |
+
+**A compressão custa ~645 ms de CPU e economiza ~12 s de rede** (50 Mbps) só no BRU1. Rede domina; por isso vale. Nomes de campo repetidos são 52% do payload cru (38 campos × ~1.065 bytes/linha) — se um dia o *parsing* virar o gargalo, o caminho é encurtar nomes/dicionarizar strings repetidas, o que reduz transferência **e** parsing.
+
+### Backend (`processar_frete.py`)
+- `_gz(texto)` — `gzip.compress(..., 6, mtime=0)`. **O `mtime=0` é obrigatório:** sem ele, dois processamentos do mesmo dado geram bytes diferentes e o Firestore registra (e cobra) escrita sem nada ter mudado.
+- `_chunks_por_tamanho(items)` — corta pelo tamanho **já comprimido** (alvo `ALVO_CHUNK_GZ`=800 KB). O corte antigo por contagem fixa (800 itens) era calibrado para JSON cru; comprimido, 800 itens ocupam ~95 KB e desperdiçariam 90% do documento. Estima por amostra (comprimir a cada item seria O(n²)) e **confere cada bloco**, partindo ao meio o que passar de `LIMITE_FIRESTORE`.
+- `_set_doc()` grava e falha alto se o comprimido passar do teto.
+- `_limpar_chunks_orfaos()` apaga os chunks que sobraram da rodada anterior — na migração o BRU1 foi de 103 para 12 docs, e os 91 restantes ficariam ocupando espaço para sempre (o frontend nunca os leria, pois usa `det_chunks`). Removeu 119 docs no total.
+- `_ler_doc_anterior()` lê os 2 formatos, porque na 1ª execução o doc publicado ainda estava em texto puro.
+
+### Frontend (`index.html`)
+- `_docPayload(doc)` aceita os dois formatos: `payload_gz` (bytes → gunzip) ou `payload` (string). Firebase v8 devolve bytes como `firebase.firestore.Blob` → `.toUint8Array()` (confirmado no SDK 8.10.1, com UTF-8 preservado).
+- `_chunkItems(chunkResults, rotulo)` junta os itens dos chunks. O gunzip é assíncrono, então **não dá para usar o `flatMap` síncrono de antes**; descomprime em paralelo e concatena preservando a ordem. Chunk ilegível vira aviso + dados parciais, não exceção.
+- ⚠️ **A forma de chamar o `DecompressionStream` muda o tempo em 2×:** `new Response(bytes).body.pipeThrough(...)` = 476 ms; `new Blob([bytes]).stream().pipeThrough(...)` = 1.004 ms. **Não trocar por Blob "porque é mais legível".**
+- Exige Chrome/Edge 80+, Firefox 113+, Safari 16.4+ — sem suporte, mensagem explícita em vez de erro genérico.
+
+### ⚠️ Ordem de publicação
+O frontend lê os 2 formatos, mas **dado novo com `index.html` antigo quebra o dashboard**. Sempre: **publicar o `index.html` primeiro, esperar o Pages concluir, só então rodar o `processar_frete.py`.**
+
+### Efeito colateral: o teto de 1 MB deixou de apertar
+O doc principal do BRU1 operava a **994 KB (97,1% do limite)** — foi o que estourou quando o DRE tentou entrar nele, motivo de ele viver em doc separado. Comprimido está em ~141 KB (13,8%). A regra de "medir antes de adicionar campo global" continua valendo, mas a margem deixou de ser o gargalo imediato.
+
+### Cota gratuita (plano Spark, sem Blaze)
+São 50.000 leituras de documento/dia. A 163 leituras por abertura, o grupo tinha ~306 aberturas/dia; a 44, passa a ~1.136.
 
 ## Segurança e LGPD
 
@@ -1029,6 +1068,7 @@ Produtividade de picking por unidade: quantidade de pedidos e itens separados no
 ## Pitfalls conhecidos
 
 - **RESOLVIDO (jul/2026) — CT-e de "auto-transferência" (origem === destino):** 54 CT-e de BRU1 com `_transfDestino(d)==='BRU1'` no período testado. Causa raiz identificada: NF-e com múltiplos CT-e vinculados (redespacho/subcontratação) — o CT-e da etapa intermediária pode ter a própria empresa como destinatário, mesmo a venda sendo normal para cliente externo. `_transfCategoria(d)` agora trata `destino===d.empresa` como não-transferência (cai em "Venda"). Ver seção "Fix — auto-referência em `_transfCategoria`" no módulo Transferências para detalhes.
+- **ALIVIADO (ago/2026) pelo payload comprimido — ver "Payload comprimido no Firestore".** O doc principal do BRU1 saiu de 994 KB (97,1% do teto) para ~141 KB (13,8%). A disciplina de medir antes de adicionar campo global continua valendo; o que mudou é que a margem deixou de ser crítica. O texto abaixo descreve a situação anterior e fica como histórico do raciocínio:
 - **Limite de 1MB por documento Firestore — BRU1 já opera perto do teto** — o doc principal de cada empresa (tudo exceto `detalhes`, que são chunkados) precisa ficar abaixo de ~1024 KB. Medição mais recente (ago/2026, depois do card Raio de Entrega): BRU1 em **993 KB, ~31 KB de margem** (era 987 KB antes, 978 KB em jul/2026) — a margem encolhe a cada release, então **medir antes de adicionar qualquer campo novo já virou obrigatório, não recomendação**; o próximo campo global de porte exige mover algo para chunk primeiro — a menor entre as 8 empresas por ser a maior filial. O 2º maior é SOR (672 KB). Campos que NÃO são filtrados por empresa (embutidos inteiros em todo doc) são os primeiros suspeitos ao investigar crescimento: `cnpj_nomes` (filtrado desde jul/2026 aos CNPJs de fato usados via `part_cnpj` em `detalhes` — única leitura no frontend é `_cliClientCell` na aba Por Cliente), `nfe_fat_por_emp_ano_mes`, `cte_conc_por_emp_ano_mes`, `separacao_por_emp_ano_mes` (todos pequenos, ok ficarem globais). **Antes de adicionar qualquer novo campo global ao payload, medir o impacto em KB no doc da BRU1** (o maior) com `json.dumps(...).encode('utf-8')` — se for pesado (breakdown por sub-categoria, por dia, etc.), preferir o padrão de `separacao_detalhe`: campo top-level filtrado por empresa em `split_by_empresa`, não dentro de `resumo`.
 - **`position:fixed` + `backdrop-filter` no ancestral = containing block trocado** — `header.topbar` tem `backdrop-filter:blur(20px)`, o que o torna o *containing block* de qualquer descendente `position:fixed` (mesma regra de `transform`/`filter`/`will-change`). Definir `left`/`top` de um elemento fixed com coordenadas de `getBoundingClientRect()` (relativas ao viewport) sem descontar a posição do header dá elemento deslocado. Ver `_msPosition()` na seção "Filtros do Topbar — Multiselect". Vale para qualquer novo elemento `position:fixed` criado dentro do `header`.
 
