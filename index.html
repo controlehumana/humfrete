@@ -1698,9 +1698,17 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
   <div class="card">
     <div class="card-title">Detalhamento por NF-e<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Última ocorrência conhecida de cada NF-e no portal da transportadora. Atualizado automaticamente 2x por dia.</span></span></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text3);font-weight:600;flex-shrink:0">Transportadora:</span>
+      <div style="display:flex;gap:3px;background:var(--input-bg);border:1px solid var(--bd2);border-radius:8px;padding:3px">
+        <button class="cat-btn active" id="rst_f_all" onclick="setRstTranspFilter('')">Todas</button>
+        <button class="cat-btn" id="rst_f_gollog" onclick="setRstTranspFilter('gollog')">GoLog</button>
+        <button class="cat-btn" id="rst_f_latins" onclick="setRstTranspFilter('latins')">Latins</button>
+        <button class="cat-btn" id="rst_f_tnk" onclick="setRstTranspFilter('tnk')">TNK</button>
+      </div>
+    </div>
     <div class="sr">
       <input type="text" id="rst_search" placeholder="Buscar NF-e, empresa...">
-      <select id="rst_sel_transp"><option value="">Todas as transportadoras</option><option value="gollog">GoLog</option><option value="latins">Latins Transportes</option><option value="tnk">TNK Logística</option></select>
       <select id="rst_sel_status"><option value="">Todos os status</option><option value="entregue">Entregue</option><option value="transito">Em Trânsito</option><option value="sem">Sem Rastreio</option></select>
       <button class="btn-xlsx" onclick="if(window.rstExportXLSX)window.rstExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
     </div>
@@ -6010,8 +6018,8 @@ function initApp(){
   window.dmExportXLSX=dmExportXLSX;
 
   let rstPage=0;
+  let rstTranspFilter='';
   const rstInp=document.getElementById('rst_search');
-  const rstSelTransp=document.getElementById('rst_sel_transp');
   const rstSelStatus=document.getElementById('rst_sel_status');
   const RST_TRANSP_NOME={gollog:'GoLog',latins:'Latins Transportes',tnk:'TNK Logística'};
   function _rstStatus(d){
@@ -6020,10 +6028,19 @@ function initApp(){
     return 'transito';
   }
   function rstFilter(){rstPage=0;renderRastreio();}
+  function setRstTranspFilter(val){
+    rstTranspFilter=val;
+    document.getElementById('rst_f_all').classList.toggle('active',val==='');
+    document.getElementById('rst_f_gollog').classList.toggle('active',val==='gollog');
+    document.getElementById('rst_f_latins').classList.toggle('active',val==='latins');
+    document.getElementById('rst_f_tnk').classList.toggle('active',val==='tnk');
+    rstFilter();
+  }
+  window.setRstTranspFilter=setRstTranspFilter;
   function renderRastreio(){
     const baseEmpresa=(DATA.rastreio_status||[]).filter(d=>!state.empresas.length||state.empresas.includes(d.empresa));
     const base=baseEmpresa.filter(d=>{
-      const transpOk=!rstSelTransp.value||d.transportadora===rstSelTransp.value;
+      const transpOk=!rstTranspFilter||d.transportadora===rstTranspFilter;
       const statusOk=!rstSelStatus.value||_rstStatus(d)===rstSelStatus.value;
       const q=(rstInp.value||'').toLowerCase();
       const qOk=!q||(d.numero_nf||'').toLowerCase().includes(q)||(d.empresa||'').toLowerCase().includes(q);
@@ -6055,7 +6072,6 @@ function initApp(){
     mkPager(base.length,rstPage,PAGE,'rst_pager',pg=>{rstPage=pg;renderRastreio();});
   }
   rstInp.addEventListener('input',rstFilter);
-  rstSelTransp.addEventListener('change',rstFilter);
   rstSelStatus.addEventListener('change',rstFilter);
 
   function rstExportXLSX(){
@@ -6063,7 +6079,7 @@ function initApp(){
     const q=(rstInp.value||'').toLowerCase();
     const rows=(DATA.rastreio_status||[]).filter(d=>{
       const empOk=!state.empresas.length||state.empresas.includes(d.empresa);
-      const transpOk=!rstSelTransp.value||d.transportadora===rstSelTransp.value;
+      const transpOk=!rstTranspFilter||d.transportadora===rstTranspFilter;
       const statusOk=!rstSelStatus.value||_rstStatus(d)===rstSelStatus.value;
       const qOk=!q||(d.numero_nf||'').toLowerCase().includes(q)||(d.empresa||'').toLowerCase().includes(q);
       return empOk&&transpOk&&statusOk&&qOk;
