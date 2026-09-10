@@ -656,7 +656,7 @@ CREATE TABLE import_log (
 8. **Tooltip geo** — cores via variáveis `tipText`, `tipLabel`, `tipBorder`, `tipAccent`, `tipGold` (tema-aware); nunca hardcode hex no `_geoHover`
 9. **Insight body** — `.ok`/`.hi`/`.bad` têm override para ocean em CSS (`html.ocean .insight-body .ok` etc.)
 10. **card-tip** — tem `z-index:1000` no hover para ficar acima de células `position:sticky` do heatmap
-11. **Nova aba** — ao criar nova aba: adicionar tab-btn no sidebar, tab panel HTML, entrada em `_TAB_NAMES`, caso no tab switching, entrada em `ALL_TABS_INFO`
+11. **Nova aba** — ao criar nova aba: adicionar tab-btn no sidebar, tab panel HTML, entrada em `_TAB_NAMES`, caso no tab switching, entrada em `ALL_TABS_INFO`. Se a aba consome um campo novo do payload: **também precisa de uma linha em `_mergeData()`** (não é merge genérico — campo sem entrada ali nunca chega em `DATA`, mesmo publicado certinho no Firestore; ver pitfall no Módulo Rastreio)
 12. **Botões de ação nos cards** — usar classe `btn-xlsx` (definida no CSS global com override `html.ocean`) para garantir legibilidade em ambos os temas; nunca hardcode de cor inline nesses botões
 
 ## Módulo Nat. Operação — `natop` (index.html)
@@ -1064,6 +1064,61 @@ Produtividade de picking por unidade: quantidade de pedidos e itens separados no
 - `_sepDetalhe()` — itera `DATA.separacao_detalhe`; sempre respeita `state.empresas` (dict já vem filtrado por empresa do backend, então nunca teria dado de outra empresa mesmo sem o filtro)
 - `mkBarQtd(id,lbs,vals,color,lbl)` — variante de `mkBar` para quantidades (não BRL), usa `N()` nos eixos/tooltip
 - `_mergeData()` mescla os dois: `separacao_por_emp_ano_mes` (dentro de `resumo`) via `Object.assign` simples (todo doc já tem tudo); `separacao_detalhe` (top-level) via `Object.assign` também, mas aqui cada doc só contribui as próprias chaves — o merge reconstrói a visão completa pra quem tem acesso a múltiplas empresas
+
+## Módulo Rastreio — `rastreio` (index.html, set/2026)
+
+Status de entrega (GoLog/Latins/TNK) por NF-e — "cadê minha entrega". Dado
+vem de fora do projeto Frete: o repositório **`Rastreio/`** (separado,
+raiz do `ClaudeCode/`) consulta os portais dessas 3 transportadoras 2x/dia
+via tarefa agendada (`Rastreio/atualizar_rastreio.py`) e grava numa tabela
+nova do **mesmo** `QUIVE/cte.db`, `rastreio_status` — sem nenhuma
+dependência entre os dois projetos além do banco compartilhado. Ver
+`Rastreio/CLAUDE.md` para como a coleta funciona (login em cada portal,
+detecção de transportadora por CNPJ, etc.).
+
+### `_carregar_rastreio()` (processar_frete.py)
+Mesmo padrão de `_carregar_nfse_entregadores()`: sem argumentos, abre a
+própria conexão com `QUIVE_DB`, guarda contra tabela ausente, `try/except`
+retornando `[]`. Lê a tabela inteira (não filtra — o filtro por empresa
+acontece em `split_by_empresa`, mesmo padrão de `delivery`) e devolve
+`list[dict]` com `chave_nfe, numero_nf, empresa, transportadora, conhecimento,
+entregue (bool), ultima_data, ultima_situacao, ocorrencias (histórico
+completo), atualizado_em`.
+
+**Tamanho medido (set/2026):** o campo inteiro do BRU1 (maior filial, 308
+NF-e, histórico completo incluído) comprime pra ~30 KB — cabe sem chunk no
+doc principal, que foi de 148 KB pra 178 KB de um teto de ~1024 KB
+comprimido. Sem risco de precisar do mecanismo de chunk usado por
+`detalhes`/`transf_espelho`.
+
+### Frontend (index.html)
+- **Só respeita `state.empresas`** — ignora `state.ano`/`state.meses` de
+  propósito (aviso visível na aba, mesmo padrão do `natop_filter_warn`): a
+  tabela já vem naturalmente limitada aos últimos 20 dias pela coleta.
+- Filtro rápido de transportadora em botões (`cat-btn`, mesmo padrão do
+  filtro de Saldo na aba Operacional/`setOpSaldoFilter`) — preferido a
+  dropdown por pedido do usuário.
+- Status calculado no frontend (`_rstStatus(d)`): `'entregue'` se
+  `d.entregue`, `'sem'` se `ultima_situacao` contém `"nao encontrado"`
+  (o CT-e identificou a transportadora mas o portal dela não retornou
+  nada pra essa NF-e — normalmente porque o login usado só enxerga a
+  própria unidade, não é erro), senão `'transito'`.
+
+### Pitfall — campo novo no payload precisa de 3 edições, não 2 (set/2026)
+Publiquei `rastreio_status` em `cruzar()` + `split_by_empresa()`, testei
+que o documento do Firestore tinha o campo certo (`db.collection('dados')
+.document('BRU1').get()` confirmou 308 registros) — e mesmo assim a aba
+carregava tudo zerado no dashboard publicado. Causa: **`_mergeData()` no
+`index.html` não é merge genérico** — cada campo do payload precisa de uma
+linha explícita ali (`rastreio_status: datas.flatMap(d=>d.rastreio_status||[])`,
+mesmo padrão de `delivery`) para sair dos docs individuais de empresa e
+chegar em `DATA`. Faltou essa terceira edição na primeira publicação; só
+apareceu testando o dashboard publicado de verdade (login real), não dava
+pra pegar isso testando só o payload do Firestore isoladamente. **Qualquer
+campo novo no payload exige as 3 edições: `cruzar()` (ou onde o loader
+entra no dict), `split_by_empresa()`, e `_mergeData()`** — as duas
+primeiras já eram regra conhecida, a terceira não estava explícita em
+lugar nenhum do CLAUDE.md antes disso.
 
 ## Pitfalls conhecidos
 
