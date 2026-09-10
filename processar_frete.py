@@ -708,7 +708,12 @@ def _carregar_rastreio():
     """Carrega do banco SQLite o status de rastreio de entrega (GoLog/Latins/
     TNK), gravado por Rastreio/atualizar_rastreio.py (projeto separado, que
     roda 2x/dia e so escreve nessa tabela do mesmo cte.db). Retorna lista de
-    dicts prontos para o payload da aba Rastreio."""
+    dicts prontos para o payload da aba Rastreio.
+
+    JOIN com vw_nf_saida (pela chave da NF-e) traz data_nf (data de emissao
+    da NF, DD/MM/YYYY) e cidade_destino/uf_destino (cidade do participante -
+    destinatario da NF de saida) - pedido do usuario apos a publicacao
+    inicial, que so tinha data/situacao do rastreio em si."""
     if not os.path.exists(QUIVE_DB):
         return []
     try:
@@ -718,7 +723,11 @@ def _carregar_rastreio():
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rastreio_status'")
         if not cur.fetchone():
             conn.close(); return []
-        rows = cur.execute("SELECT * FROM rastreio_status").fetchall()
+        rows = cur.execute("""
+            SELECT r.*, v.data_emissao AS data_nf, v.part_cidade AS cidade_destino, v.part_estado AS uf_destino
+            FROM rastreio_status r
+            LEFT JOIN vw_nf_saida v ON v.chave = r.chave_nfe
+        """).fetchall()
         conn.close()
         resultado = [{
             "chave_nfe":       r["chave_nfe"],
@@ -731,6 +740,9 @@ def _carregar_rastreio():
             "ultima_situacao": r["ultima_situacao"],
             "ocorrencias":     json.loads(r["ocorrencias_json"] or "[]"),
             "atualizado_em":   r["atualizado_em"],
+            "data_nf":         r["data_nf"],
+            "cidade_destino":  r["cidade_destino"],
+            "uf_destino":      r["uf_destino"],
         } for r in rows]
         print(f"   Rastreio: {len(resultado)} NF-e carregadas")
         return resultado

@@ -1689,6 +1689,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
 <!-- TAB RASTREIO -->
 <div id="tab-rastreio" class="tab-panel">
   <div class="sdiv">Rastreio de Entregas</div>
+  <div style="font-size:11px;color:var(--text3);margin:-8px 0 12px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-clock-rotate-left"></i> Última coleta: <strong id="rst_atualizado_em">-</strong></div>
   <div class="alert a-yellow" style="margin-bottom:12px"><i class="fa-solid fa-circle-info"></i> Esta aba mostra as NF-e transportadas por GoLog, Latins ou TNK nos últimos 20 dias (janela fixa da coleta) — <strong>não respeita os filtros de Ano/Mês</strong> do topo, só o filtro de Empresa. Cobre apenas essas 3 transportadoras; as demais ainda não têm rastreio automático.</div>
   <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card"><div class="kpi-tooltip">NF-e cujo portal da transportadora confirmou a entrega ao destinatário.</div><div class="kpi-val" id="rst_entregues">-</div><div class="kpi-lbl">Entregues</div><div class="kpi-sub">confirmado no portal</div></div>
@@ -1714,7 +1715,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     </div>
     <div class="tw dtbl" style="max-height:70vh;overflow-y:auto;margin-top:10px">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">NF-e</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Última Ocorrência</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:center;color:var(--text3);font-weight:600;white-space:nowrap">Status</th></tr></thead>
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">NF-e</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data NF</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Cidade Destino</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Última Ocorrência</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data Ocorrência</th><th style="padding:8px 10px;text-align:center;color:var(--text3);font-weight:600;white-space:nowrap">Status</th></tr></thead>
         <tbody id="rst_tbody"></tbody>
       </table>
     </div>
@@ -6051,6 +6052,12 @@ function initApp(){
     kpi('rst_transito',N(baseEmpresa.filter(d=>_rstStatus(d)==='transito').length));
     kpi('rst_sem',N(baseEmpresa.filter(d=>_rstStatus(d)==='sem').length));
     kpi('rst_total',N(baseEmpresa.length));
+    const ultimaColeta=(DATA.rastreio_status||[]).reduce((max,d)=>d.atualizado_em>max?d.atualizado_em:max,'');
+    const elColeta=document.getElementById('rst_atualizado_em');
+    if(elColeta){
+      const m=ultimaColeta.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})/);
+      elColeta.textContent=m?`${m[3]}/${m[2]}/${m[1]} ${m[4]}`:'-';
+    }
     const slice=base.slice(rstPage*PAGE,(rstPage+1)*PAGE);
     const isOc=document.documentElement.classList.contains('ocean');
     const statusChip=st=>{
@@ -6060,9 +6067,12 @@ function initApp(){
     };
     document.getElementById('rst_tbody').innerHTML=slice.map(d=>{
       const st=_rstStatus(d);
+      const destino=d.cidade_destino?esc(d.cidade_destino)+(d.uf_destino?'/'+esc(d.uf_destino):''):'-';
       return '<tr style="border-bottom:1px solid var(--row-border)">'
         +'<td style="padding:7px 10px;font-family:monospace">'+esc(d.numero_nf||'?')+'</td>'
         +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa||'?')+'</span></td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+esc(d.data_nf||'-')+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+destino+'</td>'
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+esc(RST_TRANSP_NOME[d.transportadora]||d.transportadora||'?')+'</td>'
         +'<td style="padding:7px 10px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="'+esc(d.ultima_situacao||'')+'">'+esc(d.ultima_situacao||'-')+'</td>'
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+esc(d.ultima_data||'-')+'</td>'
@@ -6087,8 +6097,10 @@ function initApp(){
     if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
     const statusLabel={entregue:'Entregue',transito:'Em Trânsito',sem:'Sem Rastreio'};
     const data=rows.map(d=>({
-      'NF-e':d.numero_nf,'Empresa':d.empresa,'Transportadora':RST_TRANSP_NOME[d.transportadora]||d.transportadora,
-      'Última Ocorrência':d.ultima_situacao,'Data':d.ultima_data,'Status':statusLabel[_rstStatus(d)],
+      'NF-e':d.numero_nf,'Empresa':d.empresa,'Data NF':d.data_nf,
+      'Cidade Destino':d.cidade_destino?d.cidade_destino+(d.uf_destino?'/'+d.uf_destino:''):'',
+      'Transportadora':RST_TRANSP_NOME[d.transportadora]||d.transportadora,
+      'Última Ocorrência':d.ultima_situacao,'Data Ocorrência':d.ultima_data,'Status':statusLabel[_rstStatus(d)],
     }));
     const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
     XLSX.utils.book_append_sheet(wb,ws,'Rastreio');
