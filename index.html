@@ -694,6 +694,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <button class="tab-btn tab-highlight" data-tab="delivery"><i data-lucide="truck"></i><span class="sb-label">Delivery</span><span class="tab-badge" id="tb_dlv">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Devoluções Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="separacao"><i data-lucide="clipboard-list"></i><span class="sb-label">Separação</span><span class="tab-badge" id="tb_sep">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="rastreio"><i data-lucide="map-pin"></i><span class="sb-label">Rastreio</span><span class="tab-badge" id="tb_rst">-</span></button>
     <div class="sb-section">Analise</div>
     <button class="tab-btn tab-highlight" data-tab="empresa"><i data-lucide="building-2"></i><span class="sb-label">Por Empresa</span><span class="tab-badge" id="tb_emp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="transferencias"><i data-lucide="arrow-left-right"></i><span class="sb-label">Transferências</span></button>
@@ -1685,6 +1686,34 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
 </div>
 
+<!-- TAB RASTREIO -->
+<div id="tab-rastreio" class="tab-panel">
+  <div class="sdiv">Rastreio de Entregas</div>
+  <div class="alert a-yellow" style="margin-bottom:12px"><i class="fa-solid fa-circle-info"></i> Esta aba mostra as NF-e transportadas por GoLog, Latins ou TNK nos últimos 20 dias (janela fixa da coleta) — <strong>não respeita os filtros de Ano/Mês</strong> do topo, só o filtro de Empresa. Cobre apenas essas 3 transportadoras; as demais ainda não têm rastreio automático.</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">NF-e cujo portal da transportadora confirmou a entrega ao destinatário.</div><div class="kpi-val" id="rst_entregues">-</div><div class="kpi-lbl">Entregues</div><div class="kpi-sub">confirmado no portal</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">NF-e encontradas no portal da transportadora, mas ainda sem confirmação de entrega.</div><div class="kpi-val" id="rst_transito">-</div><div class="kpi-lbl">Em Trânsito</div><div class="kpi-sub">aguardando confirmação</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">O CT-e identificou a transportadora, mas o portal dela não retornou nenhum resultado para essa NF-e. Na maioria dos casos é limitação de escopo do login usado (ex.: só enxerga a própria unidade), não um erro.</div><div class="kpi-val" id="rst_sem">-</div><div class="kpi-lbl">Sem Rastreio no Portal</div><div class="kpi-sub">não encontrado</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total de NF-e rastreadas nos últimos 20 dias, somando as 3 transportadoras.</div><div class="kpi-val" id="rst_total">-</div><div class="kpi-lbl">Total Rastreado</div><div class="kpi-sub">GoLog + Latins + TNK</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Detalhamento por NF-e<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Última ocorrência conhecida de cada NF-e no portal da transportadora. Atualizado automaticamente 2x por dia.</span></span></div>
+    <div class="sr">
+      <input type="text" id="rst_search" placeholder="Buscar NF-e, empresa...">
+      <select id="rst_sel_transp"><option value="">Todas as transportadoras</option><option value="gollog">GoLog</option><option value="latins">Latins Transportes</option><option value="tnk">TNK Logística</option></select>
+      <select id="rst_sel_status"><option value="">Todos os status</option><option value="entregue">Entregue</option><option value="transito">Em Trânsito</option><option value="sem">Sem Rastreio</option></select>
+      <button class="btn-xlsx" onclick="if(window.rstExportXLSX)window.rstExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+    </div>
+    <div class="tw dtbl" style="max-height:70vh;overflow-y:auto;margin-top:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">NF-e</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Última Ocorrência</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:center;color:var(--text3);font-weight:600;white-space:nowrap">Status</th></tr></thead>
+        <tbody id="rst_tbody"></tbody>
+      </table>
+    </div>
+    <div id="rst_pager" style="margin-top:10px"></div>
+  </div>
+</div>
+
 <!-- TAB POR EMPRESA -->
 <div id="tab-empresa" class="tab-panel">
   <div id="emp_periodo_banner" style="margin-bottom:14px;padding:8px 16px;background:#DBEAFE;border:1px solid #BFDBFE;border-radius:8px;font-size:12px;color:#1E40AF;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="opacity:.8"></i><span id="emp_periodo_txt">Carregando...</span></div>
@@ -1958,6 +1987,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <button class="mob-nav-btn" data-tab="delivery"><i data-lucide="truck"></i><span>Delivery</span></button>
   <button class="mob-nav-btn" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span>Dev.Mkt</span></button>
   <button class="mob-nav-btn" data-tab="separacao"><i data-lucide="clipboard-list"></i><span>Separação</span></button>
+  <button class="mob-nav-btn" data-tab="rastreio"><i data-lucide="map-pin"></i><span>Rastreio</span></button>
   <button class="mob-nav-btn" data-tab="empresa"><i data-lucide="building-2"></i><span>Empresa</span></button>
   <button class="mob-nav-btn" data-tab="operacional"><i data-lucide="list"></i><span>Operat.</span></button>
   <button class="mob-nav-btn" data-tab="clientes"><i data-lucide="users"></i><span>Clientes</span></button>
@@ -3021,7 +3051,7 @@ function renderAll(){
   document.getElementById('h_total_vs').innerHTML=prev?vsChip(agg.tot,prev.tot,true)+vsNote:'';document.getElementById('h_saldo_vs').innerHTML=prev?vsChip(agg.difCom,prev.difCom,false)+vsNote:'';document.getElementById('h_pct_vs').innerHTML=prev?vsChip(agg.fretePctFat,prev.fretePctFat,true)+vsNote:'';document.getElementById('h_ticket_vs').innerHTML=prev?vsChip(agg.media,prev.media,true)+vsNote:'';
   tablePage=0;renderTable();
   const activeTab=document.querySelector('.tab-btn.active');
-  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='transferencias')renderTransferencias();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();else if(tab==='dre'&&window._renderDRE)window._renderDRE();}
+  if(activeTab){const tab=activeTab.getAttribute('data-tab');if(tab==='empresa')renderEmpresa();else if(tab==='transferencias')renderTransferencias();else if(tab==='marketplace')renderMarketplace();else if(tab==='clientes')renderClientes();else if(tab==='nao-vinculados'){if(window._renderNV)window._renderNV();}else if(tab==='compras'&&window._renderCompras)window._renderCompras();else if(tab==='delivery'){if(window._renderDelivery)window._renderDelivery();}else if(tab==='dev-mkt'&&window._renderDevMkt)window._renderDevMkt();else if(tab==='separacao'&&window._renderSeparacao)window._renderSeparacao();else if(tab==='rastreio'&&window._renderRastreio)window._renderRastreio();else if(tab==='geo')renderGeo();else if(tab==='rotas')renderRotas();else if(tab==='natop')renderNatOp();else if(tab==='dre'&&window._renderDRE)window._renderDRE();}
   // Custo Logístico Consolidado — segue filtros ativos
   (function(){
     // helper: filtra por ano, mês e empresa no formato DD/MM/YYYY
@@ -5978,6 +6008,78 @@ function initApp(){
   }
   window.dmExportXLSX=dmExportXLSX;
 
+  let rstPage=0;
+  const rstInp=document.getElementById('rst_search');
+  const rstSelTransp=document.getElementById('rst_sel_transp');
+  const rstSelStatus=document.getElementById('rst_sel_status');
+  const RST_TRANSP_NOME={gollog:'GoLog',latins:'Latins Transportes',tnk:'TNK Logística'};
+  function _rstStatus(d){
+    if(d.entregue) return 'entregue';
+    if((d.ultima_situacao||'').includes('nao encontrado')) return 'sem';
+    return 'transito';
+  }
+  function rstFilter(){rstPage=0;renderRastreio();}
+  function renderRastreio(){
+    const baseEmpresa=(DATA.rastreio_status||[]).filter(d=>!state.empresas.length||state.empresas.includes(d.empresa));
+    const base=baseEmpresa.filter(d=>{
+      const transpOk=!rstSelTransp.value||d.transportadora===rstSelTransp.value;
+      const statusOk=!rstSelStatus.value||_rstStatus(d)===rstSelStatus.value;
+      const q=(rstInp.value||'').toLowerCase();
+      const qOk=!q||(d.numero_nf||'').toLowerCase().includes(q)||(d.empresa||'').toLowerCase().includes(q);
+      return transpOk&&statusOk&&qOk;
+    });
+    const kpi=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+    kpi('rst_entregues',N(baseEmpresa.filter(d=>_rstStatus(d)==='entregue').length));
+    kpi('rst_transito',N(baseEmpresa.filter(d=>_rstStatus(d)==='transito').length));
+    kpi('rst_sem',N(baseEmpresa.filter(d=>_rstStatus(d)==='sem').length));
+    kpi('rst_total',N(baseEmpresa.length));
+    const slice=base.slice(rstPage*PAGE,(rstPage+1)*PAGE);
+    const isOc=document.documentElement.classList.contains('ocean');
+    const statusChip=st=>{
+      if(st==='entregue') return '<span class="chip" style="background:'+(isOc?'#DCFCE7':'rgba(34,197,94,.18)')+';color:'+(isOc?'#166534':'#22C55E')+';border:1px solid '+(isOc?'#86EFAC':'transparent')+';font-size:9px;font-weight:700">Entregue</span>';
+      if(st==='sem') return '<span class="chip chip-gray" style="font-size:9px;font-weight:700">Sem Rastreio</span>';
+      return '<span class="chip" style="background:'+(isOc?'#FEF9C3':'rgba(245,158,11,.18)')+';color:'+(isOc?'#854D0E':'#F59E0B')+';border:1px solid '+(isOc?'#FDE047':'transparent')+';font-size:9px;font-weight:700">Em Trânsito</span>';
+    };
+    document.getElementById('rst_tbody').innerHTML=slice.map(d=>{
+      const st=_rstStatus(d);
+      return '<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:7px 10px;font-family:monospace">'+esc(d.numero_nf||'?')+'</td>'
+        +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa||'?')+'</span></td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+esc(RST_TRANSP_NOME[d.transportadora]||d.transportadora||'?')+'</td>'
+        +'<td style="padding:7px 10px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="'+esc(d.ultima_situacao||'')+'">'+esc(d.ultima_situacao||'-')+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+esc(d.ultima_data||'-')+'</td>'
+        +'<td style="padding:7px 10px;text-align:center">'+statusChip(st)+'</td>'
+        +'</tr>';
+    }).join('');
+    mkPager(base.length,rstPage,PAGE,'rst_pager',pg=>{rstPage=pg;renderRastreio();});
+  }
+  rstInp.addEventListener('input',rstFilter);
+  rstSelTransp.addEventListener('change',rstFilter);
+  rstSelStatus.addEventListener('change',rstFilter);
+
+  function rstExportXLSX(){
+    if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+    const q=(rstInp.value||'').toLowerCase();
+    const rows=(DATA.rastreio_status||[]).filter(d=>{
+      const empOk=!state.empresas.length||state.empresas.includes(d.empresa);
+      const transpOk=!rstSelTransp.value||d.transportadora===rstSelTransp.value;
+      const statusOk=!rstSelStatus.value||_rstStatus(d)===rstSelStatus.value;
+      const qOk=!q||(d.numero_nf||'').toLowerCase().includes(q)||(d.empresa||'').toLowerCase().includes(q);
+      return empOk&&transpOk&&statusOk&&qOk;
+    });
+    if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
+    const statusLabel={entregue:'Entregue',transito:'Em Trânsito',sem:'Sem Rastreio'};
+    const data=rows.map(d=>({
+      'NF-e':d.numero_nf,'Empresa':d.empresa,'Transportadora':RST_TRANSP_NOME[d.transportadora]||d.transportadora,
+      'Última Ocorrência':d.ultima_situacao,'Data':d.ultima_data,'Status':statusLabel[_rstStatus(d)],
+    }));
+    const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb,ws,'Rastreio');
+    XLSX.writeFile(wb,'rastreio_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }
+  window.rstExportXLSX=rstExportXLSX;
+  window._renderRastreio=renderRastreio;
+
   // Expose devmkt and compras render to tab handler
   window._renderCompras=renderCompras;
   window._renderDevMkt=renderDevMkt;
@@ -6002,13 +6104,14 @@ function initApp(){
     document.getElementById('tb_dlv').textContent=N((DATA.delivery||[]).length);
     document.getElementById('tb_devmkt').textContent=N((DATA.devolucoes_mkt||[]).length);
     document.getElementById('tb_sep').textContent=N(Object.values(DATA.resumo?.separacao_por_emp_ano_mes||{}).reduce((s,v)=>s+(v.pedidos||0),0));
+    document.getElementById('tb_rst').textContent=N((DATA.rastreio_status||[]).filter(d=>!d.entregue&&!(d.ultima_situacao||'').includes('nao encontrado')).length);
     buildCteRateioIndex();
     renderAll();
   }catch(err){console.error('[FRETE] Erro na inicializacao:',err);}
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','dre':'DRE Logístico','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','dre':'DRE Logístico','marketplace':'Marketplace','compras':'Frete Compras','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','rastreio':'Rastreio de Entregas','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -6028,6 +6131,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     else if(tab==='delivery'&&window._renderDelivery) window._renderDelivery();
     else if(tab==='dev-mkt'&&window._renderDevMkt) window._renderDevMkt();
     else if(tab==='separacao'&&window._renderSeparacao) window._renderSeparacao();
+    else if(tab==='rastreio'&&window._renderRastreio) window._renderRastreio();
     else if(tab==='nao-vinculados'&&window._renderNV) window._renderNV();
     else if(tab==='operacional') renderTable();
     else if(tab==='geo') renderGeo();
@@ -6078,6 +6182,7 @@ const ALL_TABS_INFO=[
   {id:'delivery',label:'Delivery'},
   {id:'dev-mkt',label:'Devoluções Marketplace'},
   {id:'separacao',label:'Separação'},
+  {id:'rastreio',label:'Rastreio'},
   {id:'empresa',label:'Por Empresa'},
   {id:'transferencias',label:'Transferências'},
   {id:'operacional',label:'Operacional'},

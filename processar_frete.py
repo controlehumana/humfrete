@@ -704,6 +704,41 @@ def _carregar_nfse_entregadores():
         return []
 
 
+def _carregar_rastreio():
+    """Carrega do banco SQLite o status de rastreio de entrega (GoLog/Latins/
+    TNK), gravado por Rastreio/atualizar_rastreio.py (projeto separado, que
+    roda 2x/dia e so escreve nessa tabela do mesmo cte.db). Retorna lista de
+    dicts prontos para o payload da aba Rastreio."""
+    if not os.path.exists(QUIVE_DB):
+        return []
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rastreio_status'")
+        if not cur.fetchone():
+            conn.close(); return []
+        rows = cur.execute("SELECT * FROM rastreio_status").fetchall()
+        conn.close()
+        resultado = [{
+            "chave_nfe":       r["chave_nfe"],
+            "numero_nf":       r["numero_nf"],
+            "empresa":         r["empresa"],
+            "transportadora":  r["transportadora_slug"],
+            "conhecimento":    r["conhecimento"],
+            "entregue":        bool(r["entregue"]),
+            "ultima_data":     r["ultima_data"],
+            "ultima_situacao": r["ultima_situacao"],
+            "ocorrencias":     json.loads(r["ocorrencias_json"] or "[]"),
+            "atualizado_em":   r["atualizado_em"],
+        } for r in rows]
+        print(f"   Rastreio: {len(resultado)} NF-e carregadas")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar rastreio_status: {e}")
+        return []
+
+
 def _norm_cidade(s):
     """Normaliza nome de cidade para comparacao: maiusculas, sem acento, sem espaco
     duplicado. A Volumetria grava 'CAMPO GRANDE' e o faturamento 'Campo Grande';
@@ -1475,6 +1510,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     volumetria_detalhe = _carregar_volumetria_detalhe()  # detalhe por NF-e (cliente/cidade/UF) das entregas de entregadores
     sedes_unidades = _carregar_sedes_unidades()      # cidade-sede de cada unidade (base do "dentro x fora da cidade")
     separacao_detalhe, produtos_desc = _calcular_separacao() # Produtividade de separação por empresa (módulo Separação)
+    rastreio_status = _carregar_rastreio()           # Status de entrega GoLog/Latins/TNK (módulo Rastreio)
     # Versão leve (sem por_canal/por_dow) para embutir sem filtro em todo doc de empresa —
     # permite ranking cruzando todas as empresas mesmo para usuário restrito a 1 empresa.
     # A versão completa (separacao_detalhe) é filtrada por empresa em split_by_empresa,
@@ -1829,6 +1865,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "volumetria_detalhe":volumetria_detalhe,
         "separacao_detalhe":separacao_detalhe,
         "produtos_desc":produtos_desc,
+        "rastreio_status":rastreio_status,
     }
 
 
@@ -4762,6 +4799,7 @@ def split_by_empresa(dados):
             "compras": [d for d in dados.get("compras",[]) if d.get("empresa_dest")==emp],
             "devolucoes_mkt": [d for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest")==emp],
             "delivery": [d for d in dados.get("delivery",[]) if d.get("empresa")==emp],
+            "rastreio_status": [d for d in dados.get("rastreio_status",[]) if d.get("empresa")==emp],
             "volumetria_entregadores": [d for d in dados.get("volumetria_entregadores",[]) if d.get("empresa")==emp],
             "volumetria_detalhe": [d for d in dados.get("volumetria_detalhe",[]) if d.get("empresa")==emp],
             "separacao_detalhe": {k:v for k,v in dados.get("separacao_detalhe",{}).items() if k.startswith(emp+"|")},
