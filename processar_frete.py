@@ -1500,7 +1500,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 ch: round((nfe["total_nf"] or 1) / total_val, 6)
                 for ch, nfe in nfes_em_fat
             }
-    detalhes=[]; nfe_sem_cte=[]
+    detalhes=[]; nfe_sem_cte=[]; devolucao_venda_fat=[]
     for chave,nfe in nfe_map.items():
         ctes=nfe_to_cte.get(chave,[])
         if ctes:
@@ -1518,6 +1518,28 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 else: linha="Misto"
                 frete_cobrado=round(nfe["vlr_frete_nf"],2)
                 diferenca=round(frete_cobrado-frete_rateado,2)
+                # Devolução de venda: o próprio Faturamento já registra esse evento com a
+                # chave da NF-e do cliente (nat_operacao/cod_nat_oper de devolução) --
+                # sai de 'detalhes' (Frete de Saída) e vai pra 'devolucao_venda', senão
+                # fica misturado com frete de venda normal no Custo Total/DRE.
+                if "devolu" in (nfe.get("nat_operacao") or "").lower():
+                    devolucao_venda_fat.append({
+                        "cte_chave":    cte["cte_chave"],
+                        "transportadora": cte["transportadora"],
+                        "data_emissao": fmt_date(nfe["data_emissao"]),
+                        "rem_nome":     nfe["participante"],
+                        "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
+                        "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
+                        "empresa_dest": nfe["empresa"],
+                        "valor_frete":  frete_rateado,
+                        "nfe_refs":     [chave],
+                        "peso_kg":      round(cte["peso_kg"]*frac,2), "volume_m3": round(cte.get("volume_m3",0)*frac,3),
+                        "numero_nfe":   nfe["numero"],
+                        "total_nf":     round(nfe["total_nf"],2),
+                        "cfop":         nfe.get("cod_nat_operacao",""),
+                        "nat_desc":     nfe.get("nat_operacao",""),
+                    })
+                    continue
                 detalhes.append({
                     "chave_nfe":nfe["chave"],"empresa":nfe["empresa"],"numero":nfe["numero"],"pedido":nfe.get("pedido") or "",
                     "data":nfe["data_emissao"],"canal":nfe["canal"],"nicho":nfe.get("nicho") or "","nat_operacao":nfe["nat_operacao"],
@@ -1544,10 +1566,13 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 "total_nf":round(nfe["total_nf"],2)})
     print(f"   NF-e com CTe: {len(detalhes)}")
     print(f"   NF-e sem CTe: {len(nfe_sem_cte)}")
+    print(f"   NF-e de devolução de venda (já no Faturamento): {len(devolucao_venda_fat)}")
     cte_nfe_keys=set(nfe_to_cte.keys()); fat_keys=set(nfe_map.keys())
     cte_sem_fat=len(cte_nfe_keys-fat_keys)
     print(f"   CTe sem NF-e no faturamento: {cte_sem_fat}")
-    linked_cte_chaves=set(d["cte_chave"] for d in detalhes)
+    # Inclui os CTe de devolução (Faturamento) no set de "já classificados" pra não
+    # serem reprocessados como 'compras' mais adiante (dest_cnpj deles também é Humana).
+    linked_cte_chaves=set(d["cte_chave"] for d in detalhes) | set(d["cte_chave"] for d in devolucao_venda_fat)
     # Carrega CTe vinculados a NF de entrada (compras)
     nf_entrada_map = _carregar_nf_entrada()          # cte_chave -> [nf_data, ...]
     nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
@@ -1627,7 +1652,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if "TIKTOK" in t: return "tiktok"
         if "AMAZON" in t: return "amazon"   # manter em sincronia com _marketplace_type
         return None
-    compras=[]; devolucoes_mkt=[]; devolucao_venda=[]
+    compras=[]; devolucoes_mkt=[]; devolucao_venda=list(devolucao_venda_fat)
     # Compras via NF de Entrada (fonte primária — mais completa)
     ctes_adicionados_compras = set()
     CFOP_DEVOLUCAO = {"5202", "6202"}

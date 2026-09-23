@@ -156,7 +156,13 @@ Nem todo CTe cujo destinatário é uma empresa Humana é uma compra nova. Caso r
 
 `processar_frete.py` carrega `vw_cte_nf_devolucao` (join `cte_nf` + `nf_devolucao_venda` filtrado a `status='devolucao'`) **antes** do bucket "dest CNPJ_MAP" de compras, então esses CTe nunca chegam a cair em 'compras'. Payload novo: `devolucao_venda` (mesmo shape de `compras`, mais `cfop` e `nfe_ref_venda`).
 
-**Só cobre o gap, não é retroativo automático de tudo:** por enquanto só processa os CT-e que ainda não tinham `nf_entrada` — não refaz a classificação de CTe que já foram parar em 'compras' antes desse script existir (não há como saber sem consultar a NF-e de cada um). Rodar `buscar_devolucao_venda.py` de novo eventualmente vai pegando o que ainda falta.
+**Retroativo (set/2026):** `processar_frete.py` também checa o CFOP/`nat_desc` de todo CTe que **já** tinha `nf_entrada` capturada — achou 7 casos que estavam escondidos dentro de 'compras' desde sempre, sem nunca terem sido reclassificados. Isso roda em toda execução, não é um backfill único.
+
+**Segunda frente, maior — devolução dentro de "Frete de Saída" (não de Compras):** o Faturamento (ERP, `vw_nf_saida`) já registra o evento de devolução usando a própria chave da NF-e do cliente (`nat_operacao` contém "DEVOLU..."), então o CTe casa normalmente com uma venda e nunca passa pelas regras de compras — o frete fica certo no total, mas misturado com frete de venda normal, sem aparecer separado em lugar nenhum. **4.062 NF-e** (R$4.455 de frete) nessa situação — `processar_frete.py` agora desvia essas linhas de `detalhes` (Frete de Saída) pra `devolucao_venda` direto no loop principal, antes até da classificação por CTe. Como essas NF-e não têm CFOP no dado do Faturamento (só `cod_nat_operacao`, tipo `1-00001-0000007`), o campo `cfop` do payload vem com esse código em vez do CFOP numérico de fato — mostra o `nat_desc` completo no tooltip pra compensar.
+
+**`QUIVE/buscar_devolucao_venda.py` também "semeia" essas 4.062 sem chamar API nenhuma** (`seed_devolucao_do_faturamento()`) — o Faturamento já diz que é devolução, não precisa confirmar via NF-e. Isso alimenta `nf_devolucao_venda` só pra essas notas ficarem disponíveis pro backfill de DANFE (`buscar_danfe_compras.py`, que agora lê pendências de **duas** tabelas: `nf_entrada` e `nf_devolucao_venda` filtrado a `status='devolucao'`).
+
+**Ainda não é 100% retroativo:** CTe que já tinha `nf_entrada` com CFOP normal de compra nunca é re-checado a fundo além do CFOP/`nat_desc` já capturado (não há reprocessamento de XML). E o bucket "dest CNPJ_MAP" só cobre CTe sem `nf_entrada` no momento em que o script roda — segue incremental a cada execução.
 
 ### Campos do payload `ctes_nao_vinculados`
 ```python

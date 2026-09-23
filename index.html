@@ -4886,7 +4886,7 @@ function initApp(){
     tbody.innerHTML=slice.map(d=>{
       const orig=esc((d.origem_cidade||'?')+(d.origem_uf?'/'+d.origem_uf:''));
       const dest=esc((d.destino_cidade||'?')+(d.destino_uf?'/'+d.destino_uf:''));
-      const nfeChips=(d.nfe_refs||[]).slice(0,3).map(ch=>'<span class="chip chip-gray" style="font-size:9px;font-family:monospace" title="'+esc(ch)+'">'+ch.slice(25,34)+'...</span>').join(' ')
+      const nfeChips=(d.nfe_refs||[]).slice(0,3).map(ch=>'<span class="chip chip-gray" style="font-size:9px;font-family:monospace;cursor:pointer" title="'+esc(ch)+' — clique para ver o DANFE" onclick="verDanfe(\''+ch+'\',\''+esc(d.empresa_dest||'')+'\')">'+ch.slice(25,34)+' 📄</span>').join(' ')
         +((d.nfe_refs||[]).length>3?'<span style="font-size:9px;color:var(--text3)"> +'+(d.nfe_refs||[]).length-3+'</span>':'');
       const data=fmtDate(d.data_emissao)||'--';
       return '<tr style="border-bottom:1px solid var(--row-border)">'
@@ -4897,7 +4897,7 @@ function initApp(){
         +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa_dest||'?')+'</span></td>'
         +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+esc(d.transportadora||'')+'">'+esc(d.transportadora||'--')+'</td>'
         +'<td style="padding:7px 10px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
-        +'<td style="padding:7px 10px;white-space:nowrap"><span class="chip chip-amber" style="font-size:10px;font-weight:700;font-family:monospace">'+esc(d.cfop||'-')+'</span></td>'
+        +'<td style="padding:7px 10px;white-space:nowrap"><span class="chip chip-amber" style="font-size:10px;font-weight:700;font-family:monospace" title="'+esc(d.nat_desc||'')+'">'+esc(d.cfop||'-')+'</span></td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(d.total_nf?BRL(d.total_nf):'<span style="color:var(--text3)">-</span>')+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+N(Math.round(d.peso_kg))+'</td>'
