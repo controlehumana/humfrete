@@ -4717,7 +4717,7 @@ function renderCompras(){
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+orig+'</td>'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+dest+'</td>'
       +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+(d.transportadora||'')+'">'+( d.transportadora||'—')+'</td>'
-      +'<td style="padding:7px 10px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
+      +'<td style="padding:7px 10px;max-width:170px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(d.total_nf?BRL(d.total_nf):'<span style="color:var(--text3)">—</span>')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+N(Math.round(d.peso_kg))+'</td>'

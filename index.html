@@ -799,6 +799,11 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       <div><div class="univ-val" id="univ_compras">-</div><div class="univ-lbl">Frete Compras</div></div>
     </div>
     <div class="univ-sep"></div>
+    <div class="univ-item" title="CT-e de devolução de venda — mercadoria que a própria Humana vendeu e o cliente devolveu (CFOP 5202/6202). Esses fretes não entram nos KPIs principais — ficam na aba Devolução Venda.">
+      <span class="univ-ico"><i class="fa-solid fa-rotate-left" style="color:var(--amber)"></i></span>
+      <div><div class="univ-val" id="univ_devvenda">-</div><div class="univ-lbl">Devolução Venda</div></div>
+    </div>
+    <div class="univ-sep"></div>
     <div class="univ-item" title="CT-e de devoluções via marketplaces (Shopee, Mercado Livre, TikTok Shop). Esses fretes não entram nos KPIs principais — ficam na aba Devoluções Marketplace.">
       <span class="univ-ico"><i class="fa-solid fa-rotate-left" style="color:var(--purple)"></i></span>
       <div><div class="univ-val" id="univ_devmkt">-</div><div class="univ-lbl">Devoluções Marketplace</div></div>
@@ -2926,6 +2931,7 @@ function renderUniverso(){
   _s('univ_cte', r.total_cte||0);
   _s('univ_nfe_fat', r.nfe_fat_periodo||0);
   _s('univ_compras', (DATA.compras||[]).length);
+  _s('univ_devvenda', (DATA.devolucao_venda||[]).length);
   _s('univ_devmkt', (DATA.devolucoes_mkt||[]).length);
   _s('univ_delivery', (DATA.delivery||[]).length);
 }
@@ -4810,7 +4816,7 @@ function initApp(){
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+orig+'</td>'
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+dest+'</td>'
         +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+esc(d.transportadora||'')+'">'+esc(d.transportadora||'--')+'</td>'
-        +'<td style="padding:7px 10px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
+        +'<td style="padding:7px 10px;max-width:170px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(d.total_nf?BRL(d.total_nf):'<span style="color:var(--text3)">-</span>')+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+N(Math.round(d.peso_kg))+'</td>'
@@ -4896,7 +4902,7 @@ function initApp(){
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+orig+'</td>'
         +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+dest+'</td>'
         +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+esc(d.transportadora||'')+'">'+esc(d.transportadora||'--')+'</td>'
-        +'<td style="padding:7px 10px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
+        +'<td style="padding:7px 10px;max-width:170px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
         +'<td style="padding:7px 10px;white-space:nowrap"><span class="chip chip-amber" style="font-size:10px;font-weight:700;font-family:monospace" title="'+esc(d.nat_desc||'')+'">'+esc(d.cfop||'-')+'</span></td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
         +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(d.total_nf?BRL(d.total_nf):'<span style="color:var(--text3)">-</span>')+'</td>'

@@ -190,6 +190,7 @@ Faixa compacta no topo da aba Visão Geral (antes do `.hero-grid`) mostrando o v
 | `univ_cte` | `r.total_cte` | CT-e baixados |
 | `univ_nfe_fat` | `r.nfe_fat_periodo` | NF-e de faturamento |
 | `univ_compras` | `DATA.compras.length` | NF de entrada (compras) |
+| `univ_devvenda` | `DATA.devolucao_venda.length` | Devolução de Venda (CFOP 5202/6202) |
 | `univ_devmkt` | `DATA.devolucoes_mkt.length` | Devoluções Marketplace |
 | `univ_delivery` | `DATA.delivery.length` | NFS-e de entregadores |
 
