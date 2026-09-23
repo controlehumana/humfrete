@@ -4801,11 +4801,20 @@ function initApp(){
   // aplicam a mesma restricao por empresa do Firestore). Nem toda NF-e tem
   // DANFE ainda (backfill em andamento ou nota fora da base da Qive) -- nesse
   // caso o erro e 'storage/object-not-found', tratado como aviso normal.
+  //
+  // A aba tem que abrir ANTES do await: getDownloadURL() e assincrono, e um
+  // window.open() chamado só depois que a Promise resolve perde a associacao
+  // com o clique do usuario -- o navegador bloqueia como popup, em silencio,
+  // sem erro no console e sem cair no .catch(). Por isso abre uma aba em
+  // branco na hora do clique e só troca o location dela quando a URL chega.
   window.verDanfe=function(chave,empresa){
     if(!empresa){ showToast('Empresa não identificada para esta NF-e.','err'); return; }
+    const aba=window.open('','_blank');
+    if(aba) aba.document.write('Carregando DANFE...');
     firebase.storage().ref('danfe_compras/'+empresa+'/'+chave+'.pdf').getDownloadURL()
-      .then(url=>window.open(url,'_blank'))
+      .then(url=>{ if(aba) aba.location.href=url; else window.open(url,'_blank'); })
       .catch(err=>{
+        if(aba) aba.close();
         if(err && err.code==='storage/object-not-found') showToast('DANFE ainda não disponível para esta NF-e.','err');
         else showToast('Erro ao buscar DANFE.','err');
       });
