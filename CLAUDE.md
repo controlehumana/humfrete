@@ -135,6 +135,7 @@ const num = parseInt(ch.slice(25, 34));  // posições 25–33 = nNF/nCT
 CTe total (~58k)
   ├── Frete de Saída           → NF em nf_saida_items → 'detalhes'
   ├── Frete de Compra (NF Entrada) → vw_cte_nf_entrada → 'compras'
+  ├── Devolução de Venda (CFOP 5202/6202) → vw_cte_nf_devolucao → 'devolucao_venda'
   ├── Frete de Compra (dest CNPJ_MAP) → dest_cnpj Humana → 'compras'
   ├── Frete de Compra (tomador Humana) → rem_cnpj Humana + NF externa → 'compras'
   ├── Dev. Marketplace         → transportadora Shopee/ML/TikTok Shop → 'devolucoes_mkt'
@@ -143,6 +144,19 @@ CTe total (~58k)
 ```
 
 **'detalhes' inclui todas as nat_operacao de saída** — vendas, bonificações, transferências e demais. Não é exclusivo de vendas.
+
+### Devolução de Venda x Frete de Compra (set/2026)
+
+Nem todo CTe cujo destinatário é uma empresa Humana é uma compra nova. Caso real (NF 605, Cirúrgica Home Garça → Humana BRU1): a NF-e diz "0-Por conta do Remetente" mas o CT-e foi emitido com `toma3=3` (destinatário/Humana), então a transportadora cobrou a Humana mesmo assim — só que essa NF-e era `natOp: "Devolucao de compra"`, `CFOP: 5202`, referenciando (via `NFref`) uma venda anterior da própria Humana. Ou seja: a Humana não comprou nada, só recebeu de volta o que já tinha vendido.
+
+**`QUIVE/buscar_devolucao_venda.py`** resolve isso: para CT-e com destinatário Humana que ainda não tem NF de entrada capturada, busca a NF-e **direto pela chave** via `GET /v1/nfe/received?access_key[]=...` (endpoint v1, aceita lote de chaves — diferente do `/v2/dfe/nfe` usado pelo `buscar_nf_entrada.py`, que **não indexa** várias dessas notas mesmo filtrando pelo CNPJ/data corretos, testado e confirmado). Classifica:
+- CFOP `5202`/`6202` (ou `nat_desc` contém "devolu") → tabela `nf_devolucao_venda`, aba **Devolução Venda** do dashboard
+- Qualquer outro CFOP (compra legítima que só não tinha sido capturada ainda) → vai pra `nf_entrada` (mesmo formato do `buscar_nf_entrada.py` — estende a cobertura de 'compras' de graça)
+- Não encontrado na Qive → fica marcado em `nf_devolucao_venda` com `status='nao_encontrado'`, não tenta de novo toda hora
+
+`processar_frete.py` carrega `vw_cte_nf_devolucao` (join `cte_nf` + `nf_devolucao_venda` filtrado a `status='devolucao'`) **antes** do bucket "dest CNPJ_MAP" de compras, então esses CTe nunca chegam a cair em 'compras'. Payload novo: `devolucao_venda` (mesmo shape de `compras`, mais `cfop` e `nfe_ref_venda`).
+
+**Só cobre o gap, não é retroativo automático de tudo:** por enquanto só processa os CT-e que ainda não tinham `nf_entrada` — não refaz a classificação de CTe que já foram parar em 'compras' antes desse script existir (não há como saber sem consultar a NF-e de cada um). Rodar `buscar_devolucao_venda.py` de novo eventualmente vai pegando o que ainda falta.
 
 ### Campos do payload `ctes_nao_vinculados`
 ```python
