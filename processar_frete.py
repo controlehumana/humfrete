@@ -3004,11 +3004,11 @@ header{
       <table id="comp_table" style="width:100%;border-collapse:collapse;font-size:11px">
         <thead>
           <tr style="border-bottom:1px solid var(--bd)">
+            <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th>
             <th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th>
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Fornecedor (Remetente)</th>
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Origem</th>
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th>
-            <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th>
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Transportadora</th>
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th>
             <th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th>
@@ -4711,11 +4711,11 @@ function renderCompras(){
       +((d.nfe_refs||[]).length>3?`<span style="font-size:9px;color:var(--text3)"> +${(d.nfe_refs||[]).length-3}</span>`:'');
     const data=(d.data_emissao||'').slice(0,10)||'—';
     return '<tr style="border-bottom:1px solid var(--row-border)">'
+      +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+(d.empresa_dest||'?')+'</span></td>'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+data+'</td>'
       +'<td style="padding:7px 10px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+(d.rem_nome||'')+'">'+( d.rem_nome||'<span style="color:var(--text3)">—</span>')+'</td>'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+orig+'</td>'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+dest+'</td>'
-      +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+(d.empresa_dest||'?')+'</span></td>'
       +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+(d.transportadora||'')+'">'+( d.transportadora||'—')+'</td>'
       +'<td style="padding:7px 10px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
