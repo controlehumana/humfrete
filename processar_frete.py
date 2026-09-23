@@ -1331,7 +1331,7 @@ def _carregar_cobertura_volumetria():
         return {}
 
 
-def montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados, cobertura):
+def montar_dre(detalhes, delivery, compras, devolucoes_mkt, devolucao_venda, ctes_nao_vinculados, cobertura):
     """Agrega o DRE Logístico — custo de frete por empresa/ano/mês, canal e transportadora.
 
     Reusa a classificação de CT-e que `cruzar()` já fez (`detalhes`, `compras`,
@@ -1355,10 +1355,10 @@ def montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados,
         k = f"{emp}|{ano}|{mes}"
         if k not in dre:
             dre[k] = {"cte_saida": 0.0, "cte_mkt": 0.0, "cte_transf": 0.0, "delivery": 0.0,
-                      "dev_mkt": 0.0, "sem_vinculo": 0.0, "compras": 0.0,
+                      "dev_mkt": 0.0, "sem_vinculo": 0.0, "compras": 0.0, "devolucao_venda": 0.0,
                       "frete_cobrado": 0.0, "gratis": 0.0, "gratis_qtd": 0,
                       "cte_saida_n": 0, "cte_mkt_n": 0, "cte_transf_n": 0,
-                      "delivery_n": 0, "dev_mkt_n": 0, "sem_vinculo_n": 0}
+                      "delivery_n": 0, "dev_mkt_n": 0, "sem_vinculo_n": 0, "devolucao_venda_n": 0}
             vistos[k] = {"cte_saida": set(), "cte_mkt": set(), "cte_transf": set()}
         return dre[k], vistos[k]
 
@@ -1431,6 +1431,16 @@ def montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados,
         s, _ = _slot(emp, ano, mes)
         s["compras"] += d.get("valor_frete") or 0
 
+    for d in devolucao_venda:
+        emp = d.get("empresa_dest") or ""
+        data = d.get("data_emissao") or ""
+        ano, mes = data[-4:], data[3:5]
+        if not (emp and len(ano) == 4 and len(mes) == 2):
+            continue
+        s, _ = _slot(emp, ano, mes)
+        s["devolucao_venda"] += d.get("valor_frete") or 0
+        s["devolucao_venda_n"] += 1
+
     for d in ctes_nao_vinculados:
         emp = CNPJ_MAP.get(d.get("dest_cnpj") or "") or CNPJ_MAP.get(d.get("rem_cnpj") or "") or ""
         data = d.get("data_emissao") or ""
@@ -1447,7 +1457,7 @@ def montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados,
                   "com_nfse": cob.get("com_nfse", 0), "buraco": cob.get("buraco", 0),
                   "sem_transp": cob.get("sem_transp", 0), "peso_doc": cob.get("peso_doc", 0)})
         for c in ("cte_saida", "cte_mkt", "cte_transf", "delivery", "dev_mkt",
-                  "sem_vinculo", "compras", "frete_cobrado", "gratis"):
+                  "sem_vinculo", "compras", "devolucao_venda", "frete_cobrado", "gratis"):
             s[c] = round(s[c], 2)
     for v in canal_ag.values():
         v["frete"] = round(v["frete"], 2)
@@ -1948,7 +1958,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         k: {"total": _cte_tot_eam[k], "nao_vinculados": _cte_nv_eam.get(k, 0)}
         for k in _cte_tot_eam
     }
-    _dre = montar_dre(detalhes, delivery, compras, devolucoes_mkt, ctes_nao_vinculados,
+    _dre = montar_dre(detalhes, delivery, compras, devolucoes_mkt, devolucao_venda, ctes_nao_vinculados,
                       _carregar_cobertura_volumetria())
     return {
         "gerado_em":datetime.now().strftime("%d/%m/%Y %H:%M"),

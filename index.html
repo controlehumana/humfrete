@@ -5707,9 +5707,9 @@ function initApp(){
   }
   function _dreAgg(keys){
     const o={cte_saida:0,cte_mkt:0,cte_transf:0,delivery:0,dev_mkt:0,sem_vinculo:0,
-             compras:0,frete_cobrado:0,gratis:0,gratis_qtd:0,entregas:0,com_cte:0,
+             compras:0,devolucao_venda:0,frete_cobrado:0,gratis:0,gratis_qtd:0,entregas:0,com_cte:0,
              com_nfse:0,buraco:0,sem_transp:0,peso_doc:0,
-             cte_saida_n:0,cte_mkt_n:0,cte_transf_n:0,delivery_n:0,dev_mkt_n:0,sem_vinculo_n:0};
+             cte_saida_n:0,cte_mkt_n:0,cte_transf_n:0,delivery_n:0,dev_mkt_n:0,sem_vinculo_n:0,devolucao_venda_n:0};
     keys.forEach(k=>{const r=DATA.dre[k]||{};for(const c in o) if(typeof r[c]==='number') o[c]+=r[c];});
     // cte_venda = saida menos os subconjuntos; total NAO soma mkt/transf por fora
     o.cte_venda=Math.max(0,o.cte_saida-o.cte_mkt-o.cte_transf);
@@ -5771,7 +5771,8 @@ function initApp(){
 
     const S=(id,txt,html)=>{const el=document.getElementById(id);if(el){if(html)el.innerHTML=txt;else el.textContent=txt;}};
     S('dre_k_tot',_dreB(A.log));
-    S('dre_k_tot_sub','distribuição · mais '+_dreB(A.compras)+' de frete sobre compras');
+    S('dre_k_tot_sub','distribuição · mais '+_dreB(A.compras)+' de frete sobre compras'
+      +(A.devolucao_venda?' e '+_dreB(A.devolucao_venda)+' de devolução de venda':''));
     S('dre_k_tot_tr',P&&P.a.log?(()=>{const d=(A.log-P.a.log)/P.a.log*100;
       return `<span class="dre-dlt ${d>0?'up':'dn'}" style="margin-top:6px;display:inline-block">${
         d>0?'▲':'▼'} ${Math.abs(d).toFixed(1).replace('.',',')}% vs ${esc(P.lbl)}</span>`;})():'',true);
@@ -5802,8 +5803,9 @@ function initApp(){
      +L('CT-e sem identificação',A.sem_vinculo,A.log,'',0)
      +L('= Custo de Distribuição',A.log,A.log,'sum')
      +L('Frete sobre compras (entra no CMV)',A.compras,A.log,'',1)
+     +L('Frete de Devolução de Venda',A.devolucao_venda,A.log,'',1)
      +L('Recuperado do cliente',A.frete_cobrado,A.log,'',1,null,1)
-     +L('= Custo Líquido de Frete',A.log+A.compras-A.frete_cobrado,null,'res')
+     +L('= Custo Líquido de Frete',A.log+A.compras+A.devolucao_venda-A.frete_cobrado,null,'res')
      +`<tr><td colspan="3" style="padding-top:12px;border:none"><div class="dre-leia" style="margin:0">`
      +`<b>Frete grátis:</b> ${_dreB(A.gratis)} do custo acima (<b>${_dreP(A.gratis,A.log)}</b>) veio de `
      +`${N(A.gratis_qtd)} entregas em que <b>nada foi cobrado</b> do cliente. É política comercial, `
@@ -6071,8 +6073,9 @@ function initApp(){
       {Linha:'CT-e sem identificação',Valor:M(A.sem_vinculo),'% do custo':_dreP(A.sem_vinculo,A.log),'vs anterior (%)':varPct('sem_vinculo')},
       {Linha:'= Custo de Distribuição',Valor:M(A.log),'% do custo':'100%','vs anterior (%)':varPct('log')},
       {Linha:'Frete sobre compras (entra no CMV)',Valor:M(A.compras),'% do custo':_dreP(A.compras,A.log),'vs anterior (%)':varPct('compras')},
+      {Linha:'Frete de Devolução de Venda',Valor:M(A.devolucao_venda),'% do custo':_dreP(A.devolucao_venda,A.log),'vs anterior (%)':varPct('devolucao_venda')},
       {Linha:'Recuperado do cliente',Valor:M(A.frete_cobrado),'% do custo':_dreP(A.frete_cobrado,A.log),'vs anterior (%)':varPct('frete_cobrado')},
-      {Linha:'= Custo Líquido de Frete',Valor:M(A.log+A.compras-A.frete_cobrado),'% do custo':'','vs anterior (%)':''},
+      {Linha:'= Custo Líquido de Frete',Valor:M(A.log+A.compras+A.devolucao_venda-A.frete_cobrado),'% do custo':'','vs anterior (%)':''},
       {Linha:'',Valor:'','% do custo':'','vs anterior (%)':''},
       {Linha:'Frete grátis (nada cobrado do cliente)',Valor:M(A.gratis),'% do custo':_dreP(A.gratis,A.log),'vs anterior (%)':varPct('gratis')},
       {Linha:'Entregas com custo documentado',Valor:A.doc,'% do custo':'','vs anterior (%)':''},
@@ -6090,6 +6093,7 @@ function initApp(){
         'Venda a cliente':M(r.cte_venda),'Marketplace':M(r.cte_mkt),'Transferência':M(r.cte_transf),
         'Delivery':M(r.delivery),'Devoluções MKT':M(r.dev_mkt),'Sem identificação':M(r.sem_vinculo),
         'Custo de Distribuição':M(r.log),'Frete de Compras':M(r.compras),
+        'Frete de Devolução de Venda':M(r.devolucao_venda),
         'Recuperado do cliente':M(r.frete_cobrado),'Frete grátis':M(r.gratis),
         'Entregas documentadas':r.doc,'Entregas na Volumetria':r.entregas,
         'Peso (kg)':M(r.peso_doc),
@@ -6117,7 +6121,7 @@ function initApp(){
     };
     add('DRE Consolidado',cons,['Valor']);
     add('Unidade x Mes',det,['Frete Saída CT-e','Venda a cliente','Marketplace','Transferência','Delivery',
-      'Devoluções MKT','Sem identificação','Custo de Distribuição','Frete de Compras',
+      'Devoluções MKT','Sem identificação','Custo de Distribuição','Frete de Compras','Frete de Devolução de Venda',
       'Recuperado do cliente','Frete grátis','Custo por entrega','Custo por quilo']);
     add('Por Canal',canais,['Frete','Frete por NF-e']);
     add('Por Transportadora',transps,['Frete','Frete médio']);
