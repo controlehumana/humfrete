@@ -2904,8 +2904,9 @@ header{
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Transportadora</th>
             <th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th>
             <th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th>
+            <th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor NF</th>
             <th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th>
-            <th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Vol. (m³)</th>
+            <th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">% Frete</th>
           </tr>
         </thead>
         <tbody id="comp_tbody"></tbody>
@@ -4600,7 +4601,6 @@ function renderCompras(){
     const dest=(d.destino_cidade||'?')+(d.destino_uf?'/'+d.destino_uf:'');
     const nfeChips=(d.nfe_refs||[]).slice(0,3).map(ch=>`<span class="chip chip-gray" style="font-size:9px;font-family:monospace" title="${ch}">${ch.slice(25,34)}…</span>`).join(' ')
       +((d.nfe_refs||[]).length>3?`<span style="font-size:9px;color:var(--text3)"> +${(d.nfe_refs||[]).length-3}</span>`:'');
-    const vol=d.volume_m3?d.volume_m3.toFixed(3):'—';
     const data=(d.data_emissao||'').slice(0,10)||'—';
     return '<tr style="border-bottom:1px solid var(--row-border)">'
       +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+data+'</td>'
@@ -4611,8 +4611,9 @@ function renderCompras(){
       +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+(d.transportadora||'')+'">'+( d.transportadora||'—')+'</td>'
       +'<td style="padding:7px 10px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(d.total_nf?BRL(d.total_nf):'<span style="color:var(--text3)">—</span>')+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+N(Math.round(d.peso_kg))+'</td>'
-      +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+vol+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;white-space:nowrap">'+pctBarInline(d.valor_frete,d.total_nf,d.nat_desc)+'</td>'
       +'</tr>';
   }).join('');
   mkPager(rows.length,compPage,PAGE,'comp_pager',pg=>{compPage=pg;renderCompras();});
