@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helpers -- mesmo padrao de firestore.rules, so que lendo o perfil do
+    // usuario via chamada cross-service (Storage Rules -> Firestore).
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+    function isAdmin() {
+      return request.auth != null && userDoc().isAdmin == true;
+    }
+
+    // DANFE das NF de compra (botao "Ver DANFE" na aba Frete Compras).
+    // Caminho: danfe_compras/{empresa}/{chave}.pdf -- publicado por
+    // QUIVE/buscar_danfe_compras.py via SDK Admin. Mesma regra de acesso por
+    // empresa do Firestore (dados/{doc}): usuario com acesso aquela empresa
+    // ou admin.
+    match /danfe_compras/{empresa}/{arquivo} {
+      allow read: if request.auth != null && (
+        isAdmin() || empresa in userDoc().empresas
+      );
+      allow write: if false; // apenas via SDK Admin (buscar_danfe_compras.py)
+    }
+  }
+}
