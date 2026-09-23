@@ -115,7 +115,7 @@ def _parse_single_fat(fat_file, nfe_map, force_empresa=None):
             if not empresa and force_empresa: empresa=force_empresa
             if not empresa: empresa=chave[6:20]
             nfe_map[chave]={
-                "chave":chave,"empresa":empresa,"numero":get(row,"NUMERO"),
+                "chave":chave,"empresa":empresa,"numero":get(row,"NUMERO"),"pedido":get(row,"Pedido"),
                 "canal":get(row,"Canal"),"nicho":get(row,"Nicho"),"data_emissao":get(row,"Data Emissao"),
                 "participante":get(row,"Participante"),"cidade":get(row,"Participante Cidade"),
                 "estado":get(row,"Participante Estado"),"part_cnpj":get(row,"CPF_CNPJ Participante"),
@@ -162,6 +162,7 @@ def _parse_faturamento_db():
                 "chave":           chave,
                 "empresa":         r["empresa"] or CNPJ_MAP.get(chave[6:20], ""),
                 "numero":          r["numero"],
+                "pedido":          r["pedido"] if "pedido" in r.keys() else "",
                 "canal":           r["canal"],
                 "nicho":           r["nicho"] or "",
                 "data_emissao":    r["data_emissao"],
@@ -1485,7 +1486,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 frete_cobrado=round(nfe["vlr_frete_nf"],2)
                 diferenca=round(frete_cobrado-frete_rateado,2)
                 detalhes.append({
-                    "chave_nfe":nfe["chave"],"empresa":nfe["empresa"],"numero":nfe["numero"],
+                    "chave_nfe":nfe["chave"],"empresa":nfe["empresa"],"numero":nfe["numero"],"pedido":nfe.get("pedido") or "",
                     "data":nfe["data_emissao"],"canal":nfe["canal"],"nicho":nfe.get("nicho") or "","nat_operacao":nfe["nat_operacao"],
                     "cliente":nfe["participante"],"cidade":nfe["cidade"],"estado":nfe["estado"],
                     "part_cnpj":nfe["part_cnpj"],"cod_nat_operacao":nfe["cod_nat_operacao"],
@@ -2627,7 +2628,7 @@ header{
     <div class="tw dtbl" id="details_wrap" style="max-height:70vh;overflow-y:auto">
       <table>
         <thead><tr>
-          <th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th>
+          <th>Empresa</th><th>Linha</th><th>NF</th><th>Pedido</th><th>Data</th><th>Canal</th>
           <th class="sort-th" id="th_total_nf" onclick="sortBy('total_nf')">Total NF</th>
           <th class="sort-th" id="th_valor_frete" onclick="sortBy('valor_frete')">Valor Frete</th>
           <th class="sort-th" id="th_pct" onclick="sortBy('pct')">%Fr/Venda</th>
@@ -3914,7 +3915,7 @@ function toggleRateioDetail(trId,cteChave,curNfe){
       +'<td style="min-width:100px;padding:5px 10px"><div style="height:4px;border-radius:2px;background:#1E2D42"><div style="height:100%;border-radius:2px;background:var(--amber);width:'+bw+'%"></div></div></td>'
       +'</tr>';
   }).join('');
-  const panel='<tr id="'+detId+'" style="background:#080D18"><td colspan="19" style="padding:0">'
+  const panel='<tr id="'+detId+'" style="background:#080D18"><td colspan="20" style="padding:0">'
     +'<div style="background:#0A1525;border-left:3px solid var(--amber);padding:14px 18px;margin:0 0 2px 0">'
     +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap">'
     +'<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--amber)"><i class="fa-solid fa-truck"></i> Rateio do CTe</span>'
@@ -3948,6 +3949,7 @@ function mkDetailRow(d,rowId){
     +'<td><strong>'+(d.empresa||'-')+'</strong></td>'
     +'<td>'+linhaTag(d.linha)+'</td>'
     +'<td style="font-family:monospace;font-size:10px">'+(d.numero||'-')+'</td>'
+    +'<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+(d.pedido||'-')+'</td>'
     +'<td>'+(d.data||'-')+'</td><td>'+(d.canal||'-')+'</td>'
     +'<td style="color:var(--text);font-weight:600">'+BRL(d.total_nf)+'</td>'
     +'<td style="color:var(--blue2);font-weight:600;white-space:nowrap">'+BRL(d.valor_frete)+rateioBtn+'</td>'

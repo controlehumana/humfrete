@@ -255,6 +255,11 @@ Efeitos do cleanup:
 - Quando `difCom < 0`: card label "Diferença de Frete ao Cliente — Deixamos de Cobrar" (vermelho), exibe `Math.abs(difCom)`
 - Para validar manualmente: exportar aba Operacional com filtro **"Todos"** (não "Saldo Negativo") e somar a coluna Saldo — resultado deve bater com o card. Se exportado com `opSaldoFilter='NEG'`, o total da planilha excluirá as linhas de saldo positivo e não baterá com o card (que é posição líquida).
 
+### Coluna "Pedido" na aba Operacional (set/2026)
+O CSV de Faturamento sempre teve a coluna `Pedido` (nº do pedido de venda no ERP), mas ela nunca foi capturada. Agora: `importar_faturamento.py` lê `Pedido` → coluna `nf_saida_items.pedido` (com `ALTER TABLE` guardado por `PRAGMA table_info` para bancos já existentes) → `vw_nf_saida.pedido` → `processar_frete.py` propaga em `nfe_map`/`detalhes` → `index.html` exibe uma coluna `Pedido` logo após `NF` na tabela (e no export Excel). Escopo **só a aba Operacional** — não replicado em Marketplace/Compras/Delivery/etc.
+- **Sem backfill histórico:** NF-e já importadas antes dessa mudança ficam com `pedido` vazio — só os CSVs de Faturamento arquivados em `exports/` (jul–set/2026) teriam o dado, e decidiu-se não reprocessá-los. NF-e novas trazem o Pedido normalmente a partir da próxima importação.
+- **Atenção ao mexer na tabela Operacional:** o `colspan` do painel de detalhe do Rateio (`toggleRateioDetail`) foi ajustado de 19→20 por causa da coluna nova — se adicionar/remover coluna da tabela principal de novo, reajustar esse colspan também (existe em **dois lugares**: `index.html` e o `HTML_TEMPLATE` espelhado em `processar_frete.py`).
+
 ### Filtro de Saldo na aba Operacional
 Botões Todos / Saldo Positivo / Saldo Negativo / Sem Cobrança acima da tabela. Controlado por `opSaldoFilter` (global) via `setOpSaldoFilter(val)`. Tanto `renderTable()` quanto `opExportXLSX()` usam `opSaldoFilteredRows()` em vez de `tableRows` diretamente — **o export reflete o filtro de saldo ativo no momento**.
 
