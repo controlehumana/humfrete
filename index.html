@@ -1098,7 +1098,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
       </div>
       <input type="text" id="mkt_search" placeholder="Buscar NF, transportadora, destino..." class="hd-filter-item" style="flex:1;min-width:160px;cursor:text">
     </div>
-    <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th><th>Total NF</th><th title="Valor pago pela empresa à transportadora pelo frete desta entrega (CT-e)">Valor Frete ⓘ</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th title="Valor de frete cobrado do cliente na nota fiscal de saída">Fr.Cobrado ⓘ</th><th title="Saldo = Frete Cobrado − Valor Frete. Positivo: empresa repassou mais do que pagou. Negativo: empresa subsidiou parte do frete.">Saldo ⓘ</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
+    <div class="tw dtbl" id="mkt_wrap" style="max-height:70vh;overflow-y:auto"><table><thead><tr><th>Empresa</th><th>Linha</th><th>NF</th><th>Pedido</th><th>Data</th><th>Canal</th><th>Total NF</th><th title="Valor pago pela empresa à transportadora pelo frete desta entrega (CT-e)">Valor Frete ⓘ</th><th>%Fr/Venda</th><th>Linhahum</th><th>Humana</th><th title="Valor de frete cobrado do cliente na nota fiscal de saída">Fr.Cobrado ⓘ</th><th title="Saldo = Frete Cobrado − Valor Frete. Positivo: empresa repassou mais do que pagou. Negativo: empresa subsidiou parte do frete.">Saldo ⓘ</th><th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th><th>Transportadora</th><th>Origem</th><th>Destino</th><th>Peso(kg)</th><th title="Ver espelho da NF-e">Espelho</th></tr></thead><tbody id="mkt_tbody"></tbody></table></div>
     <div class="pager" id="mkt_pager"></div>
   </div>
 </div>
@@ -3360,8 +3360,9 @@ function renderMktTable(){
       ||(d.empresa||'').toLowerCase().includes(q)
       ||(d.canal||'').toLowerCase().includes(q);
   });}
+  window._opRows=filtered;
   const slice=filtered.slice(mktPage*PAGE,mktPage*PAGE+PAGE);
-  tbody.innerHTML=slice.map(d=>mkDetailRow(d)).join('');
+  tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'mr'+(mktPage*PAGE+i),mktPage*PAGE+i)).join('');
   mkPager(filtered.length,mktPage,PAGE,'mkt_pager',pg=>{mktPage=pg;renderMktTable();});
 }
 

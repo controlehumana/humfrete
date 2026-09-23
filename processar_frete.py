@@ -2704,7 +2704,7 @@ header{
     <div class="tw dtbl" id="mkt_wrap">
       <table>
         <thead><tr>
-          <th>Empresa</th><th>Linha</th><th>NF</th><th>Data</th><th>Canal</th>
+          <th>Empresa</th><th>Linha</th><th>NF</th><th>Pedido</th><th>Data</th><th>Canal</th>
           <th>Total NF</th><th>Valor Frete</th><th>%Fr/Venda</th>
           <th>Linhahum</th><th>Humana</th><th>Fr.Cobrado</th><th>Saldo</th>
           <th>Frete LH</th><th>Frete HU</th><th>Qtd NF/CTe</th>
@@ -4076,7 +4076,7 @@ function renderMktTable(){
   const tbody=document.getElementById('mkt_tbody');
   const filtered=mktFilterVal==='SHOPEE'?mktRows.filter(d=>d.marketplace_type==='shopee'):mktFilterVal==='MERCADO LIVRE'?mktRows.filter(d=>d.marketplace_type==='ml'):mktFilterVal==='TIKTOK SHOP'?mktRows.filter(d=>d.marketplace_type==='tiktok'):mktRows;
   const slice=filtered.slice(mktPage*PAGE,mktPage*PAGE+PAGE);
-  tbody.innerHTML=slice.map(d=>mkDetailRow(d)).join('');
+  tbody.innerHTML=slice.map((d,i)=>mkDetailRow(d,'mr'+(mktPage*PAGE+i))).join('');
   mkPager(filtered.length,mktPage,PAGE,'mkt_pager',pg=>{mktPage=pg;renderMktTable();});
 }
 
