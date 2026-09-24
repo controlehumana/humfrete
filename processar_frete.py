@@ -706,6 +706,47 @@ def _carregar_nf_devolucao_venda():
         return {}
 
 
+def _carregar_nf_devolucao_compra():
+    """Espelha _carregar_nf_devolucao_venda(), mas para status='compra' --
+    Humana devolvendo mercadoria PRO FORNECEDOR (nat_desc "DEVOLUCAO DE
+    COMPRAS" e variantes), não uma compra nova nem uma devolução de venda.
+    Pedido do usuário (2026-09-24): módulo próprio pra visualizar esse
+    custo separado, em vez de ficar misturado dentro de 'compras' (onde
+    caía sem nenhuma marca até essa data). Não usa view pré-criada no QUIVE
+    (só a 'devolucao' tem vw_cte_nf_devolucao) -- SQL direto, mesmo shape.
+    Retorna dict: cte_chave -> lista de dicts com dados da NF de devolução."""
+    if not os.path.exists(QUIVE_DB):
+        return {}
+    try:
+        conn = sqlite3.connect(QUIVE_DB)
+        conn.row_factory = sqlite3.Row
+        cur  = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nf_devolucao_venda'")
+        if not cur.fetchone():
+            conn.close(); return {}
+        cur.execute("""
+            SELECT cn.chave_cte, cn.chave_nfe,
+                   nd.empresa, nd.emit_cnpj, nd.emit_nome, nd.dt_emissao,
+                   nd.numero AS numero_nfe, nd.cfop, nd.nat_desc, nd.total_nf, nd.nfe_ref_venda
+            FROM cte_nf cn
+            JOIN nf_devolucao_venda nd ON cn.chave_nfe = nd.chave
+            WHERE nd.status = 'compra'
+        """)
+        rows = cur.fetchall()
+        conn.close()
+        resultado = {}
+        for r in rows:
+            chave_cte = r["chave_cte"]
+            if chave_cte not in resultado:
+                resultado[chave_cte] = []
+            resultado[chave_cte].append(dict(r))
+        print(f"   NF de Devolução de Compra: {len(rows)} vínculos CTe×NF ({len(resultado)} CTe únicos)")
+        return resultado
+    except Exception as e:
+        print(f"   [AVISO] Não foi possível carregar nf_devolucao_compra: {e}")
+        return {}
+
+
 # Entregadores que sao a mesma operacao de entrega, faturando por CNPJs
 # diferentes (confirmado pelo usuario) -- mapeia pro nome combinado, pra
 # aparecerem como um so em toda a aba Delivery (ranking, detalhe, matriz de
@@ -1611,6 +1652,8 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
     nf_entrada_chaves = set(nf_entrada_map.keys())   # CTe identificados como compras
     nf_devolucao_map = _carregar_nf_devolucao_venda()      # cte_chave -> [nf_data, ...]
     nf_devolucao_chaves = set(nf_devolucao_map.keys())     # CTe identificados como devolução de venda
+    nf_devolucao_compra_map = _carregar_nf_devolucao_compra()   # cte_chave -> [nf_data, ...]
+    nf_devolucao_compra_chaves = set(nf_devolucao_compra_map.keys())  # CTe identificados como devolução de compra
     delivery = _carregar_nfse_entregadores()         # NFS-e dos entregadores (módulo Delivery)
     volumetria_entregadores = _carregar_volumetria_entregadores()  # NF-e/peso entregues por entregador (módulo Delivery)
     volumetria_detalhe = _carregar_volumetria_detalhe()  # detalhe por NF-e (cliente/cidade/UF) das entregas de entregadores
@@ -1685,7 +1728,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         if "TIKTOK" in t: return "tiktok"
         if "AMAZON" in t: return "amazon"   # manter em sincronia com _marketplace_type
         return None
-    compras=[]; devolucoes_mkt=[]; devolucao_venda=list(devolucao_venda_fat)
+    compras=[]; devolucoes_mkt=[]; devolucao_venda=list(devolucao_venda_fat); devolucao_compra=[]
     # Compras via NF de Entrada (fonte primária — mais completa)
     ctes_adicionados_compras = set()
     CFOP_DEVOLUCAO = {"5202", "6202"}
@@ -1719,6 +1762,9 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             if eh_devolucao:
                 row["cfop"] = nf.get("cfop","")
                 devolucao_venda.append(row)
+            elif _cat_nf == "compra":
+                row["cfop"] = nf.get("cfop","")
+                devolucao_compra.append(row)
             else:
                 row["fornecedor_cnpj"] = nf.get("emit_cnpj","")
                 row["frete_nf"] = sum(n.get("frete_nf",0) for n in nfs)
@@ -1751,6 +1797,35 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 "cfop":         nf.get("cfop",""),
                 "nat_desc":     nf.get("nat_desc",""),
                 "nfe_ref_venda":nf.get("nfe_ref_venda",""),
+            })
+            ctes_adicionados_compras.add(cte["cte_chave"])
+    # Devolução de compra: CT-e cujo destinatário é empresa Humana mas a NF-e
+    # referenciada é a própria Humana devolvendo mercadoria pro fornecedor
+    # (nat_desc "DEVOLUCAO DE COMPRAS" etc.) -- não é aquisição nova nem
+    # devolução de venda. Pedido do usuário (2026-09-24): módulo próprio.
+    # Mesma ordem/motivo do bloco de devolução de venda acima.
+    for cte in cte_list:
+        if cte["cte_chave"] in linked_cte_chaves: continue
+        if cte["cte_chave"] in ctes_adicionados_compras: continue
+        if cte["cte_chave"] in nf_devolucao_compra_chaves:
+            nfs = nf_devolucao_compra_map[cte["cte_chave"]]
+            nf  = nfs[0]
+            devolucao_compra.append({
+                "cte_chave":    cte["cte_chave"],
+                "transportadora": cte["transportadora"],
+                "data_emissao": fmt_date(cte["data_emissao"]),
+                "rem_nome":     nf.get("emit_nome") or cte["rem_nome"],
+                "origem_cidade":cte["origem_cidade"],"origem_uf":cte["origem_uf"],
+                "destino_cidade":cte["destino_cidade"],"destino_uf":cte["destino_uf"],
+                "empresa_dest": nf.get("empresa") or CNPJ_MAP.get(cte["dest_cnpj"],""),
+                "valor_frete":  cte["valor_frete"],
+                "nfe_refs":     cte["nfe_chaves"],
+                "peso_kg":      cte["peso_kg"], "volume_m3": cte["volume_m3"],
+                "cliente_cnpj": nf.get("emit_cnpj",""),
+                "numero_nfe":   nf.get("numero_nfe",""),
+                "total_nf":     sum(n.get("total_nf",0) for n in nfs),
+                "cfop":         nf.get("cfop",""),
+                "nat_desc":     nf.get("nat_desc",""),
             })
             ctes_adicionados_compras.add(cte["cte_chave"])
     for cte in cte_list:
@@ -1792,6 +1867,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         })
         ctes_adicionados_compras.add(cte["cte_chave"])
     print(f"   CTe de compra (frete entrada): {len(compras)}")
+    print(f"   CTe devolução de compra: {len(devolucao_compra)}")
     print(f"   CTe devolução marketplace: {len(devolucoes_mkt)}")
     # Diagnóstico: nat_operacao + cod_nat por empresa — de detalhes (NF-e com CTe)
     _diag=defaultdict(lambda:defaultdict(int))
@@ -2007,7 +2083,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
         "transf_fat":transf_fat,"transf_sem_cte":transf_sem_cte_list,"transf_espelho":transf_espelho_list,"cnpj_map":CNPJ_MAP,
         "por_nat_op":make_list(por_nat_op),"nat_op_sem_cte":nat_op_sem_cte,"detalhes":detalhes,"ctes_nao_vinculados":ctes_nao_vinculados,
         "ctes_nf_cancelada":ctes_nf_cancelada,
-        "compras":compras,"devolucoes_mkt":devolucoes_mkt,"devolucao_venda":devolucao_venda,
+        "compras":compras,"devolucoes_mkt":devolucoes_mkt,"devolucao_venda":devolucao_venda,"devolucao_compra":devolucao_compra,
         "delivery":delivery,
         "volumetria_entregadores":volumetria_entregadores,
         "volumetria_detalhe":volumetria_detalhe,
@@ -4910,6 +4986,7 @@ def split_by_empresa(dados):
     empresas.update(d.get("empresa_dest","") for d in dados.get("compras",[]) if d.get("empresa_dest"))
     empresas.update(d.get("empresa_dest","") for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest"))
     empresas.update(d.get("empresa_dest","") for d in dados.get("devolucao_venda",[]) if d.get("empresa_dest"))
+    empresas.update(d.get("empresa_dest","") for d in dados.get("devolucao_compra",[]) if d.get("empresa_dest"))
     CNPJ_MAP_local = dados.get("cnpj_map", {})
     def _nv_emp(c):
         """Empresa tomadora de um CTe sem vínculo: rem_cnpj → primeira chave NF-e."""
@@ -4950,6 +5027,7 @@ def split_by_empresa(dados):
             "compras": [d for d in dados.get("compras",[]) if d.get("empresa_dest")==emp],
             "devolucoes_mkt": [d for d in dados.get("devolucoes_mkt",[]) if d.get("empresa_dest")==emp],
             "devolucao_venda": [d for d in dados.get("devolucao_venda",[]) if d.get("empresa_dest")==emp],
+            "devolucao_compra": [d for d in dados.get("devolucao_compra",[]) if d.get("empresa_dest")==emp],
             "delivery": [d for d in dados.get("delivery",[]) if d.get("empresa")==emp],
             "rastreio_status": [d for d in dados.get("rastreio_status",[]) if d.get("empresa")==emp],
             "volumetria_entregadores": [d for d in dados.get("volumetria_entregadores",[]) if d.get("empresa")==emp],

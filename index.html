@@ -693,6 +693,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
     <button class="tab-btn tab-highlight" data-tab="marketplace"><i data-lucide="shopping-cart"></i><span class="sb-label">Marketplace</span><span class="tab-badge" id="tb_mkt">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="compras"><i data-lucide="package"></i><span class="sb-label">Frete Compras</span><span class="tab-badge" id="tb_comp">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="devolucao-venda"><i data-lucide="undo-2"></i><span class="sb-label">Devolução Venda</span><span class="tab-badge" id="tb_devvenda">-</span></button>
+    <button class="tab-btn tab-highlight" data-tab="devolucao-compra"><i data-lucide="undo"></i><span class="sb-label">Devolução Compra</span><span class="tab-badge" id="tb_devcompra">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="delivery"><i data-lucide="truck"></i><span class="sb-label">Delivery</span><span class="tab-badge" id="tb_dlv">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="dev-mkt"><i data-lucide="corner-down-left"></i><span class="sb-label">Devoluções Marketplace</span><span class="tab-badge" id="tb_devmkt">-</span></button>
     <button class="tab-btn tab-highlight" data-tab="separacao"><i data-lucide="clipboard-list"></i><span class="sb-label">Separação</span><span class="tab-badge" id="tb_sep">-</span></button>
@@ -1513,6 +1514,31 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   </div>
 </div>
 
+<!-- TAB DEVOLUCAO COMPRA -->
+<div id="tab-devolucao-compra" class="tab-panel">
+  <div class="sdiv">Frete de Devolução de Compra - Mercadoria Retornando pro Fornecedor</div>
+  <div class="card" style="padding:14px 18px;margin-bottom:14px;border-left:3px solid var(--amber)">
+    <p style="font-size:11px;color:var(--text2);line-height:1.6;margin:0">Aqui a Humana não está comprando nada novo — é mercadoria que a própria Humana já tinha comprado e está devolvendo pro fornecedor (nat_desc "Devolução de Compras" e variantes). Diferente de <strong style="color:var(--text)">Frete Compras</strong>, que é aquisição nova, e de <strong style="color:var(--text)">Devolução Venda</strong>, que é cliente devolvendo o que a Humana vendeu.</p>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card"><div class="kpi-tooltip">Entregas de devolução de mercadoria comprada pela Humana e devolvida ao fornecedor.</div><div class="kpi-val" id="devc_qtd">-</div><div class="kpi-lbl">CTe de Devolução</div><div class="kpi-sub">documentos processados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total pago pra devolver mercadoria ao fornecedor no periodo.</div><div class="kpi-val" id="devc_frete">-</div><div class="kpi-lbl">Frete Total Devolução</div><div class="kpi-sub">pago a transportadora</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Total de mercadoria devolvida em quilogramas no periodo.</div><div class="kpi-val" id="devc_peso">-</div><div class="kpi-lbl">Peso Total</div><div class="kpi-sub">kg transportados</div></div>
+    <div class="kpi-card"><div class="kpi-tooltip">Custo medio por devolução ao fornecedor.</div><div class="kpi-val" id="devc_frete_medio">-</div><div class="kpi-lbl">Frete Medio</div><div class="kpi-sub">por CTe</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Detalhamento por CTe de Devolução<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Listagem detalhada de cada devolução de compra com o custo de frete identificado.</span></span></div>
+    <div class="sr"><input type="text" id="devc_search" placeholder="Buscar fornecedor, origem, transportadora, NF-e..."><select id="devc_sel_emp"><option value="">Todas as empresas</option></select><button class="btn-xlsx" onclick="if(window.devcExportXLSX)window.devcExportXLSX()" title="Exportar registros filtrados para Excel"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button></div>
+    <div class="tw dtbl" id="devc_wrap" style="max-height:70vh;overflow-y:auto;margin-top:10px">
+      <table id="devc_table" style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--bd)"><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Empresa</th><th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap">Data</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Fornecedor</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Origem</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Destino</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">Transportadora</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap">NF-e(s)</th><th style="padding:8px 10px;text-align:left;color:#475569;font-weight:600;white-space:nowrap" title="CFOP da NF-e de devolução">CFOP</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor Frete</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Valor NF</th><th style="padding:8px 10px;text-align:right;color:#475569;font-weight:600;white-space:nowrap">Peso (kg)</th></tr></thead>
+        <tbody id="devc_tbody"></tbody>
+      </table>
+    </div>
+    <div id="devc_pager" style="margin-top:10px"></div>
+  </div>
+</div>
+
 <!-- TAB DELIVERY -->
 <div id="tab-delivery" class="tab-panel">
   <div class="sdiv">Delivery - NFS-e dos Entregadores</div>
@@ -2210,6 +2236,7 @@ function _mergeData(datas) {
     compras: datas.flatMap(d=>d.compras||[]),
     devolucoes_mkt: datas.flatMap(d=>d.devolucoes_mkt||[]),
     devolucao_venda: datas.flatMap(d=>d.devolucao_venda||[]),
+    devolucao_compra: datas.flatMap(d=>d.devolucao_compra||[]),
     delivery: datas.flatMap(d=>d.delivery||[]),
     rastreio_status: datas.flatMap(d=>d.rastreio_status||[]),
     volumetria_entregadores: datas.flatMap(d=>d.volumetria_entregadores||[]),
@@ -4957,6 +4984,79 @@ function initApp(){
     XLSX.writeFile(wb,'frete_devolucao_venda_'+new Date().toISOString().slice(0,10)+'.xlsx');
   };
 
+  // ABA DEVOLUCAO COMPRA (mesma estrutura da Devolucao Venda acima)
+  let devcPage=0;
+  const devcInp=document.getElementById('devc_search');
+  const devcSelEmp=document.getElementById('devc_sel_emp');
+  (()=>{
+    const emps=[...new Set((DATA.devolucao_compra||[]).map(d=>d.empresa_dest).filter(Boolean))].sort();
+    emps.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;devcSelEmp.appendChild(o);});
+  })();
+  function devcFilter(){devcPage=0;renderDevolucaoCompra();}
+  function devcFilteredRows(){
+    const q=(devcInp.value||'').toLowerCase();
+    return (DATA.devolucao_compra||[]).filter(d=>{
+      const empOk=(!devcSelEmp.value||d.empresa_dest===devcSelEmp.value)
+                 &&(!state.empresas.length||state.empresas.includes(d.empresa_dest));
+      const anoOk=!state.ano||(d.data_emissao||'').slice(6,10)===state.ano;
+      const mesOk=!state.meses.length||state.meses.includes((d.data_emissao||'').slice(3,5));
+      const qOk=!q||(d.rem_nome||'').toLowerCase().includes(q)
+        ||(d.origem_cidade||'').toLowerCase().includes(q)
+        ||(d.transportadora||'').toLowerCase().includes(q)
+        ||(d.cte_chave||'').includes(q)
+        ||(d.nfe_refs||[]).some(n=>n.includes(q));
+      return empOk&&anoOk&&mesOk&&qOk;
+    });
+  }
+  function renderDevolucaoCompra(){
+    devcPage=0;
+    const rows=devcFilteredRows();
+    const totFrete=rows.reduce((s,d)=>s+d.valor_frete,0);
+    const totPeso=rows.reduce((s,d)=>s+d.peso_kg,0);
+    document.getElementById('devc_qtd').textContent=N(rows.length);
+    document.getElementById('devc_frete').textContent=BRL(totFrete);
+    document.getElementById('devc_peso').textContent=N(Math.round(totPeso))+' kg';
+    document.getElementById('devc_frete_medio').textContent=rows.length?BRL(totFrete/rows.length):'R$ 0';
+    const slice=rows.slice(devcPage*PAGE,(devcPage+1)*PAGE);
+    const tbody=document.getElementById('devc_tbody');
+    tbody.innerHTML=slice.map(d=>{
+      const orig=esc((d.origem_cidade||'?')+(d.origem_uf?'/'+d.origem_uf:''));
+      const dest=esc((d.destino_cidade||'?')+(d.destino_uf?'/'+d.destino_uf:''));
+      const nfeChips=(d.nfe_refs||[]).slice(0,3).map(ch=>'<span class="chip chip-gray" style="font-size:9px;font-family:monospace;cursor:pointer" title="'+esc(ch)+' — clique para ver o DANFE" onclick="verDanfe(\''+ch+'\',\''+esc(d.empresa_dest||'')+'\')">'+ch.slice(25,34)+' 📄</span>').join(' ')
+        +((d.nfe_refs||[]).length>3?'<span style="font-size:9px;color:var(--text3)"> +'+(d.nfe_refs||[]).length-3+'</span>':'');
+      const data=fmtDate(d.data_emissao)||'--';
+      return '<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:7px 10px"><span class="chip chip-blue" style="font-size:10px;font-weight:700">'+esc(d.empresa_dest||'?')+'</span></td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text3);font-size:10px">'+data+'</td>'
+        +'<td style="padding:7px 10px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600" title="'+esc(d.rem_nome||'')+'">'+( d.rem_nome?esc(d.rem_nome):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+orig+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap;color:var(--text2)">'+dest+'</td>'
+        +'<td style="padding:7px 10px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:10px" title="'+esc(d.transportadora||'')+'">'+esc(d.transportadora||'--')+'</td>'
+        +'<td style="padding:7px 10px;max-width:170px">'+( nfeChips||'<span style="color:var(--text3);font-size:10px">sem NF-e</span>')+'</td>'
+        +'<td style="padding:7px 10px;white-space:nowrap"><span class="chip chip-amber" style="font-size:10px;font-weight:700;font-family:monospace" title="'+esc(d.nat_desc||'')+'">'+esc(d.cfop||'-')+'</span></td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text);font-weight:700;white-space:nowrap">'+BRL(d.valor_frete)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+(d.total_nf?BRL(d.total_nf):'<span style="color:var(--text3)">-</span>')+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;color:var(--text2);white-space:nowrap">'+N(Math.round(d.peso_kg))+'</td>'
+        +'</tr>';
+    }).join('');
+    mkPager(rows.length,devcPage,PAGE,'devc_pager',pg=>{devcPage=pg;renderDevolucaoCompra();});
+  }
+  devcInp.addEventListener('input',devcFilter);
+  devcSelEmp.addEventListener('change',devcFilter);
+  window.devcExportXLSX=function(){
+    if(typeof XLSX==='undefined') return alert('Biblioteca de exportação não carregada.');
+    const rows=devcFilteredRows();
+    if(!rows.length) return alert('Nenhum registro para exportar com os filtros atuais.');
+    const data=rows.map(d=>({'Empresa':d.empresa_dest||'','Data':fmtDate(d.data_emissao)||'','Fornecedor':d.rem_nome||'','Origem':(d.origem_cidade||'')+(d.origem_uf?'/'+d.origem_uf:''),'Destino':(d.destino_cidade||'')+(d.destino_uf?'/'+d.destino_uf:''),'Transportadora':d.transportadora||'','NF-e(s)':(d.nfe_refs||[]).join(', '),'CFOP':d.cfop||'','Valor Frete (R$)':+(d.valor_frete||0).toFixed(2),'Valor NF (R$)':+(d.total_nf||0).toFixed(2),'Peso (kg)':Math.round(d.peso_kg||0),'Chave CT-e':d.cte_chave||''}));
+    const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);
+    const hdr=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[];
+    ['Valor Frete (R$)','Valor NF (R$)'].forEach(col=>{
+      const ci=hdr.indexOf(col);if(ci>=0)for(let ri=1;ri<=data.length;ri++){const a=XLSX.utils.encode_cell({r:ri,c:ci});if(ws[a])ws[a].z='"R$"#,##0.00';}
+    });
+    XLSX.utils.book_append_sheet(wb,ws,'Devolucao Compra');
+    XLSX.writeFile(wb,'frete_devolucao_compra_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  };
+
   // ABA DELIVERY
   let dlvPage=0;
   const dlvInp=document.getElementById('dlv_search');
@@ -6283,6 +6383,7 @@ function initApp(){
   // Expose devmkt and compras render to tab handler
   window._renderCompras=renderCompras;
   window._renderDevolucaoVenda=renderDevolucaoVenda;
+  window._renderDevolucaoCompra=renderDevolucaoCompra;
   window._renderDevMkt=renderDevMkt;
 
   // cli_search event
@@ -6303,6 +6404,7 @@ function initApp(){
     document.getElementById('tb_emp').textContent=N([...new Set(DATA.detalhes.map(d=>d.empresa).filter(Boolean))].length);
     document.getElementById('tb_comp').textContent=N((DATA.compras||[]).length);
     document.getElementById('tb_devvenda').textContent=N((DATA.devolucao_venda||[]).length);
+    document.getElementById('tb_devcompra').textContent=N((DATA.devolucao_compra||[]).length);
     document.getElementById('tb_dlv').textContent=N((DATA.delivery||[]).length);
     document.getElementById('tb_devmkt').textContent=N((DATA.devolucoes_mkt||[]).length);
     document.getElementById('tb_sep').textContent=N(Object.values(DATA.resumo?.separacao_por_emp_ano_mes||{}).reduce((s,v)=>s+(v.pedidos||0),0));
@@ -6313,7 +6415,7 @@ function initApp(){
   _initAppDone=true; // garante flag mesmo se renderAll lancar excecao
 }
 
-const _TAB_NAMES={'visao-geral':'Visao Geral','dre':'DRE Logístico','marketplace':'Marketplace','compras':'Frete Compras','devolucao-venda':'Devolução Venda','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','rastreio':'Rastreio de Entregas','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
+const _TAB_NAMES={'visao-geral':'Visao Geral','dre':'DRE Logístico','marketplace':'Marketplace','compras':'Frete Compras','devolucao-venda':'Devolução Venda','devolucao-compra':'Devolução Compra','delivery':'Delivery','dev-mkt':'Devoluções Marketplace','separacao':'Separação','rastreio':'Rastreio de Entregas','empresa':'Por Empresa','transferencias':'Transferências','operacional':'Operacional','natop':'Por Tipo de Venda','clientes':'Por Cliente','nao-vinculados':'CT-e sem Identificação','geo':'Geografico','rotas':'Analise de Rotas','admin':'Admin'};
 function toggleSidebar(){document.body.classList.toggle('sb-collapsed');localStorage.setItem('sb-collapsed',document.body.classList.contains('sb-collapsed')?'1':'0');}
 (function(){if(localStorage.getItem('sb-collapsed')==='1'){document.body.classList.add('sb-collapsed');}})();
 // TABS
@@ -6331,6 +6433,7 @@ document.querySelectorAll('.tab-btn,.mob-nav-btn').forEach(btn=>{
     else if(tab==='clientes') renderClientes();
     else if(tab==='compras'&&window._renderCompras) window._renderCompras();
     else if(tab==='devolucao-venda'&&window._renderDevolucaoVenda) window._renderDevolucaoVenda();
+    else if(tab==='devolucao-compra'&&window._renderDevolucaoCompra) window._renderDevolucaoCompra();
     else if(tab==='delivery'&&window._renderDelivery) window._renderDelivery();
     else if(tab==='dev-mkt'&&window._renderDevMkt) window._renderDevMkt();
     else if(tab==='separacao'&&window._renderSeparacao) window._renderSeparacao();
@@ -6383,6 +6486,7 @@ const ALL_TABS_INFO=[
   {id:'marketplace',label:'Marketplace'},
   {id:'compras',label:'Frete Compras'},
   {id:'devolucao-venda',label:'Devolução Venda'},
+  {id:'devolucao-compra',label:'Devolução Compra'},
   {id:'delivery',label:'Delivery'},
   {id:'dev-mkt',label:'Devoluções Marketplace'},
   {id:'separacao',label:'Separação'},
