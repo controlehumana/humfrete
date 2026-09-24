@@ -4902,6 +4902,19 @@ function initApp(){
       return;
     }
 
+    // mod (posicoes 21-22 da chave, 0-indexed 20:22) = 99 -> DCe (Declaracao
+    // de Conteudo, usada por marketplaces na logistica reversa). Nao e uma
+    // NF-e/CT-e comum -- a Qive rejeita ("not a valid Access Key") e o unico
+    // portal de consulta publica (SVRS) exige login gov.br, que nao pode
+    // ser automatizado num botao publico. Nunca vai ter DANFE por essa via,
+    // avisa isso explicitamente em vez do "ainda não disponível" generico,
+    // que sugere que só falta backfill (investigado e descartado 2026-09-25).
+    if(chave.slice(20,22)==='99'){
+      if(aba) aba.close();
+      showToast('Documento de conteúdo (DCe) — sem visualização disponível para este tipo de documento.','err');
+      return;
+    }
+
     if(!empresa){ if(aba) aba.close(); showToast('Empresa não identificada para esta NF-e.','err'); return; }
     firebase.storage().ref('danfe_compras/'+empresa+'/'+chave+'.pdf').getDownloadURL()
       .then(url=>{ if(aba) aba.location.href=url; else window.open(url,'_blank'); })
