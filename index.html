@@ -4828,23 +4828,53 @@ function initApp(){
   compInp.addEventListener('input',compFilter);
   compSelEmp.addEventListener('change',compFilter);
 
-  // Botao "Ver DANFE" (chips de NF-e na aba Frete Compras). O PDF e buscado
-  // uma vez no backend (QUIVE/buscar_danfe_compras.py, API Qive) e publicado
-  // no Storage em danfe_compras/{empresa}/{chave}.pdf -- aqui so montamos o
-  // mesmo caminho e pedimos a URL assinada pro usuario logado (Storage Rules
-  // aplicam a mesma restricao por empresa do Firestore). Nem toda NF-e tem
-  // DANFE ainda (backfill em andamento ou nota fora da base da Qive) -- nesse
-  // caso o erro e 'storage/object-not-found', tratado como aviso normal.
+  // Botao "Ver DANFE" (chips de NF-e nas abas Frete Compras e Devolucao
+  // Venda). Dois caminhos, escolhidos pelo CNPJ embutido na propria chave
+  // (posicoes 7-20, sempre o EMISSOR por especificacao da NF-e -- nao
+  // depende de nenhum dado local):
   //
-  // A aba tem que abrir ANTES do await: getDownloadURL() e assincrono, e um
-  // window.open() chamado só depois que a Promise resolve perde a associacao
-  // com o clique do usuario -- o navegador bloqueia como popup, em silencio,
-  // sem erro no console e sem cair no .catch(). Por isso abre uma aba em
-  // branco na hora do clique e só troca o location dela quando a URL chega.
+  // 1) Chave emitida por uma das 8 unidades Humana (CNPJ_EMPRESA[cnpj]
+  //    existe) -- e o caso de TODA nf_devolucao_venda (confirmado
+  //    2026-09-24: sao sempre NF-e que a propria Humana emitiu -- devolucao
+  //    de compra, consignacao, ou "DEVOLUCAO DE VENDAS" semeada do
+  //    Faturamento). O ERP interno da Humana serve o PDF dessas num
+  //    endpoint PUBLICO, sem autenticacao (testado 12/12 amostras reais):
+  //      https://gestao.humanaalimentar.com.br/erp-docs/dfe/emitidos/nfe/{cnpj}/{ano}/{mes}/pdf/{chave}.pdf
+  //    cnpj/ano/mes vem da propria chave -- monta a URL e abre direto,
+  //    SEM backend, SEM Storage, SEM script de backfill. Funciona pra
+  //    qualquer NF-e nova automaticamente, sem precisar rodar nada antes.
+  //    (Antes disso a Qive dava 404 pra ~100% dessas -- ela nao indexa bem
+  //    o que a Humana emite, so o que ela recebe.)
+  //
+  // 2) Qualquer outra chave (sempre documento de TERCEIRO -- caso de
+  //    nf_entrada, fornecedor emitindo a compra) -- mantem o caminho
+  //    antigo: PDF buscado uma vez no backend (QUIVE/buscar_danfe_compras.py,
+  //    API Qive, que exige credencial secreta e por isso nao pode rodar no
+  //    navegador) e publicado no Storage em danfe_compras/{empresa}/{chave}.pdf.
+  //    Nem toda NF-e tem DANFE ainda (backfill em andamento ou nota fora da
+  //    base da Qive) -- nesse caso o erro e 'storage/object-not-found',
+  //    tratado como aviso normal.
+  //
+  // Em ambos os casos a aba tem que abrir ANTES do await: getDownloadURL()
+  // e assincrono, e um window.open() chamado só depois que a Promise
+  // resolve perde a associacao com o clique do usuario -- o navegador
+  // bloqueia como popup, em silencio, sem erro no console e sem cair no
+  // .catch(). Por isso abre uma aba em branco na hora do clique e só troca
+  // o location dela quando a URL final e conhecida (no caminho 1, isso e
+  // sincrono -- não tem nem Promise).
   window.verDanfe=function(chave,empresa){
-    if(!empresa){ showToast('Empresa não identificada para esta NF-e.','err'); return; }
     const aba=window.open('','_blank');
     if(aba) aba.document.write('Carregando DANFE...');
+
+    const cnpjChave=chave.slice(6,20);
+    if(CNPJ_EMPRESA[cnpjChave]){
+      const ano='20'+chave.slice(2,4), mes=chave.slice(4,6);
+      const url='https://gestao.humanaalimentar.com.br/erp-docs/dfe/emitidos/nfe/'+cnpjChave+'/'+ano+'/'+mes+'/pdf/'+chave+'.pdf';
+      if(aba) aba.location.href=url; else window.open(url,'_blank');
+      return;
+    }
+
+    if(!empresa){ if(aba) aba.close(); showToast('Empresa não identificada para esta NF-e.','err'); return; }
     firebase.storage().ref('danfe_compras/'+empresa+'/'+chave+'.pdf').getDownloadURL()
       .then(url=>{ if(aba) aba.location.href=url; else window.open(url,'_blank'); })
       .catch(err=>{

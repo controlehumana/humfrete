@@ -42,6 +42,29 @@ def br_float(s):
     try: return float(s)
     except ValueError: return 0.0
 
+
+def _classificar_nat_desc(nat_desc):
+    """Espelha QUIVE/buscar_devolucao_venda.py::classificar_nat_desc().
+
+    Corrige o bug encontrado em 2026-09-24: checar so a substring "devolu"
+    no nat_desc/nat_operacao classificava qualquer "DEVOLUCAO DE COMPRAS"
+    (Humana devolvendo pro fornecedor) ou "ENTRADA - DEVOLUCAO DE
+    CONSIGNACAO" (sem movimentacao fisica, so lancamento fiscal -- confirmado
+    pelo usuario) como devolucao de VENDA. Medido na base real: ~26% das
+    linhas que caiam em 'devolucao_venda' nao eram devolucao de venda —
+    R$42,9k de R$49,4k de frete (87%) eram na verdade devolucao de compra.
+    Mantida como funcao separada (nao importada de QUIVE) porque os dois
+    projetos nao compartilham modulo Python.
+    """
+    texto = (nat_desc or "").lower()
+    if "consignac" in texto:
+        return "consignacao"
+    if "compra" in texto or "cpa " in texto or "cpa/" in texto:
+        return "compra"
+    if "devolu" in texto:
+        return "devolucao"
+    return None
+
 def fmt_date(s):
     """Normaliza qualquer data para DD/MM/YYYY. Aceita YYYY-MM-DD ou DD/MM/YYYY."""
     s = (s or "").strip()[:10]
@@ -1532,7 +1555,7 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
                 # chave da NF-e do cliente (nat_operacao/cod_nat_oper de devolução) --
                 # sai de 'detalhes' (Frete de Saída) e vai pra 'devolucao_venda', senão
                 # fica misturado com frete de venda normal no Custo Total/DRE.
-                if "devolu" in (nfe.get("nat_operacao") or "").lower():
+                if _classificar_nat_desc(nfe.get("nat_operacao")) == "devolucao":
                     devolucao_venda_fat.append({
                         "cte_chave":    cte["cte_chave"],
                         "transportadora": cte["transportadora"],
@@ -1673,7 +1696,11 @@ def cruzar(nfe_map, cte_list, nfe_to_cte):
             nf  = nfs[0]  # usa a primeira NF para dados do fornecedor
             # Mesmo vindo de nf_entrada (capturada como compra normal), pode
             # ser devolução de venda -- o CFOP é que manda, não a origem do dado.
-            eh_devolucao = (nf.get("cfop") in CFOP_DEVOLUCAO) or ("devolu" in (nf.get("nat_desc") or "").lower())
+            # nat_desc classificado (nao so substring "devolu") pra nao confundir
+            # devolucao de COMPRA/consignacao com devolucao de VENDA (ver
+            # _classificar_nat_desc, mesmo bug do buscar_devolucao_venda.py).
+            _cat_nf = _classificar_nat_desc(nf.get("nat_desc"))
+            eh_devolucao = (_cat_nf == "devolucao") or (_cat_nf is None and nf.get("cfop") in CFOP_DEVOLUCAO)
             row = {
                 "cte_chave":    cte["cte_chave"],
                 "transportadora": cte["transportadora"],

@@ -164,6 +164,17 @@ Nem todo CTe cujo destinatário é uma empresa Humana é uma compra nova. Caso r
 
 **Ainda não é 100% retroativo:** CTe que já tinha `nf_entrada` com CFOP normal de compra nunca é re-checado a fundo além do CFOP/`nat_desc` já capturado (não há reprocessamento de XML). E o bucket "dest CNPJ_MAP" só cobre CTe sem `nf_entrada` no momento em que o script roda — segue incremental a cada execução.
 
+**CORRIGIDO (2026-09-24): "devolu" no `nat_desc`/`nat_operacao` não era garantia de devolução de VENDA.** Usuário notou uma NF (ex.: `50260802786436000930550020000314421258837851`) com `nat_desc: "DEVOLUCAO DE COMPRAS"` classificada como devolução de venda — investigação mostrou que a checagem antiga (`"devolu" in nat_desc.lower()`, em 3 lugares: `buscar_devolucao_venda.py` — seed local e loop da API — e `processar_frete.py` — os dois pontos citados acima) misturava:
+- **DEVOLUCAO DE VENDAS** (genuína, cliente devolvendo compra) — mantida
+- **DEVOLUCAO DE COMPRAS** (Humana devolvendo pro fornecedor) — **355 NF-e** na tabela `nf_devolucao_venda`, nunca era devolução de venda
+- **ENTRADA - DEVOLUCAO SIMBOLICA/DE CONSIGNACAO** (usuário confirmou: **não tem movimentação física de item, é só lançamento fiscal**) — **669 NF-e**
+
+Medido na base real: dos R$49.378 de frete que apareciam agrupados em "Devolução Venda" (via CT-e vinculado), **R$42.889 (87%) eram devolução de compra** — só R$6.489 era devolução de venda de fato. Na "segunda frente" (direto do Faturamento, sem exigir CT-e), o total de NF-e caiu de **4.062 para 147** depois da correção — a maioria das 4.062 também não era devolução de venda.
+
+**Fix:** função `classificar_nat_desc()`/`_classificar_nat_desc()` (mesma lógica duplicada em `QUIVE/buscar_devolucao_venda.py` e `Frete/processar_frete.py`, projetos sem módulo compartilhado) — testa "consignac" → `consignacao`, "compra"/"cpa " → `compra`, senão "devolu" → `devolucao`. As 355+669 já gravadas em `nf_devolucao_venda` foram reclassificadas (`status='compra'`/`'consignacao'`, saem da view `vw_cte_nf_devolucao` que só lê `status='devolucao'`) — não apagadas, ficam disponíveis se um dia fizer sentido uma aba própria pra elas.
+
+**⚠️ Armadilha durante o fix, não repetir:** a 1ª versão do classificador testava `"venda" in texto or "devolu" in texto` — `"venda"` sozinho bate em **"VENDA DE MERCADORIA"** (venda normal, não devolução!), o que na "segunda frente" do `processar_frete.py` (que itera **todo** `nfe_map`, não só as pré-filtradas por "DEVOLU") reclassificou ~112.500 vendas normais como devolução, estourando o payload do BRU1 pra 5,5MB (limite ~1MB) — **o próprio guard de tamanho do Firestore abortou o upload antes de publicar dado errado.** Fix: remover o branch `"venda"`, testar só `"devolu"` (que já cobre "DEVOLUCAO DE VENDAS" de qualquer forma). Lição: qualquer reclassificação em massa que toque a "segunda frente" (sem pré-filtro SQL) precisa rodar `processar_frete.py` localmente e olhar a contagem antes de aceitar como normal — o `ValueError` do teto do Firestore é o último cinto de segurança, não a validação.
+
 ### Campos do payload `ctes_nao_vinculados`
 ```python
 {
