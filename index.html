@@ -2638,7 +2638,7 @@ function _buildHeatmap(container,rows,keyFn,rowLabel,byYME_total,allPers,tlLbs,l
 }
 function renderYoY(){
   const d=window._yoyData;if(!d) return;
-  const {allEmps,byYME,byYMT,top10Tr,trHeatRows,outrosTrCount,allPers,tlLbs}=d;
+  const {allEmps,byYME,byYMT,top10Tr,trHeatRows,outrosTrKeys,outrosTrCount,allPers,tlLbs}=d;
   const container=document.getElementById('yoy_heatmap');if(!container) return;
   // Heatmap por empresa (mantém lógica antiga, agora via helper)
   const _isOcean=()=>document.documentElement.classList.contains('ocean');
@@ -2703,7 +2703,7 @@ function renderYoY(){
       allPers,tlLbs,
       tr=>tr==='__OUTRAS__'?`Outras (${outrosTrCount})`:trDisp(tr),
       tr=>{
-        if(tr==='__OUTRAS__') return `Outras ${outrosTrCount} transportadoras fora do Top 10, somadas`;
+        if(tr==='__OUTRAS__') return `${outrosTrCount} transportadoras fora do Top 10 (ordem decrescente de frete):\n`+outrosTrKeys.map((t,i)=>(i+1)+'. '+trDisp(t)).join('\n');
         const rawName=trGroupMap[tr]||tr;
         const cnpjs=trCnpjMap[rawName]||trCnpjMap[tr];
         if(!cnpjs||!cnpjs.size) return trName(tr);
@@ -3079,7 +3079,7 @@ function renderAll(){
   });
   const top10Tr=Object.entries(trTotals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([t])=>t);
   // Linha agregada "Outras" — soma das transportadoras fora do Top 10
-  const outrosTrKeys=Object.keys(trTotals).filter(t=>!top10Tr.includes(t));
+  const outrosTrKeys=Object.entries(trTotals).sort((a,b)=>b[1]-a[1]).map(([t])=>t).filter(t=>!top10Tr.includes(t));
   if(outrosTrKeys.length){
     Object.keys(byYMT).forEach(kt=>{
       const sep=kt.indexOf('|');const a=kt.slice(0,sep),t=kt.slice(sep+1);
@@ -3093,7 +3093,7 @@ function renderAll(){
     });
   }
   const trHeatRows=outrosTrKeys.length?[...top10Tr,'__OUTRAS__']:top10Tr;
-  window._yoyData={allYears,allEmps,byYME,byYMT,detYME,top10Tr,trHeatRows,outrosTrCount:outrosTrKeys.length,allPers,tlLbs};renderYoY();
+  window._yoyData={allYears,allEmps,byYME,byYMT,detYME,top10Tr,trHeatRows,outrosTrKeys,outrosTrCount:outrosTrKeys.length,allPers,tlLbs};renderYoY();
   const top15E=agg.byEst.slice(0,15);mkMultiBar('ch_estado',top15E.map(x=>x.label),top15E.map(x=>x.frete),top15E.map((_,i)=>'hsl('+(215-i*6)+',70%,'+(52-i)+'%)'));
   const top10T=agg.byTr.slice(0,10);mkDonut('ch_transp',top10T.map(x=>trDisp(x.label)),top10T.map(x=>x.frete));
   mkBar('ch_empresa',agg.byEmp.map(x=>x.label),agg.byEmp.map(x=>x.frete),'#059669');
