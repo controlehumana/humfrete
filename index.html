@@ -845,7 +845,7 @@ html.ocean .btn-xlsx:hover{background:rgba(5,150,105,.22);border-color:rgba(5,15
   <div class="card"><div class="card-title">Frete Mensal por Empresa (R$)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Evolucao mes a mes do gasto com frete por filial. Permite identificar sazonalidade, picos de custo e comparar se uma unidade esta crescendo mais rapido que as demais em termos de despesa logistica.</span></span></div><div class="ch-wrap-xl"><canvas id="ch_timeline"></canvas></div></div>
   <div class="card"><div class="card-title">% Frete / Faturamento - Mapa de Desempenho por Empresa<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Mapa de cores cruzando cada filial com cada mes. Verde indica meses com frete eficiente (baixo percentual sobre faturamento de saida); vermelho indica meses com custo de frete elevado. Inclui vendas, bonificacoes e transferencias. Celulas em branco sao meses sem dados. Passe o mouse sobre uma celula para ver a analise do motivo do percentual.</span></span></div><div id="yoy_heatmap" style="overflow-x:auto;overflow-y:visible"></div></div>
   <div id="heat_tip" style="display:none;position:fixed;background:var(--tooltip-bg);border:1px solid var(--bd2);border-radius:10px;padding:14px 16px;min-width:300px;max-width:360px;z-index:9999;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.6);color:var(--text)"></div>
-  <div class="card"><div class="card-title">% Frete / Faturamento - Mapa de Desempenho por Transportadora (Top 10)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Como ler este mapa: cada célula mostra (frete pago à transportadora ÷ valor das NF-e de saida que ela transportou) × 100. Exemplo: Latins entregou R$ 869 mil em mercadorias e cobrou R$ 20 mil de frete → 2,3%. O denominador é sempre o faturamento das entregas daquela transportadora — não o total da empresa. Isso mede eficiência logística: quanto custa transportar R$ 100 de mercadoria com cada parceiro. Transportadoras que atendem clientes de alto ticket médio tendem a ter % menor; as que atendem rotas longas ou pedidos pequenos tendem a ter % maior. Compare cada linha com a linha Total Grupo para identificar parceiros acima ou abaixo da média operacional.</span></span></div><div id="yoy_heatmap_tr" style="overflow-x:auto;overflow-y:visible"></div></div>
+  <div class="card"><div class="card-title">% Frete / Faturamento - Mapa de Desempenho por Transportadora (Top 10 + Outras)<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Como ler este mapa: cada célula mostra (frete pago à transportadora ÷ valor das NF-e de saida que ela transportou) × 100. Exemplo: Latins entregou R$ 869 mil em mercadorias e cobrou R$ 20 mil de frete → 2,3%. O denominador é sempre o faturamento das entregas daquela transportadora — não o total da empresa. Isso mede eficiência logística: quanto custa transportar R$ 100 de mercadoria com cada parceiro. Transportadoras que atendem clientes de alto ticket médio tendem a ter % menor; as que atendem rotas longas ou pedidos pequenos tendem a ter % maior. Compare cada linha com a linha Total Grupo para identificar parceiros acima ou abaixo da média operacional. A linha "Outras" soma todas as transportadoras que não entraram no Top 10 por volume de frete, para que nenhuma fique de fora do mapa.</span></span></div><div id="yoy_heatmap_tr" style="overflow-x:auto;overflow-y:visible"></div></div>
   <div class="sdiv">Distribuicao Geografica</div>
   <div class="ch2">
     <div class="card"><div class="card-title">Custo de Frete por Estado - Top 15<span class="card-tip"><i class="fa-solid fa-info"></i><span class="kpi-tooltip">Os 15 estados que mais custam em frete para a empresa. Permite identificar regioes mais onerosas e avaliar se vale renegociar tarifas ou buscar transportadoras mais competitivas para aqueles destinos.</span></span></div><div class="ch-wrap"><canvas id="ch_estado"></canvas></div></div>
@@ -2638,7 +2638,7 @@ function _buildHeatmap(container,rows,keyFn,rowLabel,byYME_total,allPers,tlLbs,l
 }
 function renderYoY(){
   const d=window._yoyData;if(!d) return;
-  const {allEmps,byYME,byYMT,top10Tr,allPers,tlLbs}=d;
+  const {allEmps,byYME,byYMT,top10Tr,trHeatRows,outrosTrCount,allPers,tlLbs}=d;
   const container=document.getElementById('yoy_heatmap');if(!container) return;
   // Heatmap por empresa (mantém lógica antiga, agora via helper)
   const _isOcean=()=>document.documentElement.classList.contains('ocean');
@@ -2691,18 +2691,19 @@ function renderYoY(){
     td.addEventListener('mousemove',_heatMove);
     td.addEventListener('mouseleave',()=>{document.getElementById('heat_tip').style.display='none';});
   });
-  // Heatmap por transportadora (Top 10 por volume)
-  if(byYMT&&top10Tr){
+  // Heatmap por transportadora (Top 10 por volume + linha agregada "Outras")
+  if(byYMT&&trHeatRows){
     const trContainer=document.getElementById('yoy_heatmap_tr');
     _buildHeatmap(
       trContainer,
-      top10Tr,
+      trHeatRows,
       (tr,ano,mes)=>byYMT[ano+'|'+tr]&&byYMT[ano+'|'+tr][mes],
       'Transportadora',
       byYME,
       allPers,tlLbs,
-      tr=>trDisp(tr),
+      tr=>tr==='__OUTRAS__'?`Outras (${outrosTrCount})`:trDisp(tr),
       tr=>{
+        if(tr==='__OUTRAS__') return `Outras ${outrosTrCount} transportadoras fora do Top 10, somadas`;
         const rawName=trGroupMap[tr]||tr;
         const cnpjs=trCnpjMap[rawName]||trCnpjMap[tr];
         if(!cnpjs||!cnpjs.size) return trName(tr);
@@ -3077,7 +3078,22 @@ function renderAll(){
     trTotals[t]=(trTotals[t]||0)+d.valor_frete;
   });
   const top10Tr=Object.entries(trTotals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([t])=>t);
-  window._yoyData={allYears,allEmps,byYME,byYMT,detYME,top10Tr,allPers,tlLbs};renderYoY();
+  // Linha agregada "Outras" — soma das transportadoras fora do Top 10
+  const outrosTrKeys=Object.keys(trTotals).filter(t=>!top10Tr.includes(t));
+  if(outrosTrKeys.length){
+    Object.keys(byYMT).forEach(kt=>{
+      const sep=kt.indexOf('|');const a=kt.slice(0,sep),t=kt.slice(sep+1);
+      if(!outrosTrKeys.includes(t)) return;
+      const outKey=a+'|__OUTRAS__';
+      Object.entries(byYMT[kt]).forEach(([m,v])=>{
+        if(!byYMT[outKey])byYMT[outKey]={};
+        if(!byYMT[outKey][m])byYMT[outKey][m]={fr:0,nf:0};
+        byYMT[outKey][m].fr+=v.fr;byYMT[outKey][m].nf+=v.nf;
+      });
+    });
+  }
+  const trHeatRows=outrosTrKeys.length?[...top10Tr,'__OUTRAS__']:top10Tr;
+  window._yoyData={allYears,allEmps,byYME,byYMT,detYME,top10Tr,trHeatRows,outrosTrCount:outrosTrKeys.length,allPers,tlLbs};renderYoY();
   const top15E=agg.byEst.slice(0,15);mkMultiBar('ch_estado',top15E.map(x=>x.label),top15E.map(x=>x.frete),top15E.map((_,i)=>'hsl('+(215-i*6)+',70%,'+(52-i)+'%)'));
   const top10T=agg.byTr.slice(0,10);mkDonut('ch_transp',top10T.map(x=>trDisp(x.label)),top10T.map(x=>x.frete));
   mkBar('ch_empresa',agg.byEmp.map(x=>x.label),agg.byEmp.map(x=>x.frete),'#059669');
