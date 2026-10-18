@@ -27,3 +27,6 @@ _dre_preview_data.js
 _dre_preview_gen.py
 *.jpg
 *.jpeg
+
+# Notas fiscais XML (dados reais de clientes)
+*.xml
